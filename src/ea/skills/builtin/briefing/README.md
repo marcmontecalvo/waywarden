@@ -1,0 +1,3 @@
+# briefing
+
+Skill placeholder.

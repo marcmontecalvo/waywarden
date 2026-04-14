@@ -1,0 +1,4 @@
+provider: honcho
+honcho:
+  base_url: ${HONCHO_BASE_URL}
+  api_key_env: HONCHO_API_KEY

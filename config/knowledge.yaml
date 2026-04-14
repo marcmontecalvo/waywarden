@@ -1,0 +1,7 @@
+provider: llm_wiki
+llm_wiki:
+  workspace: ${LLM_WIKI_WORKSPACE}
+  cli_path: ${LLM_WIKI_CLI}
+fallback:
+  provider: filesystem
+  root: ./data/knowledge

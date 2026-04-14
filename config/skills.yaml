@@ -1,0 +1,7 @@
+enabled:
+  - project_manager
+  - inbox_triage
+  - scheduler
+  - briefing
+  - coding_handoff
+  - ha_gateway

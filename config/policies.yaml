@@ -1,0 +1,17 @@
+tool_policy:
+  auto_allow:
+    - knowledge.search
+    - memory.read
+    - tasks.create
+    - ha.read
+  approval_required:
+    - gmail.send
+    - calendar.create_event
+    - calendar.update_event
+    - shell.exec
+    - coding.start_task
+    - ha.write
+  forbidden:
+    - host.root_shell
+    - policy.rewrite
+    - autonomous.ha_config_edit

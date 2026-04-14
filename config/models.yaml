@@ -1,0 +1,19 @@
+profiles:
+  default_chat:
+    provider: openai
+    model: gpt-5.4-thinking
+  inbox_triage:
+    provider: anthropic
+    model: claude-sonnet
+  scheduler:
+    provider: openai
+    model: gpt-5.4-thinking
+  briefing:
+    provider: openai
+    model: gpt-5.4-thinking
+  memory_maintenance:
+    provider: openai
+    model: gpt-5.4-thinking
+  knowledge_curator:
+    provider: anthropic
+    model: claude-sonnet

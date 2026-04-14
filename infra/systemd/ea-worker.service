@@ -1,0 +1,13 @@
+[Unit]
+Description=Waywarden Worker
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/waywarden
+EnvironmentFile=%h/waywarden/.env
+ExecStart=%h/.local/bin/uv run python -m ea.workers.scheduler
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

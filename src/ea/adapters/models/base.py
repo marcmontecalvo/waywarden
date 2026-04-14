@@ -1,0 +1,6 @@
+from typing import AsyncIterator, Protocol
+
+
+class ModelProvider(Protocol):
+    async def generate(self, request: dict[str, object]) -> dict[str, object]: ...
+    async def stream(self, request: dict[str, object]) -> AsyncIterator[dict[str, object]]: ...
