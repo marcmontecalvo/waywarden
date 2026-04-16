@@ -20,6 +20,8 @@ The goal is to identify:
   - File-based skills catalog and skill packaging ideas
 - [pi-rewind-hook](./pi-rewind-hook.md)
   - Rewind/restore checkpoint concept for coding sessions
+- [archon](./archon.md)
+  - OSS orchestration, workflow-state, and control-plane reference
 
 ### Roadmap / research references
 - [pi-share-hf](./pi-share-hf.md)
