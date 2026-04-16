@@ -22,6 +22,12 @@ The goal is to identify:
   - Rewind/restore checkpoint concept for coding sessions
 - [archon](./archon.md)
   - OSS orchestration, workflow-state, and control-plane reference
+- [ottomator-agents](./ottomator-agents.md)
+  - OSS multi-agent workflow and role-packaging reference
+- [adversarial-dev](./adversarial-dev.md)
+  - Adversarial review, hardening, and failure-oriented development reference
+- [harness-design-long-running-apps](./harness-design-long-running-apps.md)
+  - Long-running harness architecture and lifecycle design reference
 
 ### Roadmap / research references
 - [pi-share-hf](./pi-share-hf.md)
