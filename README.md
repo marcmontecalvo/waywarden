@@ -90,6 +90,7 @@ curl http://127.0.0.1:8000/healthz
 - `docs/architecture/`: ADRs and architecture decisions
 - `docs/issues/`: phased execution backlog
 - `docs/prompts/`: prompts for coding agents
+- `docs/research/`: external products, repos, and UX patterns worth borrowing from selectively
 - `config/`: runtime/provider/skill/policy config
 - `infra/`: docker sidecars and systemd units
 - `src/ea/`: application code
