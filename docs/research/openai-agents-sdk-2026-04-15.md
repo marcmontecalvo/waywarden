@@ -1,17 +1,17 @@
 ---
 type: research
 title: "OpenAI Agents SDK — Harness & Manifest Design"
-status: Captured
+status: Routed
 date: 2026-04-17
-source_url: "https://openai.com/index/the-next-evolution-of-the-agents-sdk/"
+source_url: "https://developers.openai.com/api/docs/guides/agents/"
 source_type: product
 priority: directly-relevant
-tags: [harness, sdk, manifest, durability, isolation]
+tags: [harness, sdk, manifest, durability, isolation, workspace-manifest, resumable-runs, worker-boundary]
 relates_to_adrs: [0001, 0011]
 ---
 
 # OpenAI Agents SDK update (2026-04-15)
-
+https://openai.com/index/the-next-evolution-of-the-agents-sdk/
 ## What is actually strong here?
 
 The strongest part is not the branding.

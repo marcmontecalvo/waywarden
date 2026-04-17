@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Ottomator Agents — Multi-Agent Orchestration"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/coleam00/ottomator-agents"
 source_type: repo
 priority: directly-relevant
-tags: [multi-agent, orchestration, workflow, role-packaging]
+tags: [multi-agent, orchestration, workflow, role-packaging, specialist-roles, workflow-packaging]
 relates_to_adrs: [0001, 0004]
 ---
 

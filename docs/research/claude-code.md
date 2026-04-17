@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Claude Code — Terminal-Native Coding Agent UX"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/anthropics/claude-code"
 source_type: product
 priority: directly-relevant
-tags: [ux, terminal-native, coding-agent, batteries-included, safe-by-default]
+tags: [ux, terminal-native, coding-agent, batteries-included, safe-by-default, repo-aware-handoff, approval-visibility]
 relates_to_adrs: [0001, 0004, 0005]
 ---
 

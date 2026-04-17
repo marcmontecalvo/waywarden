@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Archon — OSS Agent Orchestration"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/coleam00/Archon"
 source_type: repo
 priority: directly-relevant
-tags: [orchestration, control-plane, workflow-state, multi-step-work]
+tags: [orchestration, control-plane, workflow-state, multi-step-work, stage-transitions, resumable-runs]
 relates_to_adrs: [0001, 0011]
 ---
 

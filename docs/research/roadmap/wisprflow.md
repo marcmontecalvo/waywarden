@@ -1,13 +1,13 @@
 ---
 type: research
 title: "Wispr Flow — Dictation-First UX"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://www.wisprflow.com/"
 source_type: product
 priority: roadmap
-tags: [dictation, voice-input, ux, low-friction-capture]
-relates_to_adrs: null
+tags: [dictation, voice-input, ux, low-friction-capture, future-channel, intake-pipeline]
+relates_to_adrs: [0006]
 ---
 
 # Wispr Flow

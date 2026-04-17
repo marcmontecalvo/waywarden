@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Pi vs Claude Code — Harness Patterns & Gaps for WayWarden"
-status: Analyzed
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/disler/pi-vs-claude-code"
 source_type: repo
 priority: directly-relevant
-tags: [hooks, extensions, multi-agent, open-source, safety, orchestration]
+tags: [hooks, extensions, multi-agent, open-source, safety, orchestration, event-lifecycle, extension-composition]
 relates_to_adrs: [0004, 0005, 0011]
 ---
 

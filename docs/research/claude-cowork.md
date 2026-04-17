@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Claude Cowork — Collaborative Coding Workflow Patterns"
-status: Analyzed
+status: Routed
 date: 2026-04-17
 source_url: "https://www.anthropic.com/engineering/harness-design-long-running-apps"
 source_type: product
 priority: directly-relevant
-tags: [collaborative-workflow, coding-handoff, review-loops, checkpoint-model]
+tags: [collaborative-workflow, coding-handoff, review-loops, checkpoint-model, artifact-linked-conversation, collaborative-checkpoints]
 relates_to_adrs: [0001, 0008]
 ---
 

@@ -1,13 +1,13 @@
 ---
 type: research
 title: "BabbleUI — Operator Console & Terminal UX"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/badlogic/babbletui"
 source_type: product
 priority: roadmap
 tags: [terminal-ui, operator-console, tui]
-relates_to_adrs: null
+relates_to_adrs: [0006]
 ---
 
 # Roadmap Research: badlogic/babbletui

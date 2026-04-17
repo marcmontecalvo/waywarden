@@ -1,12 +1,12 @@
 ---
 type: research
 title: "Adversarial Dev — Failure-Oriented Development Patterns"
-status: Captured
+status: Routed
 date: 2026-04-17
 source_url: "https://github.com/coleam00/adversarial-dev"
 source_type: repo
 priority: directly-relevant
-tags: [testing, adversarial-review, failure-injection, robustness]
+tags: [testing, adversarial-review, failure-injection, robustness, prompt-hardening, approval-boundaries]
 relates_to_adrs: [0007]
 ---
 
