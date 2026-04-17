@@ -1,0 +1,38 @@
+full-delivery:
+  - scout
+  - planner
+  - plan-reviewer
+  - builder
+  - reviewer
+  - documenter
+  - red-team
+
+plan-build-review:
+  - planner
+  - plan-reviewer
+  - builder
+  - reviewer
+
+info:
+  - scout
+  - reviewer
+  - documenter
+
+security-pass:
+  - reviewer
+  - red-team
+
+framework-experts:
+  - agent-definition-expert
+  - prompt-expert
+  - capability-expert
+  - config-runtime-expert
+  - extension-expert
+
+framework-build:
+  - waywarden-orchestrator
+  - agent-definition-expert
+  - prompt-expert
+  - capability-expert
+  - config-runtime-expert
+  - extension-expert

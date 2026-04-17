@@ -1,0 +1,6 @@
+id: coding
+description: Coding profile
+enabled_asset_tags:
+  - shared
+  - coding
+policy_preset: yolo

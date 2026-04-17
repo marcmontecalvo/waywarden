@@ -1,89 +1,15 @@
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-*.so
-*.egg
-*.egg-info/
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
 dist/
 build/
-eggs/
-parts/
-var/
-sdist/
-develop-eggs/
-.installed.cfg
-lib/
-lib64/
-.eggs/
-
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-
-# uv
-.uv/
-
-# Testing
-.pytest_cache/
 .coverage
-.coverage.*
 htmlcov/
-coverage.xml
-*.lcov
-
-# Type checking
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pytype/
-
-# Linting
-.ruff_cache/
-
-# Environment / secrets
-.env
-.env.*
-!.env.example
-
-# Database
-*.db
-*.sqlite
 *.sqlite3
-
-# Alembic
-# (versions are committed; generated SQL dumps are not)
-*.sql
-
-# Logs
-*.log
-logs/
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Data directories (keep structure, ignore content)
-data/uploads/*
-data/knowledge/*
 data/backups/*
-!data/uploads/.gitkeep
-!data/knowledge/.gitkeep
 !data/backups/.gitkeep
-
-# Docker
-docker-compose.override.yml
-
-# Systemd local overrides
-*.service.local
+data/uploads/*
+!data/uploads/.gitkeep

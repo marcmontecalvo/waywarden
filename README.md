@@ -1,25 +1,53 @@
 # waywarden
 
-Waywarden is an EA-first agent harness: a small, public, production-shaped executive assistant runtime built for long-lived memory, curated knowledge, clean tool boundaries, and future handoff to separate Home Assistant and coding runtimes.
+Waywarden is a **slim, extensible agent harness** built around one small core and many swappable profile packs.
+
+The goal is to let you run multiple agents side by side — for example:
+- a personal EA for Marc
+- a personal EA for Lisa
+- a coding agent
+- a Home Assistant companion
+
+All of them should share the same harness architecture while remaining separately configurable, observable, and controllable.
 
 ## Positioning
 
 This repo is **not**:
-- the HA runtime
-- the coding runtime
-- a general-purpose autonomous “agent OS”
-- a fork of OpenClaw or Hermes
+- a fork of OpenClaw, Hermes, or Pi
+- a giant autonomous agent OS
+- a UI-specific product
+- a single-purpose EA runtime
 
 This repo **is**:
-- the EA core
-- a native Python app for a dedicated Ubuntu VM
+- the Waywarden core harness
+- a native Python-first runtime for a dedicated Ubuntu VM or similar host
 - a FastAPI service with clean adapter boundaries
 - a Postgres-backed system of record
-- a modular harness with swappable memory, knowledge, tool, model, and channel providers
+- a profile-driven harness with swappable memory, knowledge, tool, model, and channel providers
+- an API-first platform that can power separate dashboards and UIs
+
+## Architecture thesis
+
+Waywarden should be:
+- one **small core runtime**
+- one **extension system**
+- one **profile system**
+- many **instances**
+
+A single core should support profiles such as:
+- `ea`
+- `coding`
+- `home`
+
+A single deployment should also be able to run multiple configured instances at once, such as:
+- `marc-ea`
+- `lisa-ea`
+- `coding-main`
+- `ha-main`
 
 ## Current stack targets
 
-- Ubuntu 24.04.4 LTS
+- Ubuntu 24.04 LTS
 - Python 3.13.x
 - `uv`
 - FastAPI
@@ -30,60 +58,66 @@ This repo **is**:
 - pytest
 - Ruff
 - Postgres
-- Honcho for memory
-- LLM-Wiki for curated knowledge
+- Honcho as the starting memory provider
+- LLM-Wiki as the starting knowledge provider
+- OpenTelemetry-compatible tracing with a no-op mode when auditing is disabled
 
 ## Design rules
 
-1. **EA-only substrate**
-   The EA owns its own runtime. HA and coding integrate through protocols, not shared internals.
+1. **One core, many profiles**
+   The harness core owns the runtime primitives. Profiles decide which tools, widgets, prompts, routines, teams, policies, and context providers are active.
 
-2. **Memory is not knowledge**
-   Honcho handles agent memory. LLM-Wiki handles curated, inspectable knowledge.
+2. **Multi-instance by design**
+   The same harness should support multiple side-by-side instances without code forks.
 
-3. **No self-editing governance**
-   The EA can learn preferences and routines. It cannot rewrite its own permissions, policy, or identity.
+3. **Memory is not knowledge**
+   Honcho handles runtime memory. LLM-Wiki handles curated, inspectable knowledge.
 
-4. **No dream system in the hot path**
-   Reflection, consolidation, and summarization are background jobs only.
+4. **Providers are swappable**
+   Honcho and LLM-Wiki are starting providers, not permanent architecture commitments.
 
 5. **No giant god prompt**
    Architecture lives in code, configs, contracts, and tests.
 
+6. **Policy is explicit**
+   Approvals, YOLO mode, allow/deny behavior, and auditing are policy presets, not hidden behavior.
+
+7. **UI is optional**
+   The Web UI and dashboards live outside this repo. APIs are the contract.
+
+8. **Token discipline is a feature**
+   The harness must measure user-input tokens, injected context tokens, tool/context expansion, and response tokens per turn.
+
+## Extension surface
+
+Waywarden should support shared root-level assets and extensions such as:
+- widgets
+- commands
+- prompts
+- tools
+- skills
+- agents
+- teams
+- pipelines
+- routines
+- policies
+- themes
+- context providers
+
+Profiles should filter and enable these shared assets rather than duplicating them.
+
 ## Why this exists
 
-Forking existing harnesses is attractive for a demo but expensive for ownership.
+Forking existing harnesses is attractive for a fast demo but expensive for ownership.
 
-This repo borrows ideas from:
-- HKUDS/OpenHarness: docs-first onboarding, file-based skills/plugins, and “small, inspectable harness” philosophy
-- MaxGfeller/open-harness: code-first sessions, event streaming, composable agent loop ideas
-- jeffrschneider/OpenHarness: capability manifests and interoperable harness API/spec thinking
-- Hermes Agent: reflection and learning as a concept
-- OpenClaw: plugin categories and practical channel/tool/model separation
+Waywarden borrows ideas from:
+- OpenHarness variants for small, inspectable harness thinking
+- Pi for extension stacking, widgets, teams, chains, and profile-like customization
+- ZeroID for delegation envelopes, scoped authority, and tool-boundary trust
+- Claude Code ecosystem ideas for routines, session management, subagents, advisor patterns, and auto-mode thinking
+- OpenClaw command-center style tools for observability and operator UX
 
-It intentionally avoids inheriting their entire runtime assumptions.
-
-## Getting started
-
-### 1. Install system dependencies
-- Python 3.13
-- `uv`
-- Postgres 17+
-- Docker Engine (sidecars only)
-
-### 2. Bootstrap
-```bash
-make bootstrap
-cp .env.example .env
-make db-up
-make migrate
-make dev
-```
-
-### 3. Smoke test
-```bash
-curl http://127.0.0.1:8000/healthz
-```
+It intentionally avoids inheriting any one project’s full runtime assumptions.
 
 ## Repository map
 
@@ -91,33 +125,36 @@ curl http://127.0.0.1:8000/healthz
 - `docs/issues/`: phased execution backlog
 - `docs/prompts/`: prompts for coding agents
 - `docs/research/`: external products, repos, and UX patterns worth borrowing from selectively
-- `config/`: runtime/provider/skill/policy config
+- `config/`: runtime/provider/profile/policy config
 - `infra/`: docker sidecars and systemd units
-- `src/ea/`: application code
+- `src/`: application code
 - `tests/`: unit, integration, and contract tests
+- `assets/`: shared widgets, commands, prompts, routines, teams, policies, and other extension assets
+- `profiles/`: profile overlays and selection rules
 
 ## First milestone
 
-Deliver a real EA core with:
+Deliver a real core harness with:
 - web API
 - CLI entrypoint
+- profile loader
+- multi-instance support
 - session/message/task persistence
-- skill registry
+- extension registry
 - model router
 - Honcho adapter
 - LLM-Wiki adapter
-- Gmail/calendar/contact tool stubs
-- coding handoff adapter
-- HA gateway adapter
 - approval engine
-- backups
+- token accounting
+- global tracer abstraction
+
+Then deliver the first full profile:
+- `ea`
 
 ## Public repo note
 
-The recommended public repo name is **Waywarden**:
-- implies keeping a person on course
-- works for an executive-assistant core
-- is flexible enough for future expansion
-- avoids collisions with existing “OpenHarness” branding
-
-See `docs/architecture/0009-name-and-positioning.md` for naming notes.
+The public repo name remains **Waywarden** because it:
+- works for a core harness instead of a single agent persona
+- is not tied to coding or smart home specifically
+- implies guidance and staying on course
+- avoids collision with existing OpenHarness naming

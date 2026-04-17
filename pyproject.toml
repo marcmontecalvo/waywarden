@@ -16,13 +16,11 @@ dependencies = [
   "orjson==3.11.3",
   "pyyaml==6.0.3",
   "honcho-ai==2.1.1",
-  "anthropic>=0.50.0",
-  "openai>=1.50.0",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=8.2,<9",
+  "pytest==9.0.3",
   "pytest-asyncio==1.2.0",
   "ruff==0.15.10",
   "mypy==1.18.2",
@@ -45,9 +43,6 @@ asyncio_mode = "auto"
 [tool.mypy]
 python_version = "3.13"
 strict = true
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/ea"]
 
 [build-system]
 requires = ["hatchling"]

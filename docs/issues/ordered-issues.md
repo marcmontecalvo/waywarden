@@ -3,23 +3,33 @@
 1. Bootstrap repo with uv, FastAPI, Ruff, pytest, Alembic
 2. Add typed settings and config loader
 3. Add health endpoint and structured logging
-4. Create domain models: session, message, task, approval
-5. Create SQLAlchemy models and Alembic migration
-6. Implement repositories
-7. Define provider protocols: model, memory, knowledge, tool, channel
-8. Define skill base contract and registry
-9. Implement model router
-10. Implement builtin skills metadata only
-11. Implement approval engine and policy loader
-12. Implement Honcho adapter + fake adapter
-13. Implement LLM-Wiki adapter + filesystem fallback
-14. Implement context builder
-15. Implement tool registry
-16. Implement Gmail/calendar/contact/coding/HA tool stubs
-17. Implement chat route and orchestration service
-18. Implement task routes
-19. Implement CLI entrypoint
-20. Implement backup manager and backup route
-21. Implement background scheduler
-22. Add contract tests
-23. Add restore runbook validation
+4. Add instance, profile, and policy concepts to the domain
+5. Create domain models: session, message, task, approval, instance, profile
+6. Create SQLAlchemy models and Alembic migration
+7. Implement repositories
+8. Define provider protocols: model, memory, knowledge, tool, channel, tracer
+9. Define extension base contract and registry
+10. Define profile overlay contract and loader
+11. Add root-level shared asset folders and metadata schema
+12. Implement model router
+13. Implement approval engine and policy loader
+14. Add explicit policy presets: yolo, ask, allowlist, custom
+15. Implement token accounting hooks
+16. Implement tracer abstraction with OTel and no-op modes
+17. Implement Honcho adapter + fake adapter
+18. Implement LLM-Wiki adapter + filesystem fallback
+19. Implement context builder
+20. Implement tool registry
+21. Implement chat route and orchestration service
+22. Implement CLI entrypoint
+23. Implement EA profile overlay
+24. Implement EA routines: briefing, scheduler, inbox triage
+25. Implement delegation envelope support
+26. Implement coding profile overlay
+27. Implement till-done loop
+28. Implement adversarial review routine
+29. Implement teams / pipelines / sub-agent execution
+30. Implement backup manager and backup route
+31. Implement background scheduler
+32. Add contract tests
+33. Add restore runbook validation

@@ -1,0 +1,6 @@
+id: home
+description: Home assistant companion profile
+enabled_asset_tags:
+  - shared
+  - home
+policy_preset: yolo

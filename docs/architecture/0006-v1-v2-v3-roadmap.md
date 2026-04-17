@@ -1,28 +1,52 @@
 # ADR 0006: V1 / V2 / V3 roadmap
 
 ## V1
+Core harness plus first full profile.
+
+### Core
 - web API
-- CLI channel
-- tasks
-- approvals
-- skill registry
+- CLI entrypoint
+- multi-instance support
+- profile loader
+- extension registry
+- model router
+- token accounting
+- global tracer abstraction
+- approvals/policy engine
 - Honcho adapter
 - LLM-Wiki adapter
-- Gmail/calendar/contact stubs
-- coding handoff
-- HA gateway
-- backups
+
+### First full profile
+- EA profile
+
+### EA profile scope
+- tasks
+- inbox / scheduling primitives
+- routines
+- approvals
+- delegation envelopes
+- shared widgets and commands filtered into EA
 
 ## V2
-- more channels
-- richer briefing
-- approval inbox UI
-- background memory consolidation
-- voice ingress for EA
-- observability
+Coding profile and richer operations.
+
+### Add
+- coding profile
+- till-done / worklist loop
+- adversarial review routine
+- sub-agent primitive
+- teams and pipelines
+- repo-aware context
+- TUI
+- richer observability
+- optional compression plugins
 
 ## V3
-- proactive nudges
-- reflection jobs
-- semi-autonomous proposals
-- deeper HA integration through a separate runtime
+Home profile and deeper background systems.
+
+### Add
+- home profile
+- room/device context
+- HA adapters
+- optional reflection / dream backlog work
+- optional universal multi-runtime event bus if real need exists

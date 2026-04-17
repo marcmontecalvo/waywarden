@@ -1,20 +1,40 @@
-# ADR 0004: Skill contract
+# ADR 0004: Extension contract
 
 ## Status
 Accepted
 
 ## Decision
-Skills are code plugins with typed metadata and runtime contracts.
+Waywarden uses a typed extension model, not a skills-only model.
 
-## Required fields
-- name
+## Supported extension classes
+- widget
+- command
+- prompt
+- tool
+- skill
+- agent
+- team
+- pipeline
+- routine
+- policy
+- theme
+- context_provider
+- profile_overlay
+
+## Required metadata
+Each extension should declare at least:
+- id
+- type
 - description
-- model profile
+- tags
+- allowed profiles
 - required tools
-- required memory scopes
-- required knowledge scopes
+- required context
+- optional UI surfaces
 
 ## Rules
-- no skill bypasses approvals
-- no skill reaches provider internals directly
-- no skill owns the channel layer
+- no extension bypasses policy or approvals
+- no extension reaches provider internals directly
+- no extension owns the channel layer
+- shared assets live once at the repo root and are filtered into profiles
+- new extension classes should be addable later without reworking the whole harness

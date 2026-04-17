@@ -1,0 +1,6 @@
+id: ea
+description: Executive assistant profile
+enabled_asset_tags:
+  - shared
+  - ea
+policy_preset: yolo

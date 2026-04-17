@@ -1,21 +1,46 @@
-# ADR 0002: EA-only substrate
+# ADR 0002: Core harness plus profile packs
 
 ## Status
-Accepted
+Superseded in spirit, retained by filename for history
 
 ## Decision
-The EA owns its own runtime substrate. HA and coding remain separate systems.
+The old EA-only substrate idea is replaced with a **core harness + profile packs** model.
+
+The core owns:
+- session lifecycle
+- event loop
+- persistence
+- provider interfaces
+- extension loading
+- policy and approvals
+- tracing
+- token accounting
+- agent/team/pipeline/routine primitives
+
+Profiles own:
+- enabled tools
+- widgets
+- prompts
+- routines
+- teams
+- pipelines
+- context selection
+- profile-specific defaults
+- UI overlays
 
 ## Rationale
-A shared universal substrate sounds elegant but creates the wrong coupling:
-- shared failure modes
-- shared abstraction debt
-- shared security assumptions
-- slower iteration on the EA
+A shared core is still correct, but the earlier “EA-only substrate” framing was too narrow.
+
+The right split is:
+- one core harness
+- many profiles
+- many instances
+- clean external integrations where needed
 
 ## Integration boundary
-Use contracts, not shared internals:
-- HTTP
-- Webhooks
+Use contracts, not hidden coupling:
+- HTTP / APIs
+- webhooks
 - MCP where useful
-- common task envelope schemas
+- common task / delegation envelopes
+- tracing and event export

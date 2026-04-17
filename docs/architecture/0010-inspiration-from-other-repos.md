@@ -1,30 +1,46 @@
 # ADR 0010: Additional inspiration
 
-## HKUDS/OpenHarness
+## OpenHarness variants
 Borrow:
 - docs-first contributor flow
-- AGENTS/skills as files
+- file-based skills/plugins
 - “small, inspectable harness” philosophy
-- one-command local workflow discipline
+- contract and capability thinking
 
 Avoid:
 - adopting the whole runtime
-- inheriting broad multi-channel scope in v1
+- inheriting broad product assumptions too early
 
-## MaxGfeller/open-harness
+## Pi
 Borrow:
-- code-first composable sessions
-- event-stream style agent loop
-- package separation between core and UI integrations
+- stackable extensions
+- widgets
+- load roots
+- teams and chains
+- till-done harness-level controls
+- profile-like customization
 
 Avoid:
-- copying a TypeScript-first SDK into a Python-first EA core
+- YOLO security as the only operating model
+- treating every missing primitive as a user-side extension problem
 
-## jeffrschneider/OpenHarness
+## ZeroID
 Borrow:
-- capability manifest thinking
-- support matrix / contract mentality
-- explicit harness API specification
+- delegation envelopes
+- scoped authority
+- tool/workspace/environment claims
+- revocation-oriented trust thinking
 
 Avoid:
-- over-engineering a public spec before the runtime exists
+- hard-coupling the first release to a full identity server
+
+## Claude Code ecosystem
+Borrow:
+- routines
+- session management ideas
+- advisor/subagent patterns
+- auto-mode style graduated autonomy
+- strong operator ergonomics
+
+Avoid:
+- assuming batteries-included product behavior belongs in the Waywarden core

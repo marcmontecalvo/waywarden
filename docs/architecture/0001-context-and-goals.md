@@ -4,22 +4,32 @@
 Accepted
 
 ## Problem
-The user needs a real executive-assistant runtime, not a generic single-agent sandbox and not a fused house/coding mega-agent.
+The project started as an EA-first runtime, but the better long-term architecture is a slim, reusable harness core that can run multiple profiles and multiple instances side by side.
 
 ## Decision
-Build an EA-first harness as a small native Python service with clean adapter boundaries.
+Build Waywarden as a **small core harness** with:
+- extension loading
+- profile packs
+- instance overlays
+- explicit policy
+- swappable providers
+- API-first boundaries
 
 ## Goals
-- omnichannel EA interaction
-- persistent memory
-- curated knowledge
-- task tracking
-- tool calling with approvals
-- future handoff to HA and coding runtimes
+- support multiple instances at once
+- support multiple profiles on the same core
+- keep the core small and boring
+- support persistent memory
+- support curated knowledge
+- support task tracking and tool calling
+- support profile-specific widgets, routines, teams, and pipelines
+- support future handoff to external runtimes where useful
+- keep token bloat observable and controllable
 
 ## Non-goals
-- HA runtime internals
-- coding runtime internals
-- universal autonomous agent framework
+- giant universal autonomous agent OS
+- UI-specific architecture
+- autonomous HA mutation
 - self-editing governance
-- dream system in the request hot path
+- dream/reflection system in the request hot path
+- overbuilt distributed architecture

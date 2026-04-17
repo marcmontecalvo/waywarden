@@ -1,22 +1,31 @@
 # Epics
 
-## E1 - Bootstrap runtime
-Scaffold app, config, logging, testing, and dev ergonomics.
+## E1 - Bootstrap core harness
+Scaffold app, config, logging, testing, tracing, token accounting, and dev ergonomics.
 
 ## E2 - Persistence and domain
-Sessions, messages, tasks, approvals, backup manifests.
+Sessions, messages, tasks, approvals, backup manifests, instances, profiles.
 
-## E3 - Skills and model routing
-Skill contract, registry, model profiles, dispatch.
+## E3 - Extension and profile system
+Extension contracts, profile loader, shared asset filtering, model profiles, dispatch.
 
 ## E4 - Memory and knowledge
-Honcho adapter, LLM-Wiki adapter, context builder.
+Honcho adapter, LLM-Wiki adapter, context builder, provider swapability.
 
-## E5 - Tools and approvals
-Tool registry, approval engine, external adapters.
+## E5 - Tools and policy
+Tool registry, policy presets, approval engine, external adapters.
 
-## E6 - Channels
-Web and CLI.
+## E6 - Channels and APIs
+Web API, CLI, optional TUI support, UI-agnostic boundaries.
 
-## E7 - Background jobs
-Memory consolidation, daily brief, backups, stale task cleanup.
+## E7 - EA profile
+Tasks, briefing, inbox/scheduler routines, delegation, shared widgets/commands/prompts filtered into EA.
+
+## E8 - Coding profile
+Till-done loop, adversarial review, sub-agents, teams, pipelines, repo-aware context.
+
+## E9 - Home profile
+HA adapters, device/room context, read-first operations, profile-specific widgets.
+
+## E10 - Backlog systems
+Reflection, dream jobs, optional event bus, advanced compression plugins.
