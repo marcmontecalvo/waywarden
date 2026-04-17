@@ -1,0 +1,55 @@
+name: Epic
+description: Track a larger body of work made up of sub-issues.
+title: "[Epic]: "
+labels:
+  - ready
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: Why This Epic Exists
+      description: Capture the user, operator, or system problem this epic resolves.
+      placeholder: Describe the reason this epic matters.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Track the sub-issues or major workstreams in this epic.
+      placeholder: |
+        - [ ] Sub-issue or workstream
+        - [ ] Sub-issue or workstream
+    validations:
+      required: true
+  - type: textarea
+    id: exit_criteria
+    attributes:
+      label: Exit Criteria
+      description: Define what completion looks like at the epic level.
+      placeholder: |
+        - [ ] Outcome 1
+        - [ ] Outcome 2
+    validations:
+      required: true
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-Goals
+      description: Record adjacent work that is intentionally excluded.
+      placeholder: |
+        - Not part of this epic
+        - Deferred follow-up
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Related ADRs / Specs / Links
+      description: Link the ADRs, specs, or related issues relevant to this epic.
+      placeholder: |
+        - ADR-000:
+        - Spec:
+        - Parent issue:
+    validations:
+      required: false

@@ -1,0 +1,55 @@
+name: Feature
+description: Propose a feature or implementation task.
+title: "[Feature]: "
+labels:
+  - ready
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Describe the capability or change being requested.
+      placeholder: Add a concise summary of the feature.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: List the concrete outcomes that define done.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In Scope
+      description: Call out the boundaries for this work.
+      placeholder: |
+        - Included change
+        - Included change
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: Out of Scope
+      description: Capture what this issue should not do.
+      placeholder: |
+        - Not included
+        - Deferred follow-up
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Related ADRs / Specs / Links
+      description: Reference any ADRs, specs, or issues that shape the work.
+      placeholder: |
+        - ADR-000:
+        - Spec:
+        - Related issue:
+    validations:
+      required: false
