@@ -1,10 +1,10 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from ea.adapters.db.base import Base
-from ea.adapters.db import models  # noqa: F401
+from alembic import context
+from waywarden.adapters.db import models  # noqa: F401
+from waywarden.adapters.db.base import Base
 
 config = context.config
 

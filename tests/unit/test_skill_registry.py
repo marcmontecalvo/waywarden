@@ -1,4 +1,4 @@
-from ea.skills.registry import SkillRegistry
+from waywarden.todo.ea_profile.skills.registry import SkillRegistry
 
 
 def test_pick_default_skill() -> None:

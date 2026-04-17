@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 WorkingDirectory=%h/waywarden
 EnvironmentFile=%h/waywarden/.env
-ExecStart=%h/.local/bin/uv run python -m ea.workers.scheduler
+ExecStart=%h/.local/bin/uv run python -m waywarden.todo.ea_profile.workers.scheduler
 Restart=on-failure
 
 [Install]

@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from ea.app import app
+from waywarden.app import app
 
 
 def test_healthz() -> None:

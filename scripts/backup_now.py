@@ -1,5 +1,6 @@
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 
 def main() -> None:
     backup_root = Path("data/backups")
@@ -8,6 +9,7 @@ def main() -> None:
     marker = backup_root / f"backup-{stamp}.txt"
     marker.write_text("Backup placeholder. Implement real backup flow.\n", encoding="utf-8")
     print(marker)
+
 
 if __name__ == "__main__":
     main()

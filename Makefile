@@ -6,7 +6,7 @@ bootstrap:
 	uv sync --extra dev
 
 dev:
-	uv run uvicorn ea.app:app --app-dir src --reload --host 0.0.0.0 --port 8000
+	uv run uvicorn waywarden.app:app --app-dir src --reload --host 0.0.0.0 --port 8000
 
 lint:
 	uv run ruff check .
@@ -29,10 +29,10 @@ migrate:
 	uv run alembic upgrade head
 
 run:
-	uv run uvicorn ea.app:app --app-dir src --host 0.0.0.0 --port 8000
+	uv run uvicorn waywarden.app:app --app-dir src --host 0.0.0.0 --port 8000
 
 worker:
-	uv run python -m ea.workers.scheduler
+	uv run python -m waywarden.todo.ea_profile.workers.scheduler
 
 backup:
 	uv run python scripts/backup_now.py

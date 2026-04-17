@@ -132,6 +132,11 @@ It intentionally avoids inheriting any one project’s full runtime assumptions.
 - `assets/`: shared widgets, commands, prompts, routines, teams, policies, and other extension assets
 - `profiles/`: profile overlays and selection rules
 
+## Package layout
+
+- `src/waywarden/`: harness package root
+- `src/waywarden/todo/ea_profile/`: temporary home for EA-specific modules that still need to move behind a real profile overlay
+
 ## First milestone
 
 Deliver a real core harness with:
