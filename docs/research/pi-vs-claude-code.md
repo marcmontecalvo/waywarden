@@ -12,7 +12,7 @@ relates_to_adrs: [0004, 0005, 0011]
 
 # Pi vs Claude Code — Harness Patterns & Gaps for WayWarden
 
-**Source**: https://github.com/disler/pi-vs-claude-code  
+**Source**: https://github.com/disler/pi-vs-claude-code
 **Context**: Comprehensive comparison of Pi Agent (open-source, minimal, extensible) vs Claude Code (proprietary, batteries-included, safe-by-default)
 
 ## What is actually strong here?
@@ -126,7 +126,7 @@ The repo clearly articulates two valid but opposite approaches:
 
 - **Hybrid approach**: Build WayWarden's harness layer, adopt Pi's event model and extension composition (smaller surface), but ship damage-control and approval policies from day one (safer than Pi's YOLO, more transparent than Claude Code's deny-first).
 
-**Recommendation for WayWarden**: 
+**Recommendation for WayWarden**:
 - Study Pi's event/hook architecture and extension composition model; it's architecturally superior for a harness.
 - Study Claude Code's safety philosophy and approval workflows; WayWarden's damage-control spec shows you're already doing this well.
 - Avoid OpenCode (it's Claude Code, just open-sourced); the innovation is in Pi's minimalism and granular control, not in feature parity.

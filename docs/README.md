@@ -46,6 +46,28 @@ This docs tree is split by **intent**, not by age.
 5. If a research note changes the actual design, add or update an ADR instead of letting the research doc become the spec.
 6. **All documents must include YAML frontmatter** with metadata (type, title, status, date). See [FRONTMATTER-SPEC.md](./FRONTMATTER-SPEC.md) for the standard.
 
+## Local development
+
+Install the dev toolchain and git hooks with:
+
+```bash
+uv sync --extra dev
+uv run pre-commit install
+```
+
+Run the full hook set manually with:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+The configured hooks currently run:
+- `ruff format`
+- `ruff check --fix`
+- `mypy` on staged Python files in `src/` and `tests/`
+- `trailing-whitespace`
+- `end-of-file-fixer`
+
 ## Working rule for the current phase
 
 WayWarden is still pre-build. That means:
