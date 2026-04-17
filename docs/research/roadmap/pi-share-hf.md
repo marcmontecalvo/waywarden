@@ -3,7 +3,7 @@ type: research
 title: "Pi Share on HuggingFace — Session Export & Publishing"
 status: Captured
 date: 2026-04-17
-source_url: "https://huggingface.co/spaces/badlogic/pi-share"
+source_url: "https://github.com/badlogic/pi-share-hf"
 source_type: product
 priority: roadmap
 tags: [session-sharing, export, redaction, publishing]

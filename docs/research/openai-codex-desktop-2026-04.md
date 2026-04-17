@@ -3,7 +3,7 @@ type: research
 title: "OpenAI Codex Desktop Expansion (2026-04) — Multi-Surface Harness Design"
 status: Analyzed
 date: 2026-04-17
-source_url: null
+source_url: "https://venturebeat.com/technology/openai-drastically-updates-codex-desktop-app-to-use-all-other-apps-on-your-computer-generate-images-preview-webpages)"
 source_type: product
 priority: directly-relevant
 tags: [protocol-first, multi-client, harness-architecture, persistent-state]

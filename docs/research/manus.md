@@ -3,7 +3,7 @@ type: research
 title: "Manus — High-Agency Task Orchestration"
 status: Captured
 date: 2026-04-17
-source_url: "https://github.com/manus/manus"
+source_url: "https://open.manus.ai/docs/v2/introduction"
 source_type: repo
 priority: roadmap
 tags: [task-orchestration, artifact-oriented, high-agency]

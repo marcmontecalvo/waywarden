@@ -3,7 +3,7 @@ type: research
 title: "OpenAI Agents SDK — Harness & Manifest Design"
 status: Captured
 date: 2026-04-17
-source_url: "https://github.com/openai/openai-agents"
+source_url: "https://openai.com/index/the-next-evolution-of-the-agents-sdk/"
 source_type: product
 priority: directly-relevant
 tags: [harness, sdk, manifest, durability, isolation]
