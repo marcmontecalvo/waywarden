@@ -1,3 +1,14 @@
+---
+type: prompt
+title: "Root Bootstrap"
+status: In Use
+date: 2026-04-17
+prompt_type: system-harness
+used_by: [harness-core-setup]
+version: "1.0"
+tags: [bootstrap, harness, core, python]
+---
+
 Build a production-shaped but intentionally small Waywarden core harness in Python.
 
 Constraints:

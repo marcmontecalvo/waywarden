@@ -1,3 +1,15 @@
+---
+type: issue
+title: "Issue Pack Index"
+status: Active
+date: 2026-04-17
+issue_type: index
+priority: navigation
+phase: harness-core
+owner: TBD
+target_milestone: null
+---
+
 # Issue pack
 
 This folder contains the phased backlog the coding agent should implement in order.

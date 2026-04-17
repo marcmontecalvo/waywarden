@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0001: Context and Goals"
+status: Accepted
+date: 2026-04-17
+adr_number: "0001"
+relates_to: [0002, 0006, 0011]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0001: Context and goals
 
 ## Status

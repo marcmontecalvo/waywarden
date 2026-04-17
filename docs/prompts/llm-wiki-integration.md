@@ -1,3 +1,14 @@
+---
+type: prompt
+title: "LLM-Wiki Integration"
+status: In Use
+date: 2026-04-17
+prompt_type: system-provider-adapter
+used_by: [knowledge-integration]
+version: "1.0"
+tags: [knowledge, llm-wiki, adapter, integration]
+---
+
 Implement a KnowledgeProvider interface and an LLMWikiKnowledgeProvider adapter.
 
 Requirements:

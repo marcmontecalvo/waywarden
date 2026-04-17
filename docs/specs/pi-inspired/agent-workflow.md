@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Agent Workflow Supervisor for WayWarden"
+status: Draft
+date: 2026-04-17
+spec_number: "AW-001"
+phase: harness-core
+relates_to_adrs: [0001, 0004, 0008]
+depends_on: [0004-extension-contract, 0008-coding-agent-prompts]
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # Agent Workflow Supervisor for WayWarden
 
 This document adapts the strongest idea from Pi's Chronicle/agent-workflow spec: long-running work should be supervised through explicit states instead of one sprawling session.

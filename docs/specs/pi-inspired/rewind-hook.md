@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Rewind Hook for WayWarden"
+status: Draft
+date: 2026-04-17
+spec_number: "RH-001"
+phase: harness-core
+relates_to_adrs: [0001, 0004]
+depends_on: [0004-extension-contract]
+owner: TBD
+target_milestone: "v2-harness"
+---
+
 # Rewind Hook
 
 Why rewind belongs in WayWarden now, what behavior matters, and suggested implementation boundaries.

@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0007: Good and Bad Patterns"
+status: Accepted
+date: 2026-04-17
+adr_number: "0007"
+relates_to: [0001, 0004, 0005]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0007: Good and bad patterns
 
 ## Good

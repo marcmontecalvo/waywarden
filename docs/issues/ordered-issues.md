@@ -1,3 +1,15 @@
+---
+type: issue
+title: "Ordered Issues Backlog"
+status: Active
+date: 2026-04-17
+issue_type: ordered-backlog
+priority: execution
+phase: harness-core
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # Ordered issues
 
 1. Bootstrap repo with uv, FastAPI, Ruff, pytest, Alembic

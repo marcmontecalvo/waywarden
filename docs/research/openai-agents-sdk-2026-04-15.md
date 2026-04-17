@@ -1,3 +1,15 @@
+---
+type: research
+title: "OpenAI Agents SDK — Harness & Manifest Design"
+status: Captured
+date: 2026-04-17
+source_url: "https://github.com/openai/openai-agents"
+source_type: product
+priority: directly-relevant
+tags: [harness, sdk, manifest, durability, isolation]
+relates_to_adrs: [0001, 0011]
+---
+
 # OpenAI Agents SDK update (2026-04-15)
 
 ## What is actually strong here?

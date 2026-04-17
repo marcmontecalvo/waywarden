@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Framework Experts Pattern for WayWarden"
+status: Draft
+date: 2026-04-17
+spec_number: "FE-001"
+phase: harness-core
+relates_to_adrs: [0001, 0004]
+depends_on: [0004-extension-contract]
+owner: TBD
+target_milestone: "v2-harness"
+---
+
 # Framework Experts Pattern for WayWarden
 
 This document adapts the strongest idea from the Pi Pi concept: a single framework-oriented meta-agent backed by several narrow domain experts that can be queried in parallel.

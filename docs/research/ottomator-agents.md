@@ -1,3 +1,15 @@
+---
+type: research
+title: "Ottomator Agents — Multi-Agent Orchestration"
+status: Captured
+date: 2026-04-17
+source_url: "https://github.com/ottomator/agents"
+source_type: repo
+priority: directly-relevant
+tags: [multi-agent, orchestration, workflow, role-packaging]
+relates_to_adrs: [0001, 0004]
+---
+
 # Ottomator Agents
 
 ## Why it is interesting

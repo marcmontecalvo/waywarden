@@ -1,3 +1,15 @@
+---
+type: research
+title: "Harness Design for Long-Running Apps"
+status: Captured
+date: 2026-04-17
+source_url: "https://www.anthropic.com/engineering/harness-design-long-running-apps"
+source_type: article
+priority: directly-relevant
+tags: [harness-design, lifecycle, long-running-processes, state-management]
+relates_to_adrs: [0001, 0011]
+---
+
 # Harness Design for Long-Running Apps
 
 Source reference:

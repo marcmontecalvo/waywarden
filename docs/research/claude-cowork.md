@@ -1,3 +1,15 @@
+---
+type: research
+title: "Claude Cowork — Collaborative Coding Workflow Patterns"
+status: Analyzed
+date: 2026-04-17
+source_url: null
+source_type: product
+priority: directly-relevant
+tags: [collaborative-workflow, coding-handoff, review-loops, checkpoint-model]
+relates_to_adrs: [0001, 0008]
+---
+
 # Claude Cowork
 
 ## Why it is interesting

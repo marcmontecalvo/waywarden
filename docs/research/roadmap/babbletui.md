@@ -1,3 +1,15 @@
+---
+type: research
+title: "BabbleUI — Operator Console & Terminal UX"
+status: Captured
+date: 2026-04-17
+source_url: null
+source_type: product
+priority: roadmap
+tags: [terminal-ui, operator-console, tui]
+relates_to_adrs: null
+---
+
 # Roadmap Research: badlogic/babbletui
 
 ## What it is

@@ -1,3 +1,14 @@
+---
+type: prompt
+title: "Architecture Guardrails"
+status: In Use
+date: 2026-04-17
+prompt_type: system-guardrails
+used_by: [all-agents]
+version: "1.0"
+tags: [adr, architecture, constraints]
+---
+
 Before writing implementation code, create and respect these ADRs:
 - 0001-context-and-goals
 - 0002-ea-only-substrate

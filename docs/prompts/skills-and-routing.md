@@ -1,3 +1,14 @@
+---
+type: prompt
+title: "Skills and Routing"
+status: In Use
+date: 2026-04-17
+prompt_type: system-extension
+used_by: [harness-core-setup]
+version: "1.0"
+tags: [skills, routing, extensions, profiles]
+---
+
 Implement a typed extension system and profile-aware routing.
 
 Requirements:

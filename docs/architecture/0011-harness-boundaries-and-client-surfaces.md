@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0011: Harness Boundaries and Client Surfaces"
+status: Accepted
+date: 2026-04-17
+adr_number: "0011"
+relates_to: [0001, 0005]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0011: Harness boundaries and client surfaces
 
 ## Status

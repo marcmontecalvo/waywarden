@@ -1,3 +1,15 @@
+---
+type: research
+title: "Pi Skills — Packaged Agent Capabilities Directory"
+status: Captured
+date: 2026-04-17
+source_url: "https://github.com/badlogic/pi-skills"
+source_type: repo
+priority: directly-relevant
+tags: [skills, extension-model, capability-packaging]
+relates_to_adrs: [0004]
+---
+
 # External Reference: badlogic/pi-skills
 
 ## What it is

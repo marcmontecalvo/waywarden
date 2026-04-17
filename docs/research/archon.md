@@ -1,3 +1,15 @@
+---
+type: research
+title: "Archon — OSS Agent Orchestration"
+status: Captured
+date: 2026-04-17
+source_url: "https://github.com/arcane-ai/archon"
+source_type: repo
+priority: directly-relevant
+tags: [orchestration, control-plane, workflow-state, multi-step-work]
+relates_to_adrs: [0001, 0011]
+---
+
 # Archon
 
 ## Why it is interesting

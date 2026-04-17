@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0010: Inspiration From Other Repos"
+status: Accepted
+date: 2026-04-17
+adr_number: "0010"
+relates_to: [0001, 0007]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0010: Additional inspiration
 
 ## OpenHarness variants

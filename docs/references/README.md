@@ -1,3 +1,15 @@
+---
+type: research
+title: "WayWarden Pi-Inspired Import Pack Index"
+status: Active
+date: 2026-04-17
+source_url: "https://github.com/disler/pi-vs-claude-code"
+source_type: repo
+priority: directly-relevant
+tags: [pi, patterns, import-pack, starter]
+relates_to_adrs: [0001, 0004, 0011]
+---
+
 # WayWarden Pi-Inspired Import Pack (Updated)
 
 This zip is a **WayWarden-oriented starter pack** that pulls in the strongest ideas from several Pi ecosystem repositories without introducing TypeScript or trying to mirror those projects wholesale.

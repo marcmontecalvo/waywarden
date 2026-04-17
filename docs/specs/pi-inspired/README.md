@@ -1,3 +1,16 @@
+---
+type: spec
+title: "WayWarden Pi-Inspired Agent Pack"
+status: In Progress
+date: 2026-04-17
+spec_number: null
+phase: harness-core
+relates_to_adrs: [0001, 0004]
+depends_on: null
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # WayWarden Pi-Inspired Agent Pack
 
 This zip contains a **WayWarden-native starter pack** of markdown files and specs derived from the strongest reusable ideas in the `disler/pi-vs-claude-code` repository.

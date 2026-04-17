@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0002: Core Harness Plus Profile Packs"
+status: Accepted
+date: 2026-04-17
+adr_number: "0002"
+relates_to: [0001, 0006, 0007]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0002: Core harness plus profile packs
 
 ## Status

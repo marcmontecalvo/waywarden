@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Adoption Roadmap for Pi-Inspired Patterns"
+status: Draft
+date: 2026-04-17
+spec_number: "AR-001"
+phase: harness-core
+relates_to_adrs: [0001, 0006]
+depends_on: [0006-v1-v2-v3-roadmap]
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # Adoption Roadmap
 
 ## Phase 1 — Immediate low-risk lift

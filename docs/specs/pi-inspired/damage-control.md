@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Damage Control for WayWarden"
+status: Draft
+date: 2026-04-17
+spec_number: "DC-001"
+phase: harness-core
+relates_to_adrs: [0001, 0005, 0011]
+depends_on: [0005-approval-model]
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # Damage Control for WayWarden
 
 This is a WayWarden adaptation of the core idea from Pi's damage-control spec: intercept risky actions in real time and apply operator-defined rules before destructive work happens.

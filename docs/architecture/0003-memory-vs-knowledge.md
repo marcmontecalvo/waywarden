@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0003: Memory vs Knowledge"
+status: Accepted
+date: 2026-04-17
+adr_number: "0003"
+relates_to: [0001, 0004]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0003: Memory vs knowledge
 
 ## Status

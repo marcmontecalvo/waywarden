@@ -1,3 +1,15 @@
+---
+type: research
+title: "OpenAI Codex Desktop Expansion (2026-04) — Multi-Surface Harness Design"
+status: Analyzed
+date: 2026-04-17
+source_url: null
+source_type: product
+priority: directly-relevant
+tags: [protocol-first, multi-client, harness-architecture, persistent-state]
+relates_to_adrs: [0002, 0011]
+---
+
 # OpenAI Codex desktop expansion (2026-04)
 
 ## What is actually strong here?

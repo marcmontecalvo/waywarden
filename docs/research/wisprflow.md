@@ -1,3 +1,15 @@
+---
+type: research
+title: "Wispr Flow — Dictation-First UX"
+status: Captured
+date: 2026-04-17
+source_url: "https://www.wisprflow.com/"
+source_type: product
+priority: roadmap
+tags: [dictation, voice-input, ux, low-friction-capture]
+relates_to_adrs: null
+---
+
 # Wispr Flow
 
 ## Why it is interesting

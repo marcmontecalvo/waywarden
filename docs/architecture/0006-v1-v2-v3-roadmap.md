@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0006: V1/V2/V3 Roadmap"
+status: Accepted
+date: 2026-04-17
+adr_number: "0006"
+relates_to: [0001, 0002, 0009]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0006: V1 / V2 / V3 roadmap
 
 ## V1

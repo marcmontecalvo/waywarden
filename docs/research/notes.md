@@ -1,3 +1,15 @@
+---
+type: research
+title: "Notes on Sourcing Research"
+status: Captured
+date: 2026-04-17
+source_url: null
+source_type: article
+priority: directly-relevant
+tags: [research, sourcing, patterns]
+relates_to_adrs: null
+---
+
 # Notes on sourcing
 
 These research notes are intentionally **pattern-oriented**.

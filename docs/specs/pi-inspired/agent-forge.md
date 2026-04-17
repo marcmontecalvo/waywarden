@@ -1,3 +1,16 @@
+---
+type: spec
+title: "Agent Forge for WayWarden"
+status: Draft
+date: 2026-04-17
+spec_number: "AF-001"
+phase: harness-core
+relates_to_adrs: [0001, 0004]
+depends_on: [0004-extension-contract]
+owner: TBD
+target_milestone: "v2-harness"
+---
+
 # Agent Forge for WayWarden
 
 This is a cautious WayWarden adaptation of Pi's Agent Forge concept: the system can expand its own capabilities by creating new tools or capabilities.

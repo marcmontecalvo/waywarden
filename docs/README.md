@@ -1,6 +1,20 @@
+---
+type: research
+title: "Documentation Map and Navigation"
+status: Active
+date: 2026-04-17
+source_url: null
+source_type: index
+priority: directly-relevant
+tags: [navigation, structure, metadata]
+relates_to_adrs: null
+---
+
 # Docs map
 
 This docs tree is split by **intent**, not by age.
+
+**Key reference**: All documents must include [YAML frontmatter](./FRONTMATTER-SPEC.md) with metadata for discovery and linking.
 
 ## Folders
 
@@ -30,6 +44,7 @@ This docs tree is split by **intent**, not by age.
 3. Put **build order and implementation work** in `issues/`.
 4. Put **execution prompts** in `prompts/`.
 5. If a research note changes the actual design, add or update an ADR instead of letting the research doc become the spec.
+6. **All documents must include YAML frontmatter** with metadata (type, title, status, date). See [FRONTMATTER-SPEC.md](./FRONTMATTER-SPEC.md) for the standard.
 
 ## Working rule for the current phase
 

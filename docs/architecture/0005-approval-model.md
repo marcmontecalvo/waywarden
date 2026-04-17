@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0005: Approval and Policy Model"
+status: Accepted
+date: 2026-04-17
+adr_number: "0005"
+relates_to: [0001, 0007, 0011]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0005: Approval and policy model
 
 ## Status

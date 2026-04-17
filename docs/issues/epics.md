@@ -1,3 +1,15 @@
+---
+type: issue
+title: "Epics Backlog"
+status: Active
+date: 2026-04-17
+issue_type: epic-collection
+priority: planning
+phase: harness-core
+owner: TBD
+target_milestone: "v1-harness"
+---
+
 # Epics
 
 ## E1 - Bootstrap core harness

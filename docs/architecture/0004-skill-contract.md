@@ -1,3 +1,14 @@
+---
+type: architecture
+title: "ADR 0004: Extension Contract"
+status: Accepted
+date: 2026-04-17
+adr_number: "0004"
+relates_to: [0001, 0007]
+supersedes: null
+superseded_by: null
+---
+
 # ADR 0004: Extension contract
 
 ## Status
