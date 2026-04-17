@@ -28,6 +28,10 @@ The goal is to identify:
   - Adversarial review, hardening, and failure-oriented development reference
 - [harness-design-long-running-apps](./harness-design-long-running-apps.md)
   - Long-running harness architecture and lifecycle design reference
+- [openai-agents-sdk-2026-04-15](./openai-agents-sdk-2026-04-15.md)
+  - Harness, sandbox, manifest, durability, and isolated-subagent design signals
+- [openai-codex-desktop-2026-04](./openai-codex-desktop-2026-04.md)
+  - Protocol-first harness, client/runtime separation, and multi-surface product direction
 
 ### Roadmap / research references
 - [pi-share-hf](./pi-share-hf.md)
@@ -50,6 +54,7 @@ The goal is to identify:
 3. Prefer architecture-compatible ideas that reduce token bloat, reduce operator friction, or improve safety.
 4. Where possible, identify an OSS implementation path before planning product work.
 5. Keep notes opinionated and implementation-oriented.
+6. When a research note changes how WayWarden should actually be built, graduate that change into `docs/architecture/`.
 
 ## Suggested evaluation template
 
