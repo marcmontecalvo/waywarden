@@ -8,9 +8,7 @@ class FilesystemKnowledgeProvider(KnowledgeProvider):
     ) -> list[KnowledgeHit]:
         return []
 
-    async def ingest(
-        self, *, source_uri: str, metadata: dict[str, str]
-    ) -> dict[str, object]:
+    async def ingest(self, *, source_uri: str, metadata: dict[str, str]) -> dict[str, object]:
         return {"status": "stored-locally", "source_uri": source_uri}
 
     async def refresh(self, *, scope: list[str] | None = None) -> dict[str, object]:

@@ -15,9 +15,7 @@ class Orchestrator:
         self.registry = SkillRegistry.default()
         self.planner = ResponsePlanner()
 
-    async def handle_message(
-        self, *, session_id: str, message: str
-    ) -> OrchestratorResult:
+    async def handle_message(self, *, session_id: str, message: str) -> OrchestratorResult:
         skill = self.registry.pick_skill(message)
         reply = await self.planner.plan_reply(
             session_id=session_id, message=message, skill_name=skill.name

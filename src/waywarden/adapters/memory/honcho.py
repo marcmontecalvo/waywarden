@@ -8,9 +8,7 @@ class HonchoMemoryProvider(MemoryProvider):
     ) -> list[MemoryItem]:
         return []
 
-    async def write_event(
-        self, *, subject_id: str, event: dict[str, object]
-    ) -> None:
+    async def write_event(self, *, subject_id: str, event: dict[str, object]) -> None:
         return None
 
     async def consolidate(self, *, subject_id: str) -> dict[str, object]:
