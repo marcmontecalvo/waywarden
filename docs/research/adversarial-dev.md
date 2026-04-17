@@ -3,7 +3,7 @@ type: research
 title: "Adversarial Dev — Failure-Oriented Development Patterns"
 status: Captured
 date: 2026-04-17
-source_url: "https://github.com/anthropics/adversarial-dev"
+source_url: "https://github.com/coleam00/adversarial-dev"
 source_type: repo
 priority: directly-relevant
 tags: [testing, adversarial-review, failure-injection, robustness]
