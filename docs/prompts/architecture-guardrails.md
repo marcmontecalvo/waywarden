@@ -11,7 +11,7 @@ tags: [adr, architecture, constraints]
 
 Before writing implementation code, create and respect these ADRs:
 - 0001-context-and-goals
-- 0002-ea-only-substrate
+- 0002-core-harness-plus-profile-packs
 - 0003-memory-vs-knowledge
 - 0004-skill-contract
 - 0005-approval-model

@@ -69,6 +69,11 @@ Repo-local operator-driven development may default to `yolo`, but the harness mu
 - Do not add an overbuilt distributed architecture
 - Do not add autonomous HA mutation
 
+## Issue tracking
+
+Epics and issues live on **GitHub Issues**: https://github.com/marcmontecalvo/waywarden/issues.
+Do not open new issues as markdown files under `docs/issues/`. The files there are historical.
+
 ## First milestone
 Deliver a harness core with:
 - web API

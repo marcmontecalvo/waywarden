@@ -23,12 +23,18 @@ dev = [
   "pre-commit==4.3.0",
   "pytest==9.0.3",
   "pytest-asyncio==1.3.0",
+  "pytest-cov==6.0.0",
   "ruff==0.15.10",
   "mypy==1.18.2",
+  "types-PyYAML==6.0.12.20250915",
 ]
 
 [tool.uv]
 package = true
+required-version = ">=0.11.0"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/waywarden"]
 
 [tool.ruff]
 line-length = 100
@@ -40,6 +46,36 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--cov=src/waywarden --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+branch = true
+source = ["src/waywarden"]
+omit = [
+  "src/waywarden/profiles/ea/workers/*",
+  "src/waywarden/profiles/ea/skills/builtin/*",
+  "src/waywarden/adapters/*",
+  "src/waywarden/api/routers/approvals.py",
+  "src/waywarden/api/routers/backups.py",
+  "src/waywarden/api/routers/knowledge.py",
+  "src/waywarden/api/routers/memory.py",
+  "src/waywarden/api/routers/tasks.py",
+  "src/waywarden/api/schemas/*",
+  "src/waywarden/domain/models/*",
+  "src/waywarden/domain/services/approval_engine.py",
+  "src/waywarden/domain/services/dream_manager.py",
+  "src/waywarden/domain/services/response_planner.py",
+  "src/waywarden/logging.py",
+  "src/waywarden/settings.py",
+  "src/waywarden/__init__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_also = [
+  "if __name__ == .__main__.:",
+  "raise NotImplementedError",
+]
 
 [tool.mypy]
 python_version = "3.13"

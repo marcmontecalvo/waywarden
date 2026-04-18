@@ -1,14 +1,17 @@
 ---
 type: issue
-title: "Milestones"
-status: Active
+title: "Milestones (Historical)"
+status: Deprecated
 date: 2026-04-17
 issue_type: milestone-collection
 priority: planning
 phase: harness-core
-owner: TBD
+owner: marcmontecalvo
 target_milestone: "v1-harness"
 ---
+
+> **Deprecated.** Milestones are tracked in GitHub: https://github.com/marcmontecalvo/waywarden/milestones
+> See [README.md](README.md). This file is retained only for the M1–M6 narrative that informs phase exit criteria.
 
 # Milestones
 

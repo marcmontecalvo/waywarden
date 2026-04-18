@@ -2,7 +2,7 @@ name: Bug
 description: Report a defect with enough detail to reproduce it.
 title: "[Bug]: "
 labels:
-  - ready
+  - needs-triage
 body:
   - type: textarea
     id: repro

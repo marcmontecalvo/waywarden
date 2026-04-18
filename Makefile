@@ -32,7 +32,7 @@ run:
 	uv run uvicorn waywarden.app:app --app-dir src --host 0.0.0.0 --port 8000
 
 worker:
-	uv run python -m waywarden.todo.ea_profile.workers.scheduler
+	uv run python -m waywarden.profiles.ea.workers.scheduler
 
 backup:
 	uv run python scripts/backup_now.py

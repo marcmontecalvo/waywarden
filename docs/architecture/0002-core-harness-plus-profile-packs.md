@@ -12,7 +12,7 @@ superseded_by: null
 # ADR 0002: Core harness plus profile packs
 
 ## Status
-Superseded in spirit, retained by filename for history
+Accepted
 
 ## Decision
 The old EA-only substrate idea is replaced with a **core harness + profile packs** model.

@@ -18,9 +18,9 @@ repos:
         language: system
         types_or: [python, pyi]
       - id: mypy
-        name: mypy
-        entry: uv run mypy
+        name: mypy (strict, full tree — matches CI)
+        entry: uv run mypy --strict src tests
         language: system
         files: ^(src|tests)/.*\.py$
-        pass_filenames: true
+        pass_filenames: false
         require_serial: true

@@ -1,14 +1,18 @@
 ---
 type: issue
-title: "Epics Backlog"
-status: Active
+title: "Epics Backlog (Historical)"
+status: Deprecated
 date: 2026-04-17
 issue_type: epic-collection
 priority: planning
 phase: harness-core
-owner: TBD
+owner: marcmontecalvo
 target_milestone: "v1-harness"
 ---
+
+> **Deprecated.** Epic tracking moved to GitHub Issues on 2026-04-17.
+> See [README.md](README.md) for the new source of truth.
+> This file is retained only as the original E1–E10 bucketing that shaped the phase plan.
 
 # Epics
 

@@ -85,7 +85,7 @@ Purpose:
 Describe the read-only or explicitly mutable materialized inputs the harness provides to the worker.
 
 Type:
-A non-empty list of input mount objects.
+A list of input mount objects. May be empty when the run needs no materialized inputs (for example, tool-only or memory-only work).
 
 Input mount shape:
 - `name`: string identifier unique within the manifest
@@ -119,7 +119,7 @@ Writable path grant shape:
 
 Rules:
 - every writable path must be absolute and normalized
-- writable paths must not overlap implicitly; if one path contains another, both must be rejected unless the harness marks the narrower path as redundant and drops it during normalization
+- writable paths must not overlap implicitly; during normalization the harness drops any path that is a strict descendant of another declared writable path whose `purpose`, `max_size_mb`, and `retention` are identical, and otherwise rejects the manifest as ambiguous
 - a worker must be denied writes outside declared writable paths even if the underlying runtime could technically allow them
 - profile overlays may narrow writable paths but must not silently widen them
 
@@ -167,6 +167,7 @@ Rules:
 - `deny` mode means no outbound network access
 - `profile-default` must resolve to a concrete normalized policy before the worker starts
 - `allowlist` rules must be explicit enough for audit and replay; free-form prose is invalid
+- `allowlist` mode with an empty `allow` list must be rejected as ambiguous; if no outbound access is intended, `deny` mode is required
 - the manifest must not rely on a provider-specific firewall object
 
 ### `tool_policy`

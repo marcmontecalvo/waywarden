@@ -2,7 +2,7 @@ name: Feature
 description: Propose a feature or implementation task.
 title: "[Feature]: "
 labels:
-  - ready
+  - needs-triage
 body:
   - type: textarea
     id: summary

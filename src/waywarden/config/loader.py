@@ -29,7 +29,7 @@ def load_app_config(config_dir: Path | None = None, cwd: Path | None = None) -> 
         AppConfig.yaml_file = app_config_path
 
         try:
-            return AppConfig(_env_file=resolved_cwd / ".env")
+            return AppConfig(_env_file=resolved_cwd / ".env")  # type: ignore[call-arg]
         except ValidationError as exc:
             errors.extend(_format_validation_errors(app_config_path, exc))
         finally:

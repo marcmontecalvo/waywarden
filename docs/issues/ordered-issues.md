@@ -1,14 +1,18 @@
 ---
 type: issue
-title: "Ordered Issues Backlog"
-status: Active
+title: "Ordered Issues Backlog (Historical)"
+status: Deprecated
 date: 2026-04-17
 issue_type: ordered-backlog
 priority: execution
 phase: harness-core
-owner: TBD
+owner: marcmontecalvo
 target_milestone: "v1-harness"
 ---
+
+> **Deprecated.** Issue tracking moved to GitHub on 2026-04-17.
+> See [README.md](README.md) and https://github.com/marcmontecalvo/waywarden/issues.
+> This file is retained only as the original flat ordering that informed phase-by-phase sub-issue creation.
 
 # Ordered issues
 
