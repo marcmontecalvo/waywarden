@@ -17,7 +17,7 @@ Use this skill when the user gives you a GitHub EPIC issue URL and wants fully a
 
 1. Resolve the active EPIC and identify the next actionable child issue.
 2. Read the child issue body, comments, linked specs, and any related acceptance criteria.
-3. Run repo-intelligence preflight (`assets/repo-intelligence-checklist.md`). Use CodeGraph if available and worthwhile; otherwise fall back cleanly.
+3. Run repo-intelligence preflight (`.agents/skills/work-next-issue-in-given-epic/assets/repo-intelligence-checklist.md`). Use CodeGraph if available and worthwhile; otherwise fall back cleanly.
 4. Implement the selected issue with tight scope.
 5. Run validation.
 6. Perform adversarial review.
@@ -42,7 +42,7 @@ Use this skill when the user gives you a GitHub EPIC issue URL and wants fully a
 
 ## Git / GitHub closeout requirements
 
-Follow `assets/git-and-github-closeout.md` exactly.
+Follow `.agents/skills/work-next-issue-in-given-epic/assets/git-and-github-closeout.md` exactly.
 
 Minimum required closeout:
 
@@ -59,4 +59,4 @@ If the environment or permissions prevent push/closeout, the run is **not PASS**
 
 ## Output contract
 
-Use `assets/output-format.md` exactly.
+Use `.agents/skills/work-next-issue-in-given-epic/assets/output-format.md` exactly.
