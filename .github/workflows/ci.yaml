@@ -8,10 +8,21 @@ on:
     branches:
       - main
 
+env:
+  PYTHON_VERSION: "3.13"
+  UV_VERSION: "0.11.3"
+  UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+
 jobs:
   lint:
-    name: lint
-    runs-on: ubuntu-latest
+    name: lint (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -19,20 +30,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.11.3"
+          version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-python-3.13-uv-${{ hashFiles('uv.lock') }}
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-python-3.13-uv-
+            ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-
 
       - name: Install dependencies
         run: uv sync --extra dev --frozen
@@ -44,7 +55,7 @@ jobs:
         run: uv run ruff check .
 
   typecheck:
-    name: typecheck
+    name: typecheck (ubuntu-latest)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -53,31 +64,39 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.11.3"
+          version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-python-3.13-uv-${{ hashFiles('uv.lock') }}
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-python-3.13-uv-
+            ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-
 
       - name: Install dependencies
         run: uv sync --extra dev --frozen
 
       - name: Typecheck
+        # Keep mypy Linux-only for this slice: Windows coverage is focused on the
+        # path/runtime-sensitive lint and pytest jobs required by P1-11.
         run: uv run mypy --strict src tests
 
   test:
-    name: test
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     needs: [lint, typecheck]
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -85,20 +104,20 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v6
         with:
-          version: "0.11.3"
+          version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
         uses: actions/cache@v4
         with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-python-3.13-uv-${{ hashFiles('uv.lock') }}
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
           restore-keys: |
-            ${{ runner.os }}-python-3.13-uv-
+            ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-
 
       - name: Install dependencies
         run: uv sync --extra dev --frozen

@@ -131,7 +131,7 @@ def _load_instance_config(*, config_path: Path, errors: list[str]) -> InstanceCo
 
     try:
         return InstanceConfig(
-            env=_mapping_field(content, field_name="env", path=config_path, errors=errors),
+            env=_string_mapping_field(content, field_name="env", path=config_path, errors=errors),
             overrides=_mapping_field(
                 content,
                 field_name="overrides",
@@ -161,6 +161,25 @@ def _mapping_field(
     return raw_value
 
 
+def _string_mapping_field(
+    content: Mapping[str, object],
+    *,
+    field_name: str,
+    path: Path,
+    errors: list[str],
+) -> Mapping[str, str]:
+    raw_mapping = _mapping_field(content, field_name=field_name, path=path, errors=errors)
+
+    normalized_mapping: dict[str, str] = {}
+    for key, value in raw_mapping.items():
+        if not isinstance(value, str):
+            errors.append(f"{path.as_posix()}: field `{field_name}` values must be strings")
+            return {}
+        normalized_mapping[key] = value
+
+    return normalized_mapping
+
+
 def _read_yaml_mapping(
     path: Path,
     errors: list[str],
@@ -168,7 +187,7 @@ def _read_yaml_mapping(
     mapping_label: str,
 ) -> Mapping[str, object] | None:
     try:
-        content = yaml.safe_load(path.read_text(encoding="utf-8"))
+        content: object = yaml.safe_load(path.read_text(encoding="utf-8"))
     except OSError as exc:
         errors.append(f"{path.as_posix()}: unable to read file: {exc.strerror or exc}")
         return None

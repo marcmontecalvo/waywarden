@@ -7,10 +7,10 @@ from waywarden.domain.instance import InstanceConfig, InstanceDescriptor, Instan
 
 def test_instance_descriptor_construction_normalizes_values() -> None:
     descriptor = InstanceDescriptor(
-        id="marc-ea",
+        id=InstanceId("marc-ea"),
         display_name="  Marc EA  ",
         profile_id=" ea ",
-        config_path="config/instances/marc-ea.yaml",
+        config_path=Path("config/instances/marc-ea.yaml"),
     )
 
     assert descriptor.id == InstanceId("marc-ea")
@@ -27,10 +27,10 @@ def test_instance_descriptor_equality_is_value_based() -> None:
         config_path=Path("config/instances/coding-main.yaml"),
     )
     right = InstanceDescriptor(
-        id="coding-main",
+        id=InstanceId("coding-main"),
         display_name="Coding Main",
         profile_id="coding",
-        config_path="config/instances/coding-main.yaml",
+        config_path=Path("config/instances/coding-main.yaml"),
     )
 
     assert left == right
@@ -82,7 +82,7 @@ def test_instance_descriptor_rejects_blank_required_fields(
     kwargs: dict[str, str],
 ) -> None:
     with pytest.raises(ValueError, match=field_name):
-        InstanceDescriptor(**kwargs)
+        InstanceDescriptor(**kwargs)  # type: ignore[arg-type]
 
 
 def test_instance_config_copies_mappings_and_supports_equality() -> None:
@@ -110,4 +110,4 @@ def test_instance_config_rejects_blank_env_keys() -> None:
 
 def test_instance_config_rejects_non_string_env_values() -> None:
     with pytest.raises(TypeError, match="WAYWARDEN_ENV"):
-        InstanceConfig(env={"WAYWARDEN_ENV": 1})  # type: ignore[arg-type]
+        InstanceConfig(env={"WAYWARDEN_ENV": 1})  # type: ignore[dict-item]

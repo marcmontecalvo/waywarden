@@ -148,7 +148,9 @@ class ProfileRegistry(Mapping[ProfileId, ProfileDescriptor]):
 
     def __init__(
         self,
-        descriptors: Mapping[ProfileId | str, ProfileDescriptor] | None = None,
+        descriptors: Mapping[ProfileId, ProfileDescriptor]
+        | Mapping[str, ProfileDescriptor]
+        | None = None,
     ) -> None:
         normalized_descriptors: dict[ProfileId, ProfileDescriptor] = {}
 

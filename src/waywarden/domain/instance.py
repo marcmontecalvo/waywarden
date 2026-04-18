@@ -106,7 +106,9 @@ class InstanceRegistry(Mapping[InstanceId, InstanceDescriptor]):
 
     def __init__(
         self,
-        descriptors: Mapping[InstanceId | str, InstanceDescriptor] | None = None,
+        descriptors: Mapping[InstanceId, InstanceDescriptor]
+        | Mapping[str, InstanceDescriptor]
+        | None = None,
     ) -> None:
         normalized_descriptors: dict[InstanceId, InstanceDescriptor] = {}
 

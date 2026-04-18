@@ -5,7 +5,7 @@ from waywarden.domain.profile import ProfileDescriptor, ProfileId
 
 def test_profile_descriptor_construction_normalizes_values() -> None:
     descriptor = ProfileDescriptor(
-        id=" ea ",
+        id=ProfileId(" ea "),
         display_name="  Executive Assistant  ",
         version="1.2.3",
         supported_extensions=(" skill ", "prompt", "team"),
@@ -25,7 +25,7 @@ def test_profile_descriptor_equality_is_value_based() -> None:
         supported_extensions=("command", "tool", "skill"),
     )
     right = ProfileDescriptor(
-        id="coding",
+        id=ProfileId("coding"),
         display_name="Coding",
         version="1.0.0",
         supported_extensions=("command", "tool", "skill"),
@@ -71,13 +71,13 @@ def test_profile_descriptor_rejects_invalid_required_fields(
     kwargs: dict[str, object],
 ) -> None:
     with pytest.raises(ValueError, match=field_name):
-        ProfileDescriptor(**kwargs)
+        ProfileDescriptor(**kwargs)  # type: ignore[arg-type]
 
 
 def test_profile_descriptor_rejects_empty_supported_extensions() -> None:
     with pytest.raises(ValueError, match="supported_extensions"):
         ProfileDescriptor(
-            id="ea",
+            id=ProfileId("ea"),
             display_name="Executive Assistant",
             version="1.0.0",
             supported_extensions=(),
@@ -87,7 +87,7 @@ def test_profile_descriptor_rejects_empty_supported_extensions() -> None:
 def test_profile_descriptor_rejects_unknown_supported_extensions() -> None:
     with pytest.raises(ValueError, match="lowercase extension slug"):
         ProfileDescriptor(
-            id="ea",
+            id=ProfileId("ea"),
             display_name="Executive Assistant",
             version="1.0.0",
             supported_extensions=("Memory Provider",),
@@ -97,7 +97,7 @@ def test_profile_descriptor_rejects_unknown_supported_extensions() -> None:
 def test_profile_descriptor_rejects_duplicate_supported_extensions() -> None:
     with pytest.raises(ValueError, match="duplicates"):
         ProfileDescriptor(
-            id="ea",
+            id=ProfileId("ea"),
             display_name="Executive Assistant",
             version="1.0.0",
             supported_extensions=("skill", "prompt", "skill"),
