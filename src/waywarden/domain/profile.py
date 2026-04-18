@@ -183,3 +183,7 @@ class ProfileRegistry(Mapping[ProfileId, ProfileDescriptor]):
 
     def __len__(self) -> int:
         return len(self._descriptors)
+
+    def list(self) -> tuple[ProfileDescriptor, ...]:
+        """Return all registered descriptors in deterministic (id-sorted) order."""
+        return tuple(self._descriptors.values())

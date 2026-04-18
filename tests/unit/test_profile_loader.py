@@ -95,3 +95,39 @@ def test_load_profiles_rejects_duplicate_profile_ids_deterministically(
     assert "profile id 'shared' is declared by multiple files" in message
     assert "alpha/profile.yaml" in message
     assert "beta/profile.yaml" in message
+
+
+def test_load_profiles_one_valid_profile(tmp_path: Path) -> None:
+    """Isolated: exactly one valid profile yields a registry with that single profile."""
+    profiles_dir = tmp_path / "profiles"
+    (profiles_dir / "solo").mkdir(parents=True)
+    (profiles_dir / "solo" / "profile.yaml").write_text(
+        "id: solo\ndisplay_name: Solo Profile\nversion: 1.0.0\nsupported_extensions:\n  - skill\n",
+        encoding="utf-8",
+    )
+
+    registry = load_profiles(profiles_dir)
+
+    assert len(registry) == 1
+    assert ProfileId("solo") in registry
+    assert registry[ProfileId("solo")].display_name == "Solo Profile"
+    assert registry.list() == (registry[ProfileId("solo")],)
+
+
+def test_load_profiles_one_invalid_profile(tmp_path: Path) -> None:
+    """Isolated: exactly one invalid profile raises ProfileLoadError naming the file and reason."""
+    profiles_dir = tmp_path / "profiles"
+    (profiles_dir / "bad").mkdir(parents=True)
+    # version "2.0" is not valid semver — must be "2.0.0"
+    (profiles_dir / "bad" / "profile.yaml").write_text(
+        'id: bad\ndisplay_name: Bad Profile\nversion: "2.0"\nsupported_extensions:\n  - skill\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ProfileLoadError) as exc_info:
+        load_profiles(profiles_dir)
+
+    message = str(exc_info.value)
+    assert "Profile loading failed:" in message
+    assert "bad/profile.yaml" in message
+    assert "semantic version like 1.0.0" in message
