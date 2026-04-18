@@ -1,4 +1,3 @@
-app_name: waywarden
-environment: development
+env: development
 host: 0.0.0.0
 port: 8000

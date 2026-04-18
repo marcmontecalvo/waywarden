@@ -3,7 +3,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from waywarden.settings import Settings, get_settings
+from waywarden import __version__
+from waywarden.config import AppConfig, get_app_config
 
 
 @asynccontextmanager
@@ -34,11 +35,11 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(backups.router)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
-    app_settings = settings or get_settings()
+def create_app(settings: AppConfig | None = None) -> FastAPI:
+    app_settings = settings or get_app_config()
     app = FastAPI(
-        title=app_settings.app_name,
-        version=app_settings.app_version,
+        title="Waywarden",
+        version=__version__,
         lifespan=lifespan,
     )
     register_routers(app)

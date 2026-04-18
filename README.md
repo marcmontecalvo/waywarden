@@ -62,6 +62,18 @@ A single deployment should also be able to run multiple configured instances at 
 - LLM-Wiki as the starting knowledge provider
 - OpenTelemetry-compatible tracing with a no-op mode when auditing is disabled
 
+## App Config
+
+Application bootstrap settings are loaded into a strictly typed `AppConfig`.
+
+Precedence is highest to lowest:
+- process environment variables with the `WAYWARDEN_` prefix
+- `.env` in the current working directory
+- `config/app.yaml`
+- `AppConfig` class defaults
+
+Only `config/app.yaml` is schema-validated in this phase. Other `config/*.yaml` files are tolerated so later milestones can attach their own typed consumers without leaking provider-specific config into the core app model.
+
 ## Design rules
 
 1. **One core, many profiles**
@@ -122,7 +134,7 @@ It intentionally avoids inheriting any one project’s full runtime assumptions.
 ## Repository map
 
 - `docs/architecture/`: ADRs and architecture decisions
-- `docs/issues/`: phased execution backlog
+- `docs/issues/`: historical phased backlog — **active tracking is on [GitHub Issues](https://github.com/marcmontecalvo/waywarden/issues)** (see [docs/issues/README.md](docs/issues/README.md))
 - `docs/prompts/`: prompts for coding agents
 - `docs/research/`: external products, repos, and UX patterns worth borrowing from selectively
 - `config/`: runtime/provider/profile/policy config
