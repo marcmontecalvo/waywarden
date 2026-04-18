@@ -1,6 +1,15 @@
 id: home
-description: Home assistant companion profile
-enabled_asset_tags:
-  - shared
-  - home
-policy_preset: yolo
+display_name: Home
+version: 1.0.0
+supported_extensions:
+  - widget
+  - command
+  - prompt
+  - tool
+  - skill
+  - team
+  - routine
+  - policy
+  - theme
+  - context_provider
+  - profile_overlay

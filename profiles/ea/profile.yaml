@@ -1,6 +1,17 @@
 id: ea
-description: Executive assistant profile
-enabled_asset_tags:
-  - shared
-  - ea
-policy_preset: yolo
+display_name: Executive Assistant
+version: 1.0.0
+supported_extensions:
+  - widget
+  - command
+  - prompt
+  - tool
+  - skill
+  - agent
+  - team
+  - pipeline
+  - routine
+  - policy
+  - theme
+  - context_provider
+  - profile_overlay

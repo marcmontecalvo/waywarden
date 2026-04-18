@@ -1,6 +1,15 @@
 id: coding
-description: Coding profile
-enabled_asset_tags:
-  - shared
-  - coding
-policy_preset: yolo
+display_name: Coding
+version: 1.0.0
+supported_extensions:
+  - command
+  - prompt
+  - tool
+  - skill
+  - agent
+  - team
+  - pipeline
+  - policy
+  - theme
+  - context_provider
+  - profile_overlay
