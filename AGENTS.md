@@ -57,6 +57,8 @@ The same deployment should support multiple named instances side by side, for ex
 - Migrations: `make migrate`
 
 ## Working rules
+- `src/waywarden` is strictly typed. Tests are checked but lightly relaxed.
+- For third-party dependencies lacking stubs (e.g. `honcho`), do not use blanket ignores. Instead, add targeted `[[tool.mypy.overrides]]` in `pyproject.toml` with `ignore_missing_imports = true` mapped only to that module.
 - Use existing patterns before introducing new ones.
 - Make small, surgical changes unless the task explicitly requires broader refactoring.
 - Update tests with every behavioral change.

@@ -193,6 +193,10 @@ It intentionally avoids inheriting any one project’s full runtime assumptions.
 - `make lint` / `make format`: runs `ruff`
 - `make secret-scan`: runs `gitleaks` over the working tree. To allow-list known false positives, add the relevant exception rules to `.gitleaksignore`.
 
+### Type checking policy
+- `src/waywarden/` stays under strict `mypy` enforcement. Tests retain lighter but checked typing.
+- For third-party dependencies lacking stubs (e.g., `honcho`), do not use global `ignore_errors = true` or blanket ignores. Add targeted `[[tool.mypy.overrides]]` entries mapping to the specific module in `pyproject.toml` with `ignore_missing_imports = true`.
+
 ## Package layout
 
 - `src/waywarden/`: harness package root

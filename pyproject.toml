@@ -82,7 +82,15 @@ exclude_also = [
 
 [tool.mypy]
 python_version = "3.13"
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "waywarden.*"
 strict = true
+
+[[tool.mypy.overrides]]
+module = "honcho.*"
+ignore_missing_imports = true
 
 [build-system]
 requires = ["hatchling"]
