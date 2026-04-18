@@ -1,15 +1,34 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from waywarden import __version__
 from waywarden.api.schemas.common import StatusResponse
 from waywarden.config import AppConfig, get_request_app_config
 
 router = APIRouter(tags=["health"])
 
 
-@router.get("/healthz", response_model=StatusResponse)
+@router.get("/healthz", response_model=StatusResponse, response_model_exclude_none=True)
 async def healthz(
-    _config: Annotated[AppConfig, Depends(get_request_app_config)],
+    config: Annotated[AppConfig, Depends(get_request_app_config)],
 ) -> StatusResponse:
-    return StatusResponse(status="ok")
+    return StatusResponse(
+        status="ok",
+        app="waywarden",
+        version=__version__,
+        commit_sha=config.commit_sha if config.expose_commit_sha else None,
+    )
+
+
+@router.get("/readyz", response_model=StatusResponse, response_model_exclude_none=True)
+async def readyz() -> StatusResponse:
+    # Fail closed until real dependency checks exist so readiness never lies.
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=StatusResponse(
+            status="not_ready",
+            app="waywarden",
+            version=__version__,
+        ).model_dump(exclude_none=True),
+    )
