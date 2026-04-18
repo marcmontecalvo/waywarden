@@ -9,7 +9,9 @@ the typed extension contract in ADR 0004.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import NewType, TypedDict
 
 ProfileId = NewType("ProfileId", str)
@@ -136,3 +138,46 @@ class ProfileDescriptor:
             "supported_extensions",
             _normalize_supported_extensions(list(self.supported_extensions)),
         )
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class ProfileRegistry(Mapping[ProfileId, ProfileDescriptor]):
+    """Read-only lookup of profile descriptors keyed by profile id."""
+
+    _descriptors: Mapping[ProfileId, ProfileDescriptor]
+
+    def __init__(
+        self,
+        descriptors: Mapping[ProfileId | str, ProfileDescriptor] | None = None,
+    ) -> None:
+        normalized_descriptors: dict[ProfileId, ProfileDescriptor] = {}
+
+        for raw_key, descriptor in (descriptors or {}).items():
+            if not isinstance(descriptor, ProfileDescriptor):
+                raise TypeError("registry descriptors must be ProfileDescriptor instances")
+
+            key = _normalize_profile_id(raw_key, field_name="profile registry key")
+            if descriptor.id != key:
+                raise ValueError(
+                    f"profile registry key must match descriptor.id ({key!r} != {descriptor.id!r})"
+                )
+            if key in normalized_descriptors:
+                raise ValueError(f"profile registry key {key!r} is duplicated")
+
+            normalized_descriptors[key] = descriptor
+
+        object.__setattr__(
+            self,
+            "_descriptors",
+            MappingProxyType(normalized_descriptors),
+        )
+
+    def __getitem__(self, key: ProfileId | str) -> ProfileDescriptor:
+        normalized_key = _normalize_profile_id(key, field_name="profile registry lookup")
+        return self._descriptors[normalized_key]
+
+    def __iter__(self) -> Iterator[ProfileId]:
+        return iter(self._descriptors)
+
+    def __len__(self) -> int:
+        return len(self._descriptors)

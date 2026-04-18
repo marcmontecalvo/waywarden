@@ -1,7 +1,7 @@
 # <phase-id>: <title>
 
 ## Goal
-<What this issue accomplishes.>
+<what this issue accomplishes>
 
 ## Scope
 - <included item>
@@ -19,12 +19,9 @@
 ## Required tests
 - <test case>
 - <test case>
-- <test case>
 
 ## Blocking dependencies
 - none
 
 ## Notes
-- <implementation hint>
-- <related path>
-- <dependency note>
+- <optional implementation hints / linked files / related context>

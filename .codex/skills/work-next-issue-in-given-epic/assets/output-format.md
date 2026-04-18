@@ -1,6 +1,6 @@
-# Required Output Format
+# Required output format
 
-Return exactly these sections, in this order.
+Return exactly these sections, in this order:
 
 ## EPIC
 - URL
@@ -21,7 +21,7 @@ Return exactly these sections, in this order.
 ## FILES CHANGED
 - one bullet per file changed
 
-## TESTS RUN
+## VALIDATION RUN
 - exact commands run
 - pass/fail for each
 
@@ -33,16 +33,28 @@ Return exactly these sections, in this order.
 - bullet list
 - write `none` if none
 
+## GIT STATUS
+- active branch
+- whether working tree is clean
+- commit sha for the final implementation commit
+- push target used
+
 ## GITHUB UPDATES
 - what was posted to the child issue
 - whether the child issue was closed
 - how the EPIC was updated
+- whether the EPIC was closed
 
 ## ACCEPTANCE STATUS
 - one bullet per acceptance criterion with `PASS` or `FAIL`
 
 ## RESULT
-- `PASS` if the issue is fully complete, validated, reviewed, corrected, and closed out
-- `FAIL` otherwise
-
-If the result would be FAIL, continue working instead of stopping unless blocked by a true external constraint.
+- `PASS` only if all of the following are true:
+  - acceptance criteria are met
+  - tests/validation pass
+  - issues found in adversarial review were corrected
+  - required code changes are committed
+  - required remote updates are pushed
+  - child issue notes/state are updated correctly
+  - EPIC notes/checklist/state are updated correctly
+- otherwise `FAIL`

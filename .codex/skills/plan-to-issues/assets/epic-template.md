@@ -1,22 +1,17 @@
 # EPIC: <name>
 
 ## Goal
-<One paragraph describing the outcome.>
+<brief paragraph>
 
 ## Order of execution
-- [ ] <phase-id>: <title> (#TBD)
-- [ ] <phase-id>: <title> (#TBD)
-- [ ] <phase-id>: <title> (#TBD)
+- [ ] P1-1: <title> (#123)
+- [ ] P1-2: <title> (#124)
+- [ ] P1-3: <title> (#125)
 
 ## Global constraints
-- <architecture boundary>
-- <non-goal>
-- <testing expectation>
-- <docs expectation>
+- <constraint>
+- <constraint>
 
 ## Definition of done
-- all child issues completed in order unless explicitly marked parallel
-- all relevant tests passing
-- EPIC checklist updated
-- no fake-success behavior
-- docs updated where required
+- <done item>
+- <done item>
