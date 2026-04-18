@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev lint format test db-up db-down migrate run worker backup
+.PHONY: bootstrap dev lint format secret-scan test db-up db-down migrate run worker backup
 
 bootstrap:
 	uv sync --extra dev
@@ -15,6 +15,9 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+secret-scan:
+	uv run pre-commit run gitleaks --all-files
 
 test:
 	uv run pytest

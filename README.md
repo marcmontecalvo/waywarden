@@ -186,6 +186,13 @@ It intentionally avoids inheriting any one project’s full runtime assumptions.
 - `assets/`: shared widgets, commands, prompts, routines, teams, policies, and other extension assets
 - `profiles/`: profile overlays and selection rules
 
+## Local development
+
+- `make run`: starts the harness
+- `make test`: runs the test suite
+- `make lint` / `make format`: runs `ruff`
+- `make secret-scan`: runs `gitleaks` over the working tree. To allow-list known false positives, add the relevant exception rules to `.gitleaksignore`.
+
 ## Package layout
 
 - `src/waywarden/`: harness package root

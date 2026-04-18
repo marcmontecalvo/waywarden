@@ -1,0 +1,3 @@
+# Baseline configuration for gitleaks
+# This file is used to ignore known false positive secrets.
+# Follow https://github.com/gitleaks/gitleaks?tab=readme-ov-file#gitleaksignore for syntax.

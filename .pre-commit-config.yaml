@@ -5,6 +5,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.0
+    hooks:
+      - id: gitleaks
+
   - repo: local
     hooks:
       - id: ruff-format
