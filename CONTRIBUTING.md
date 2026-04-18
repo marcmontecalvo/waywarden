@@ -30,6 +30,35 @@ We use a `Makefile` for standard workflows. Before pushing, ensure all checks pa
 - **Typing**: `mypy` is run with strict scope for the `waywarden.*` tree.
 - **Security**: Secret scanning via `gitleaks` is enforced in CI.
 
+## Dependency Updates
+
+Waywarden uses `uv` for dependency management.
+
+### Dependabot
+
+We use Dependabot to monitor for dependency updates in the `pip` and `github-actions` ecosystems. Dependabot is scheduled to run weekly.
+
+### Refreshing `uv.lock`
+
+Because `uv` support in Dependabot is relatively new, you may occasionally need to manually refresh the lockfile if a Dependabot PR modifies `pyproject.toml` but the lock resolution needs local adjustment, or if performing a manual update:
+
+1. Check out the PR branch locally: `gh pr checkout <PR-NUMBER>`
+2. Run `uv lock --upgrade` to refresh `uv.lock`.
+3. Verify tests pass: `make test`
+4. Commit the updated lockfile: `git commit -am "Update uv.lock"`
+5. Push changes to the branch.
+
+### Security-Driven Exceptions
+
+If a critical vulnerability requires immediate mitigation before the next Dependabot run:
+1. Update the dependency version in `pyproject.toml` (if not deep in the tree).
+2. Manually run `uv lock --upgrade-package <package_name>`.
+3. Submit a PR with the updated `uv.lock`.
+
+### Review and Merging
+
+Lockfile refresh PRs should be reviewed carefully to ensure CI remains green. Since automated upgrades can introduce breaking changes, any test failures must be addressed by modifying our code or pinning the dependency in `pyproject.toml` before merging. 
+
 ## Submitting Changes
 
 1. Create a branch for your work.
