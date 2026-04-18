@@ -105,6 +105,17 @@ overrides: {}
 
 The checked-in default fixture is `marc-ea`, pinned to the real `ea` profile. Instance loading fails clearly if the manifest is malformed, an overlay file is invalid, or a referenced `profile_id` no longer exists in `profiles/`.
 
+## CLI bootstrap
+
+The M1 boot slice exposes three commands:
+- `uv run waywarden serve`
+- `uv run waywarden list-profiles`
+- `uv run waywarden list-instances`
+
+`serve` loads `AppConfig`, builds the FastAPI app through the shared app factory, and binds uvicorn to the configured `host` and `port`.
+
+On Windows, the supported launch mode for this slice is the direct foreground command `uv run waywarden serve`. Stop it with `Ctrl+C`. Reload-oriented or alternate signal-management launch modes are intentionally out of scope for this milestone.
+
 ## Design rules
 
 1. **One core, many profiles**
