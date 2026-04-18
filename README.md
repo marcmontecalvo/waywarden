@@ -216,6 +216,25 @@ Deliver a real core harness with:
 - LLM-Wiki adapter
 - approval engine
 - token accounting
+## Package layout
+
+- `src/waywarden/`: harness package root
+- `src/waywarden/todo/ea_profile/`: temporary home for EA-specific modules that still need to move behind a real profile overlay
+
+## First milestone
+
+Deliver a real core harness with:
+- web API
+- CLI entrypoint
+- profile loader
+- multi-instance support
+- session/message/task persistence
+- extension registry
+- model router
+- Honcho adapter
+- LLM-Wiki adapter
+- approval engine
+- token accounting
 - global tracer abstraction
 
 Then deliver the first full profile:
@@ -228,3 +247,9 @@ The public repo name remains **Waywarden** because it:
 - is not tied to coding or smart home specifically
 - implies guidance and staying on course
 - avoids collision with existing OpenHarness naming
+
+## Governance
+
+- [SECURITY.md](SECURITY.md): Security reporting path and policies.
+- [CONTRIBUTING.md](CONTRIBUTING.md): Developer workflow and quality gates.
+- [LICENSE](LICENSE): Explicit repo license decision (pending maintainer choice).
