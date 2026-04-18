@@ -67,6 +67,17 @@ def test_load_app_config_aggregates_multiple_problems(tmp_path: Path) -> None:
     assert "field `port`" in message
 
 
+def test_load_app_config_reports_missing_app_yaml_clearly(tmp_path: Path) -> None:
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+
+    with pytest.raises(ConfigLoadError) as exc_info:
+        load_app_config(config_dir=config_dir, cwd=tmp_path)
+
+    assert "config/app.yaml" in str(exc_info.value)
+    assert "required configuration file not found" in str(exc_info.value)
+
+
 def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -91,3 +102,21 @@ def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
     assert config.env == "production"
     assert config.log_level == "WARNING"
     assert config.commit_sha == ""
+
+
+def test_load_app_config_does_not_leak_yaml_state_between_calls(tmp_path: Path) -> None:
+    first_dir = tmp_path / "first"
+    first_dir.mkdir()
+    (first_dir / "app.yaml").write_text("host: first-host\nport: 8080\n", encoding="utf-8")
+
+    second_dir = tmp_path / "second"
+    second_dir.mkdir()
+    (second_dir / "app.yaml").write_text("host: second-host\nport: 9090\n", encoding="utf-8")
+
+    first = load_app_config(config_dir=first_dir, cwd=tmp_path)
+    second = load_app_config(config_dir=second_dir, cwd=tmp_path)
+
+    assert first.host == "first-host"
+    assert first.port == 8080
+    assert second.host == "second-host"
+    assert second.port == 9090

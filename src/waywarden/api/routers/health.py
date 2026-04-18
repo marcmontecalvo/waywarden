@@ -1,6 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 
 from waywarden import __version__
 from waywarden.api.schemas.common import StatusResponse
@@ -22,11 +23,11 @@ async def healthz(
 
 
 @router.get("/readyz", response_model=StatusResponse, response_model_exclude_none=True)
-async def readyz() -> StatusResponse:
+async def readyz() -> JSONResponse:
     # Fail closed until real dependency checks exist so readiness never lies.
-    raise HTTPException(
+    return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=StatusResponse(
+        content=StatusResponse(
             status="not_ready",
             app="waywarden",
             version=__version__,

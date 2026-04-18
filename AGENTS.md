@@ -1,92 +1,76 @@
-# AGENTS.md
+# Waywarden repo guidance
 
 ## Purpose
+Waywarden is the core harness. It is not a one-off EA app, not a coding-only runtime, not a Home Assistant-only runtime, and not a giant autonomous agent OS.
 
-This repo contains the **Waywarden core harness**.
+The repo should stay:
+- Python-first
+- API-first
+- profile-driven
+- multi-instance capable
+- adapter-boundary clean
+- testable
 
-It is not:
-- only an EA runtime
-- only a coding runtime
-- only a Home Assistant runtime
-- a fused giant autonomous agent OS
+## Architecture guardrails
+- Keep the harness core small.
+- Put provider-specific behavior behind interfaces.
+- Do not leak provider types into the domain layer.
+- Do not let channel adapters own business logic.
+- Do not collapse memory and knowledge into one subsystem.
+- Do not hardwire the runtime to a specific UI.
+- Prefer shared root-level assets plus profile filtering over duplicated profile-specific copies.
+- Keep policy explicit and preset-driven.
+- Keep token discipline visible in code, config, contracts, and tests.
 
-It is one slim harness core with profile packs and instance overlays.
-
-## Hard constraints
-- Native Python app on a dedicated VM or similar host
-- Docker only for sidecars and infra
-- Memory and knowledge providers must be swappable
-- Honcho and LLM-Wiki are starting providers, not permanent commitments
-- No self-editing policies or permissions
-- No dream/reflection work in the request hot path
-- No direct tool execution from channel adapters
-- No provider-specific types in the domain layer
-- All external systems must be behind interfaces
-- APIs are the contract; any Web UI or dashboard is optional
-
-## Architectural priorities
-1. Correct boundaries
-2. Multi-instance support
-3. Profile-driven behavior
-4. Testable code
-5. Operational clarity
-6. Token discipline
-7. Minimal surprise
-
-## Supported profile direction
-Waywarden should support multiple profiles using the same core:
+## Profile direction
+The same core should support at least these profiles:
 - `ea`
 - `coding`
 - `home`
 
-And multiple instances of those profiles:
+The same deployment should support multiple named instances side by side, for example:
 - `marc-ea`
 - `lisa-ea`
 - `coding-main`
 - `ha-main`
 
-## Shared asset rule
-Widgets, commands, prompts, teams, routines, policies, and similar assets should live once in shared root-level folders and be filtered into profiles through metadata and profile config. Do not duplicate the same asset under multiple profile folders.
+## Repo map
+- `src/waywarden/` — core application code
+- `tests/` — unit, integration, and contract tests
+- `profiles/` — profile descriptors and overlays
+- `assets/` — shared tools, prompts, commands, routines, teams, policies, widgets, themes, and related assets
+- `config/` — typed application config and later provider/profile config
+- `infra/` — sidecars and local infra support
+- `docs/architecture/` — ADRs and architecture decisions
+- `docs/research/` — outside references and ideas worth borrowing selectively
+- `docs/issues/` — historical planning only; active execution tracking is in GitHub Issues
 
-## Policy rule
-Policy must be explicit and preset-driven.
-Support presets such as:
-- `yolo`
-- `ask`
-- `allowlist`
-- `custom`
+## Tooling and commands
+- Python: `3.13`
+- Package/dev runner: `uv`
+- Lint: `make lint`
+- Format: `make format`
+- Tests: `make test`
+- Local app: `make run`
+- Dev server: `make dev`
+- Sidecar Postgres: `make db-up`
+- Migrations: `make migrate`
 
-Repo-local operator-driven development may default to `yolo`, but the harness must support stricter presets cleanly.
+## Working rules
+- Use existing patterns before introducing new ones.
+- Make small, surgical changes unless the task explicitly requires broader refactoring.
+- Update tests with every behavioral change.
+- Run the most relevant checks first, then broader validation before claiming completion.
+- Do not mark work complete while tests, lint, or typing are knowingly broken in touched areas.
+- Prefer typed, explicit code over clever implicit behavior.
+- Keep placeholders honest: never return fake-success responses for unimplemented behavior.
+- Keep issue scope tight unless a directly related defect must be fixed to make the requested work actually correct.
 
-## Never do these
-- Do not collapse memory and knowledge into one store
-- Do not encode architecture only in prompt files
-- Do not bypass approvals/policy just because a profile is “trusted”
-- Do not make channels responsible for business logic
-- Do not let background jobs modify governance files
-- Do not hardwire the harness to a specific UI repo
-- Do not force HA and coding to live outside the harness rather than as profiles
-- Do not add an overbuilt distributed architecture
-- Do not add autonomous HA mutation
+## GitHub workflow
+- Treat GitHub Issues as the source of truth for active work.
+- Do not create new markdown backlog files under `docs/issues/`.
+- When working from an epic, complete the next actionable child issue in order unless issue text clearly allows parallelism.
+- After implementation, adversarially review your own work, fix defects, then update the issue with notes grounded in what actually changed.
 
-## Issue tracking
-
-Epics and issues live on **GitHub Issues**: https://github.com/marcmontecalvo/waywarden/issues.
-Do not open new issues as markdown files under `docs/issues/`. The files there are historical.
-
-## First milestone
-Deliver a harness core with:
-- web API
-- CLI entrypoint
-- multi-instance support
-- profile loader
-- extension registry
-- model router
-- Honcho adapter
-- LLM-Wiki adapter
-- approval engine
-- token accounting
-- global tracer abstraction
-
-Then deliver the first full profile:
-- `ea`
+## Skills and long procedures
+Use repo-local skills for repeatable workflows instead of bloating this file with long procedures. This file should stay focused on durable repo facts, hard constraints, and always-on working agreements.

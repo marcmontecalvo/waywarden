@@ -85,12 +85,12 @@ def test_profile_descriptor_rejects_empty_supported_extensions() -> None:
 
 
 def test_profile_descriptor_rejects_unknown_supported_extensions() -> None:
-    with pytest.raises(ValueError, match="supported_extensions\\[0\\]"):
+    with pytest.raises(ValueError, match="lowercase extension slug"):
         ProfileDescriptor(
             id="ea",
             display_name="Executive Assistant",
             version="1.0.0",
-            supported_extensions=("memory",),
+            supported_extensions=("Memory Provider",),
         )
 
 

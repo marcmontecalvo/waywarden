@@ -1,0 +1,53 @@
+#:schema https://developers.openai.com/codex/config-schema.json
+
+profile = "waywarden-implement"
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+service_tier = "fast"
+web_search = "cached"
+project_root_markers = [".git", "pyproject.toml", "AGENTS.md"]
+project_doc_fallback_filenames = ["CLAUDE.md", ".claude/CLAUDE.md"]
+project_doc_max_bytes = 65536
+file_opener = "vscode"
+
+[sandbox_workspace_write]
+network_access = true
+exclude_slash_tmp = false
+exclude_tmpdir_env_var = false
+
+[profiles.waywarden-implement]
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+service_tier = "fast"
+web_search = "cached"
+
+[profiles.waywarden-review]
+model = "gpt-5.4"
+model_reasoning_effort = "xhigh"
+model_verbosity = "low"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+service_tier = "fast"
+web_search = "live"
+review_model = "gpt-5.4"
+
+[profiles.waywarden-review.sandbox_workspace_write]
+network_access = true
+
+# Optional local CodeGraph MCP example. Enable only after the repo-prep step
+# can build the index and launch the server reliably in your environment.
+#
+# [mcp_servers.codegraph]
+# command = "codegraph"
+# args = ["mcp", "serve"]
+# cwd = "."
+# enabled = false
+# required = false
+# startup_timeout_sec = 20
+# tool_timeout_sec = 120

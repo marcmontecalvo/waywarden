@@ -10,26 +10,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Literal, NewType, TypedDict, cast
+from typing import NewType, TypedDict
 
 ProfileId = NewType("ProfileId", str)
-ProfileExtension = Literal[
-    "widget",
-    "command",
-    "prompt",
-    "tool",
-    "skill",
-    "agent",
-    "team",
-    "pipeline",
-    "routine",
-    "policy",
-    "theme",
-    "context_provider",
-    "profile_overlay",
-]
-
-SUPPORTED_PROFILE_EXTENSIONS: frozenset[str] = frozenset(
+CURRENT_PROFILE_EXTENSION_EXAMPLES: frozenset[str] = frozenset(
     {
         "widget",
         "command",
@@ -51,6 +35,7 @@ SEMVER_PATTERN = re.compile(
     r"(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
 )
+PROFILE_EXTENSION_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:-[a-z0-9_]+)*$")
 
 
 class ProfileManifest(TypedDict):
@@ -59,7 +44,7 @@ class ProfileManifest(TypedDict):
     id: str
     display_name: str
     version: str
-    supported_extensions: list[ProfileExtension]
+    supported_extensions: list[str]
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:
@@ -88,12 +73,12 @@ def _normalize_version(value: str, *, field_name: str) -> str:
 
 
 def _normalize_supported_extensions(
-    values: tuple[ProfileExtension, ...] | list[str],
-) -> tuple[ProfileExtension, ...]:
+    values: tuple[str, ...] | list[str],
+) -> tuple[str, ...]:
     if isinstance(values, str):
         raise TypeError("supported_extensions must be a sequence of strings")
 
-    normalized_values: list[ProfileExtension] = []
+    normalized_values: list[str] = []
     seen: set[str] = set()
 
     for index, value in enumerate(values):
@@ -104,16 +89,16 @@ def _normalize_supported_extensions(
             value,
             field_name=f"supported_extensions[{index}]",
         )
-        if normalized not in SUPPORTED_PROFILE_EXTENSIONS:
+        if not PROFILE_EXTENSION_PATTERN.fullmatch(normalized):
             raise ValueError(
-                f"supported_extensions[{index}] must be one of "
-                f"{sorted(SUPPORTED_PROFILE_EXTENSIONS)!r}"
+                f"supported_extensions[{index}] must be a lowercase extension slug like "
+                "'skill' or 'profile_overlay'"
             )
         if normalized in seen:
             raise ValueError(f"supported_extensions[{index}] duplicates {normalized!r}")
 
         seen.add(normalized)
-        normalized_values.append(cast("ProfileExtension", normalized))
+        normalized_values.append(normalized)
 
     if not normalized_values:
         raise ValueError("supported_extensions must contain at least one extension")
@@ -128,7 +113,7 @@ class ProfileDescriptor:
     id: ProfileId
     display_name: str
     version: str
-    supported_extensions: tuple[ProfileExtension, ...]
+    supported_extensions: tuple[str, ...]
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -151,4 +136,3 @@ class ProfileDescriptor:
             "supported_extensions",
             _normalize_supported_extensions(list(self.supported_extensions)),
         )
-

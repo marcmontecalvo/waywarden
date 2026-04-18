@@ -43,9 +43,7 @@ def test_readyz_returns_503_until_readiness_checks_exist() -> None:
 
     assert response.status_code == 503
     assert response.json() == {
-        "detail": {
-            "status": "not_ready",
-            "app": "waywarden",
-            "version": __version__,
-        }
+        "status": "not_ready",
+        "app": "waywarden",
+        "version": __version__,
     }

@@ -13,3 +13,4 @@ data/backups/*
 !data/backups/.gitkeep
 data/uploads/*
 !data/uploads/.gitkeep
+.mypy_cache/

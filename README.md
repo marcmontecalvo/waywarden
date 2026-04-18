@@ -72,6 +72,12 @@ Precedence is highest to lowest:
 - `config/app.yaml`
 - `AppConfig` class defaults
 
+Loading behavior:
+- `load_app_config()` reads `config/app.yaml` from the requested `config_dir`, defaulting to `./config`
+- `.env` is resolved from the requested `cwd`, defaulting to the current process working directory
+- `config/app.yaml` is required; if it is missing, loading fails with an explicit file-not-found style config error
+- each load builds its YAML source per call, so repeated or concurrent loads do not mutate shared class state
+
 Only `config/app.yaml` is schema-validated in this phase. Other `config/*.yaml` files are tolerated so later milestones can attach their own typed consumers without leaking provider-specific config into the core app model.
 
 ## Design rules

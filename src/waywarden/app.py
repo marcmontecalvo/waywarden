@@ -6,7 +6,6 @@ from fastapi import FastAPI, Request, Response
 
 from waywarden import __version__
 from waywarden.config import AppConfig, get_app_config
-from waywarden.domain.services.orchestrator import Orchestrator
 from waywarden.domain.services.skill_registry import SkillRegistry
 from waywarden.logging import (
     build_request_log_context,
@@ -14,7 +13,6 @@ from waywarden.logging import (
     get_logger,
     request_log_context,
 )
-from waywarden.profiles.ea.skills.factory import build_ea_skill_registry
 
 
 @asynccontextmanager
@@ -90,10 +88,9 @@ def create_app(
         version=__version__,
         lifespan=lifespan,
     )
-    registry = skill_registry or build_ea_skill_registry()
     app.state.settings = app_settings
-    app.state.skill_registry = registry
-    app.state.orchestrator = Orchestrator(registry=registry)
+    if skill_registry is not None:
+        app.state.skill_registry = skill_registry
     register_middleware(app)
     register_routers(app)
     return app

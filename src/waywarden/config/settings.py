@@ -8,7 +8,7 @@ Precedence is highest to lowest:
 """
 
 from pathlib import Path
-from typing import ClassVar, Literal, cast
+from typing import Literal, cast
 
 from fastapi import Request
 from pydantic_settings import (
@@ -34,8 +34,6 @@ class AppConfig(BaseSettings):
         validate_default=True,
     )
 
-    yaml_file: ClassVar[Path | None] = None
-
     @classmethod
     def settings_customise_sources(
         cls,
@@ -45,8 +43,37 @@ class AppConfig(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        yaml_source = YamlConfigSettingsSource(settings_cls, yaml_file=cls.yaml_file)
-        return init_settings, env_settings, dotenv_settings, yaml_source, file_secret_settings
+        return init_settings, env_settings, dotenv_settings, file_secret_settings
+
+
+def build_app_config_class(yaml_file: Path | None) -> type[AppConfig]:
+    """Create an AppConfig subclass with a per-load YAML source.
+
+    The base AppConfig class stays immutable so repeated or concurrent loads do not
+    mutate shared class state.
+    """
+
+    class LoadedAppConfig(AppConfig):
+        @classmethod
+        def settings_customise_sources(
+            cls,
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            sources: list[PydanticBaseSettingsSource] = [
+                init_settings,
+                env_settings,
+                dotenv_settings,
+            ]
+            if yaml_file is not None:
+                sources.append(YamlConfigSettingsSource(settings_cls, yaml_file=yaml_file))
+            sources.append(file_secret_settings)
+            return tuple(sources)
+
+    return LoadedAppConfig
 
 
 def get_request_app_config(request: Request) -> AppConfig:

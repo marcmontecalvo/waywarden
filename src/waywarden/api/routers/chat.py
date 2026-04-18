@@ -1,16 +1,22 @@
-import uuid
+from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse
 
-from fastapi import APIRouter, Request
-
-from waywarden.api.schemas.chat import ChatRequest, ChatResponse
-from waywarden.domain.services.orchestrator import Orchestrator
+from waywarden.api.schemas.chat import ChatRequest
+from waywarden.api.schemas.common import PlaceholderResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
-@router.post("", response_model=ChatResponse)
-async def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
-    orchestrator: Orchestrator = http_request.app.state.orchestrator
-    session_id = request.session_id or str(uuid.uuid4())
-    result = await orchestrator.handle_message(session_id=session_id, message=request.message)
-    return ChatResponse(session_id=session_id, reply=result.reply, skill=result.skill)
+@router.post("", response_model=PlaceholderResponse, status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def chat(_request: ChatRequest) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        content=PlaceholderResponse(
+            status="not_implemented",
+            feature="chat",
+            message=(
+                "Chat orchestration is placeholder-only in this slice; no persisted sessions, "
+                "provider execution, or model routing is active yet."
+            ),
+        ).model_dump(),
+    )

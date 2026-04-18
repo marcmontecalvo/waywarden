@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from waywarden.app import create_app
 from waywarden.config import AppConfig, get_request_app_config
+from waywarden.profiles.ea.skills.factory import build_ea_skill_registry
 
 
 def test_create_app_uses_injected_settings() -> None:
@@ -15,6 +16,16 @@ def test_create_app_uses_injected_settings() -> None:
     assert isinstance(app, FastAPI)
     assert app.title == "Waywarden"
     assert app.state.settings is settings
+    assert not hasattr(app.state, "skill_registry")
+
+
+def test_create_app_only_attaches_injected_skill_registry() -> None:
+    settings = AppConfig(host="127.0.0.1", port=9001, commit_sha="abc123")
+    registry = build_ea_skill_registry()
+
+    app = create_app(settings, skill_registry=registry)
+
+    assert app.state.skill_registry is registry
 
 
 def test_app_config_available_via_dependency_injection() -> None:

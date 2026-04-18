@@ -4,7 +4,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError
 
-from waywarden.config.settings import AppConfig
+from waywarden.config.settings import AppConfig, build_app_config_class
 
 
 class ConfigLoadError(ValueError):
@@ -25,15 +25,15 @@ def load_app_config(config_dir: Path | None = None, cwd: Path | None = None) -> 
     errors = list(yaml_errors)
 
     app_config_path = resolved_config_dir / "app.yaml"
-    if app_yaml_is_valid:
-        AppConfig.yaml_file = app_config_path
+    if not app_config_path.is_file():
+        errors.append(f"{app_config_path.as_posix()}: required configuration file not found")
 
+    if app_yaml_is_valid and app_config_path.is_file():
+        settings_cls = build_app_config_class(app_config_path)
         try:
-            return AppConfig(_env_file=resolved_cwd / ".env")  # type: ignore[call-arg]
+            return settings_cls(_env_file=resolved_cwd / ".env")  # type: ignore[call-arg]
         except ValidationError as exc:
             errors.extend(_format_validation_errors(app_config_path, exc))
-        finally:
-            AppConfig.yaml_file = None
 
     if errors:
         raise ConfigLoadError(errors)

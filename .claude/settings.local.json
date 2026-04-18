@@ -3,7 +3,8 @@
     "allow": [
       "Bash(gh *)",
       "Bash(grep *)",
-      "Bash(uv *)"
+      "Bash(uv *)",
+      "Bash(git *)"
     ]
   }
 }
