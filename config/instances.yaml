@@ -1,0 +1,5 @@
+instances:
+  - id: marc-ea
+    display_name: Marc EA
+    profile_id: ea
+    config_path: instances/marc-ea.yaml

@@ -80,6 +80,31 @@ Loading behavior:
 
 Only `config/app.yaml` is schema-validated in this phase. Other `config/*.yaml` files are tolerated so later milestones can attach their own typed consumers without leaking provider-specific config into the core app model.
 
+## Instance Fixtures
+
+M1 instance fixtures live under `config/` in two parts:
+- `config/instances.yaml`: manifest of instance descriptors for the deployment
+- `config/instances/<instance-id>.yaml`: per-instance overlay file referenced by `config_path`
+
+The manifest shape is:
+
+```yaml
+instances:
+  - id: marc-ea
+    display_name: Marc EA
+    profile_id: ea
+    config_path: instances/marc-ea.yaml
+```
+
+`config_path` is resolved relative to `config/`, and each referenced file is schema-checked against the current `InstanceConfig` shape:
+
+```yaml
+env: {}
+overrides: {}
+```
+
+The checked-in default fixture is `marc-ea`, pinned to the real `ea` profile. Instance loading fails clearly if the manifest is malformed, an overlay file is invalid, or a referenced `profile_id` no longer exists in `profiles/`.
+
 ## Design rules
 
 1. **One core, many profiles**

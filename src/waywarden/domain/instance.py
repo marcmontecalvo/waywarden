@@ -7,12 +7,22 @@ They stay intentionally provider-neutral and import no framework code.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, NewType
+from types import MappingProxyType
+from typing import Any, NewType, TypedDict
 
 InstanceId = NewType("InstanceId", str)
+
+
+class InstanceManifest(TypedDict):
+    """Typed shape for entries in ``config/instances.yaml``."""
+
+    id: str
+    display_name: str
+    profile_id: str
+    config_path: str
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:
@@ -86,3 +96,46 @@ class InstanceConfig:
 
         object.__setattr__(self, "env", normalized_env)
         object.__setattr__(self, "overrides", dict(self.overrides))
+
+
+@dataclass(frozen=True, slots=True, init=False)
+class InstanceRegistry(Mapping[InstanceId, InstanceDescriptor]):
+    """Read-only lookup of instance descriptors keyed by instance id."""
+
+    _descriptors: Mapping[InstanceId, InstanceDescriptor]
+
+    def __init__(
+        self,
+        descriptors: Mapping[InstanceId | str, InstanceDescriptor] | None = None,
+    ) -> None:
+        normalized_descriptors: dict[InstanceId, InstanceDescriptor] = {}
+
+        for raw_key, descriptor in (descriptors or {}).items():
+            if not isinstance(descriptor, InstanceDescriptor):
+                raise TypeError("registry descriptors must be InstanceDescriptor instances")
+
+            key = _normalize_instance_id(raw_key, field_name="instance registry key")
+            if descriptor.id != key:
+                raise ValueError(
+                    f"instance registry key must match descriptor.id ({key!r} != {descriptor.id!r})"
+                )
+            if key in normalized_descriptors:
+                raise ValueError(f"instance registry key {key!r} is duplicated")
+
+            normalized_descriptors[key] = descriptor
+
+        object.__setattr__(
+            self,
+            "_descriptors",
+            MappingProxyType(normalized_descriptors),
+        )
+
+    def __getitem__(self, key: InstanceId | str) -> InstanceDescriptor:
+        normalized_key = _normalize_instance_id(key, field_name="instance registry lookup")
+        return self._descriptors[normalized_key]
+
+    def __iter__(self) -> Iterator[InstanceId]:
+        return iter(self._descriptors)
+
+    def __len__(self) -> int:
+        return len(self._descriptors)
