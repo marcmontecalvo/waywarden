@@ -71,6 +71,7 @@ The same deployment should support multiple named instances side by side, for ex
 - Do not create new markdown backlog files under `docs/issues/`.
 - When working from an epic, complete the next actionable child issue in order unless issue text clearly allows parallelism.
 - After implementation, adversarially review your own work, fix defects, then update the issue with notes grounded in what actually changed.
+- **Always use the `gh` CLI for all GitHub operations** (reading issues, posting comments, closing issues, listing PRs, etc.). Never launch a browser or browser subagent for GitHub tasks. The `gh` CLI is authenticated and is the correct tool.
 
 ## Skills and long procedures
 Use repo-local skills for repeatable workflows instead of bloating this file with long procedures. This file should stay focused on durable repo facts, hard constraints, and always-on working agreements.
