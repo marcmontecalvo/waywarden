@@ -1,7 +1,0 @@
-root: ${BACKUP_ROOT}
-retain_days: 30
-targets:
-  - postgres
-  - knowledge
-  - uploads
-  - config

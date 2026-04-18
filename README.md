@@ -53,13 +53,13 @@ A single deployment should also be able to run multiple configured instances at 
 - FastAPI
 - Uvicorn
 - Pydantic v2
-- SQLAlchemy 2
-- Alembic
 - pytest
 - Ruff
-- Postgres
-- Honcho as the starting memory provider
-- LLM-Wiki as the starting knowledge provider
+
+Planned for later milestones (not wired yet):
+- SQLAlchemy 2 + Alembic + Postgres as the system of record (P2+)
+- Honcho as the starting memory provider (P3+)
+- LLM-Wiki as the starting knowledge provider (P3+)
 - OpenTelemetry-compatible tracing with a no-op mode when auditing is disabled
 
 ## App Config
