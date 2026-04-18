@@ -43,11 +43,11 @@ network_access = true
 # Optional local CodeGraph MCP example. Enable only after the repo-prep step
 # can build the index and launch the server reliably in your environment.
 #
-# [mcp_servers.codegraph]
-# command = "codegraph"
-# args = ["mcp", "serve"]
-# cwd = "."
-# enabled = false
-# required = false
-# startup_timeout_sec = 20
-# tool_timeout_sec = 120
+[mcp_servers.codegraph]
+command = "codegraph"
+args = ["mcp", "serve"]
+cwd = "."
+enabled = false
+required = false
+startup_timeout_sec = 20
+tool_timeout_sec = 120
