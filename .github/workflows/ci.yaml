@@ -51,7 +51,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
@@ -85,7 +85,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
@@ -125,7 +125,7 @@ jobs:
           version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
