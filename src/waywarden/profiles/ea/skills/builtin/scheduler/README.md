@@ -1,3 +1,0 @@
-# scheduler
-
-Skill placeholder.

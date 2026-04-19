@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev lint format secret-scan test db-up db-down migrate run worker backup
+.PHONY: bootstrap dev lint format secret-scan test run
 
 bootstrap:
 	uv sync --extra dev
@@ -22,20 +22,5 @@ secret-scan:
 test:
 	uv run pytest
 
-db-up:
-	docker compose -f infra/docker-compose.sidecars.yaml up -d postgres
-
-db-down:
-	docker compose -f infra/docker-compose.sidecars.yaml down
-
-migrate:
-	uv run alembic upgrade head
-
 run:
 	uv run uvicorn waywarden.app:app --app-dir src --host 0.0.0.0 --port 8000
-
-worker:
-	uv run python -m waywarden.profiles.ea.workers.scheduler
-
-backup:
-	uv run python scripts/backup_now.py

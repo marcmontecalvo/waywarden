@@ -5,8 +5,8 @@ from time import perf_counter
 from fastapi import FastAPI, Request, Response
 
 from waywarden import __version__
+from waywarden.api.routers import health
 from waywarden.config import AppConfig, get_app_config
-from waywarden.domain.services.skill_registry import SkillRegistry
 from waywarden.logging import (
     build_request_log_context,
     configure_logging,
@@ -22,25 +22,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 def register_routers(app: FastAPI) -> None:
-    from waywarden.api.routers import (
-        approvals,
-        backups,
-        chat,
-        health,
-        knowledge,
-        memory,
-        skills,
-        tasks,
-    )
-
     app.include_router(health.router)
-    app.include_router(chat.router)
-    app.include_router(tasks.router)
-    app.include_router(approvals.router)
-    app.include_router(skills.router)
-    app.include_router(memory.router)
-    app.include_router(knowledge.router)
-    app.include_router(backups.router)
 
 
 def register_middleware(app: FastAPI) -> None:
@@ -77,10 +59,7 @@ def register_middleware(app: FastAPI) -> None:
             return response
 
 
-def create_app(
-    settings: AppConfig | None = None,
-    skill_registry: SkillRegistry | None = None,
-) -> FastAPI:
+def create_app(settings: AppConfig | None = None) -> FastAPI:
     app_settings = settings or get_app_config()
     configure_logging(level=app_settings.log_level)
     app = FastAPI(
@@ -89,8 +68,6 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.settings = app_settings
-    if skill_registry is not None:
-        app.state.skill_registry = skill_registry
     register_middleware(app)
     register_routers(app)
     return app
