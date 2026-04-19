@@ -57,7 +57,9 @@ A single deployment should also be able to run multiple configured instances at 
 - Ruff
 
 Planned for later milestones (not wired yet):
-- SQLAlchemy 2 + Alembic + Postgres as the system of record (P2+)
+- SQLAlchemy 2 + Alembic + psycopg are pinned in the dependency graph for P2, but
+  ORM mappings and migrations land in later P2 issues
+- Postgres as the system of record (P2+)
 - Honcho as the starting memory provider (P3+)
 - LLM-Wiki as the starting knowledge provider (P3+)
 - OpenTelemetry-compatible tracing with a no-op mode when auditing is disabled
