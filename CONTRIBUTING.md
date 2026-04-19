@@ -57,7 +57,7 @@ If a critical vulnerability requires immediate mitigation before the next Depend
 
 ### Review and Merging
 
-Lockfile refresh PRs should be reviewed carefully to ensure CI remains green. Since automated upgrades can introduce breaking changes, any test failures must be addressed by modifying our code or pinning the dependency in `pyproject.toml` before merging. 
+Lockfile refresh PRs should be reviewed carefully to ensure CI remains green. Since automated upgrades can introduce breaking changes, any test failures must be addressed by modifying our code or pinning the dependency in `pyproject.toml` before merging.
 
 ## Submitting Changes
 

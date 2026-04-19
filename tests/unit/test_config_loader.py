@@ -55,13 +55,13 @@ def test_load_app_config_aggregates_multiple_problems(tmp_path: Path) -> None:
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text("host: 127.0.0.1\nport: not-a-number\n", encoding="utf-8")
-    (config_dir / "channels.yaml").write_text("channels: [broken\n", encoding="utf-8")
+    (config_dir / "extra.yaml").write_text("items: [broken\n", encoding="utf-8")
 
     with pytest.raises(ConfigLoadError) as exc_info:
         load_app_config(config_dir=config_dir, cwd=tmp_path)
 
     message = str(exc_info.value)
-    assert "config/channels.yaml" in message
+    assert "config/extra.yaml" in message
     assert "YAML parse error" in message
     assert "config/app.yaml" in message
     assert "field `port`" in message

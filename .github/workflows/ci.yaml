@@ -27,6 +27,43 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  dependency-sanity:
+    name: dependency-sanity (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Cache uv downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Verify persistence imports
+        run: uv run python -c "import sqlalchemy, alembic, psycopg"
+
   lint:
     name: lint (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
