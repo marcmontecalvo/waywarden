@@ -11,9 +11,9 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, NewType, TypedDict
+from typing import Any, TypedDict
 
-InstanceId = NewType("InstanceId", str)
+from waywarden.domain.ids import InstanceId
 
 
 class InstanceManifest(TypedDict):

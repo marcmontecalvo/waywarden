@@ -57,6 +57,11 @@ The same deployment should support multiple named instances side by side, for ex
 - Migrations: `make migrate`
 
 ## Working rules
+- For Codex runs, default to `rtk` for any shell command likely to emit more than a small screen of output; only use raw commands when unfiltered output is necessary.
+- Token discipline matters. When using shell commands that can produce large or noisy output, prefer `rtk` wrappers so Codex sees compressed results instead of raw terminal noise.
+- Default to `rtk` for noisy commands such as `git status`, `git diff`, `git log`, `rg`, `find`, `ls -R`, test runners, coverage, build logs, and similar high-volume terminal output.
+- Use normal commands only when raw/unfiltered output is specifically required for correctness or debugging.
+- If choosing between a built-in tool path and a noisy shell path, prefer the path that keeps context smallest while still preserving correctness.
 - `src/waywarden` is strictly typed. Tests are checked but lightly relaxed.
 - For third-party dependencies lacking stubs (e.g. `honcho`), do not use blanket ignores. Instead, add targeted `[[tool.mypy.overrides]]` in `pyproject.toml` with `ignore_missing_imports = true` mapped only to that module.
 - Use existing patterns before introducing new ones.

@@ -89,7 +89,13 @@ def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
         encoding="utf-8",
     )
     (tmp_path / ".env").write_text(
-        "WAYWARDEN_HOST=dotenv-host\nWAYWARDEN_PORT=9090\nWAYWARDEN_ENV=dotenv\n",
+        (
+            "WAYWARDEN_HOST=dotenv-host\n"
+            "WAYWARDEN_PORT=9090\n"
+            "WAYWARDEN_ENV=dotenv\n"
+            "WAYWARDEN_DATABASE_URL="
+            "postgresql+psycopg://dotenv:dotenv@127.0.0.1:5432/waywarden\n"
+        ),
         encoding="utf-8",
     )
     monkeypatch.setenv("WAYWARDEN_HOST", "env-host")
@@ -102,6 +108,7 @@ def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
     assert config.env == "production"
     assert config.log_level == "WARNING"
     assert config.commit_sha == ""
+    assert config.database_url == "postgresql+psycopg://dotenv:dotenv@127.0.0.1:5432/waywarden"
 
 
 def test_load_app_config_does_not_leak_yaml_state_between_calls(tmp_path: Path) -> None:

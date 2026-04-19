@@ -4,7 +4,8 @@
       "Bash(gh *)",
       "Bash(grep *)",
       "Bash(uv *)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(python -c \"import json,sys; [print\\(f\\\\\"#{i['number']} [{i['state']}] {i['title']}\\\\\"\\) for i in json.load\\(sys.stdin\\)]\")"
     ]
   }
 }

@@ -2,13 +2,14 @@
 type: spec
 title: "Run Event Protocol"
 status: Ready for Build
-date: 2026-04-17
+date: 2026-04-18
 spec_number: "RT-002"
 phase: harness-core
-relates_to_adrs: [0011]
-depends_on: [0011-harness-boundaries-and-client-surfaces, RT-001]
+relates_to_adrs: [0005, 0011]
+depends_on: [0005-approval-model, 0011-harness-boundaries-and-client-surfaces, RT-001]
 owner: core-runtime
 target_milestone: "v1-harness"
+revision: 2
 ---
 
 # Run Event Protocol
@@ -137,6 +138,7 @@ The following event types are required for v1.
 | `run.created` | Durable run record created and accepted by the harness | `created` | `instance_id`, `profile`, `policy_preset`, `manifest_ref`, `entrypoint` | `initial_objective`, `task_ref` |
 | `run.plan_ready` | Initial plan or revised plan durably accepted for execution | `planning` | `plan_ref`, `summary`, `revision`, `approval_required` | `checkpoint_ref`, `supersedes_plan_ref` |
 | `run.execution_started` | Execution phase has started or restarted | `executing` | `worker_session_ref`, `attempt`, `resume_kind` | `checkpoint_ref`, `lease_expires_at` |
+| `run.progress` | Operator-visible milestone within the current run state; does not change run state | unchanged | `phase`, `milestone` | `detail`, `checkpoint_ref`, `source_event_id` |
 | `run.approval_waiting` | Run is blocked on an approval decision | `waiting_approval` | `approval_id`, `approval_kind`, `summary` | `expires_at`, `checkpoint_ref`, `requested_capability` |
 | `run.resumed` | Run resumed after approval, disconnect recovery, scheduler wake-up, or worker restart | `executing` | `resume_kind`, `resumed_from_seq` | `checkpoint_ref`, `worker_session_ref`, `approval_id` |
 | `run.artifact_created` | Durable artifact was registered for operator or downstream use | unchanged | `artifact_ref`, `artifact_kind`, `label` | `source_event_id`, `checkpoint_ref`, `content_type` |
@@ -206,6 +208,27 @@ Optional payload fields:
 Rules:
 - the first execution attempt must set `attempt` to `1`
 - `checkpoint_ref` is required when `resume_kind` is not `fresh_start`
+
+### `run.progress`
+
+Purpose:
+Record an operator-visible milestone inside the current run state without changing that state.
+Used by the orchestration service to surface sub-phase progress (for example, `intake.received`, `plan.drafted`, `execute.tool_invoked`, `review.findings`, `handoff.envelope_emitted`) while the run remains in `planning` or `executing`.
+
+Required payload fields:
+- `phase`: string stable identifier for the orchestration sub-phase (for example `intake`, `plan`, `execute`, `review`, `handoff`)
+- `milestone`: string stable identifier for the specific milestone within that phase
+
+Optional payload fields:
+- `detail`: string or typed object with non-sensitive operator-facing context
+- `checkpoint_ref`: string
+- `source_event_id`: string referencing the event that produced this milestone (for example an earlier `run.artifact_created`)
+
+Rules:
+- `run.progress` must never change the run's top-level state; the state column for this event type is always `unchanged`
+- `phase` and `milestone` values must be declared in the orchestration service's documented milestone catalog — free-form strings are invalid
+- `detail` must be redaction-safe for operator surfaces; raw tool output or secrets must be written through `run.artifact_created` instead
+- terminal events suppress further `run.progress`; no `run.progress` may follow `run.completed`, `run.failed`, or `run.cancelled`
 
 ### `run.approval_waiting`
 
@@ -313,6 +336,25 @@ Optional payload fields:
 
 Rules:
 - cancellations must remain distinguishable from failures for audit and operator reporting
+
+## Approval decision event mapping
+
+`run.approval_waiting` records entry into the `waiting_approval` state. Resolution of that wait is mapped to existing events as follows, with no new event type required:
+
+- approval granted: emit `run.resumed` with `resume_kind = approval_granted`; run state transitions to `executing`. `approval_id` must be present in the payload.
+- approval denied and run is abandoned: emit `run.cancelled` with `reason = approval_denied` and `cancelled_by` set to the operator or policy that denied. Run state transitions to `cancelled`.
+- approval denied and the harness chooses to continue along an alternate path without the gated action: emit `run.resumed` with `resume_kind = approval_denied_alternate_path` and `approval_id` set; the continuation must not perform the denied action.
+- approval timeout: emit either `run.cancelled` with `reason = approval_timeout` or `run.failed` with `failure_code = approval_timeout`, depending on whether retry is possible; `retryable` on `run.failed` indicates whether a new attempt may be initiated.
+
+The harness must not invent `approval_requested` or `approval_decided` event types; the approval record referenced by `approval_id` is the persisted decision artifact, and its decisions are reflected through the events above.
+
+## Token usage accounting
+
+Token usage records (prompt tokens, completion tokens, model, provider) are persisted outside the RT-002 event log.
+
+- per-call usage entries are written through a dedicated `TokenUsageRepository` keyed on `run_id` and an internal sequence, not through `RunEventRepository`.
+- a run-scoped usage summary may be registered as a durable artifact via `run.artifact_created` with `artifact_kind = usage-summary` once a run reaches a terminal state.
+- implementations must not append `run.usage` or similar non-catalog event types; catalog violations are a replay hazard for clients.
 
 ## Artifact and checkpoint references
 

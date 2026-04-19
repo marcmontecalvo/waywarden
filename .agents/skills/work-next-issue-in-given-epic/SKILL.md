@@ -39,6 +39,7 @@ Use this skill when the user gives you a GitHub EPIC issue URL and wants fully a
 - Do not leave the EPIC open if this was the last required item and the EPIC's definition of done is satisfied.
 - Do not use fake-success placeholders, TODO-only implementations, or hand-wavy closeout comments.
 - Keep scope tight to the selected issue unless a directly related defect blocks truthful completion.
+- Be aggressive about token discipline during repo inspection and validation. Prefer `rtk`-wrapped shell commands for noisy output (git diffs/status, ripgrep/find scans, test runs, coverage, build logs) unless raw output is required to resolve the issue truthfully.
 
 ## Git / GitHub closeout requirements
 
