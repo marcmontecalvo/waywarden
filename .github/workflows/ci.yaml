@@ -38,7 +38,7 @@ jobs:
           - windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -46,12 +46,12 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
 
       - name: Cache uv downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.UV_CACHE_DIR }}
           key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
