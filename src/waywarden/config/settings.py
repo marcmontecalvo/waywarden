@@ -11,12 +11,17 @@ from pathlib import Path
 from typing import Literal, cast
 
 from fastapi import Request
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
+
+
+class DatabaseUrlMissing(RuntimeError):
+    """Raised when migration tooling cannot resolve a database URL."""
 
 
 class AppConfig(BaseSettings):
@@ -26,6 +31,7 @@ class AppConfig(BaseSettings):
     env: str = "development"
     commit_sha: str = ""
     expose_commit_sha: bool = False
+    database_url: str = ""
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -44,6 +50,23 @@ class AppConfig(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         return init_settings, env_settings, dotenv_settings, file_secret_settings
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, value: object) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value.strip()
+        raise TypeError("database_url must be a string")
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, value: str, info: ValidationInfo) -> str:
+        env = info.data.get("env", "development")
+        if env in {"production", "test"} and not value:
+            raise ValueError("must be set to a non-empty string when env is 'production' or 'test'")
+        return value
 
 
 def build_app_config_class(yaml_file: Path | None) -> type[AppConfig]:

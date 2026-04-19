@@ -48,6 +48,9 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "--cov=src/waywarden --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+markers = [
+  "integration: marks integration tests that require external services",
+]
 
 [tool.coverage.run]
 branch = true
