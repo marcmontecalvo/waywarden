@@ -36,8 +36,14 @@ Return exactly these sections, in this order:
 ## GIT STATUS
 - active branch
 - whether working tree is clean
-- commit sha for the final implementation commit
+- issue branch name
+- branch pushed: `yes|no`
+- merged to main: `yes|no`
+- main verified: `yes|no`
+- final branch commit sha
+- final main commit sha
 - push target used
+- branch deleted: `yes|no`
 
 ## GITHUB UPDATES
 - what was posted to the child issue
@@ -55,6 +61,9 @@ Return exactly these sections, in this order:
   - issues found in adversarial review were corrected
   - required code changes are committed
   - required remote updates are pushed
+  - work was merged into `main`
+  - `main` was verified to contain the final implementation
   - child issue notes/state are updated correctly
   - EPIC notes/checklist/state are updated correctly
+  - branch was deleted or intentionally retained with explanation
 - otherwise `FAIL`

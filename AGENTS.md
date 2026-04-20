@@ -80,5 +80,56 @@ The same deployment should support multiple named instances side by side, for ex
 - After implementation, adversarially review your own work, fix defects, then update the issue with notes grounded in what actually changed.
 - **Always use the `gh` CLI for all GitHub operations** (reading issues, posting comments, closing issues, listing PRs, etc.). Never launch a browser or browser subagent for GitHub tasks. The `gh` CLI is authenticated and is the correct tool.
 
+## Git / issue execution policy
+
+Issue completion is defined as: merged into `main`, verified on `main`, issue closed, branch deleted. Branch-only completion does not count as complete.
+
+When working a GitHub issue, follow this workflow unless the user explicitly instructs otherwise:
+
+1. Create a new issue branch from the current `main`.
+   - Branch naming:
+     - `issue-<number>-<short-slug>`
+   - Example:
+     - `issue-40-p2-5-run-event`
+
+2. Implement the issue work on that branch only.
+   - Do not commit issue work directly to `main`.
+   - Keep scope tightly limited to the issue and its explicit acceptance criteria.
+
+3. Validate on the issue branch before pushing.
+   - Run targeted tests first.
+   - Run broader relevant validation if reasonably fast.
+   - Run lint/type checks required by the repo or issue.
+
+4. Push the branch to origin.
+
+5. Merge the branch back into `main` only after validation passes.
+   - Prefer a clean merge/rebase path that preserves an understandable history.
+   - Do not leave the work completed only on the branch.
+
+6. Verify that `main` contains the final intended commit/content.
+   - Confirm the merged result on `main`, not just on the feature branch.
+   - If the merge rewrites history or changes commit SHA, verify the content, not just the original SHA string.
+
+7. Close the GitHub issue only after the work is confirmed on `main`.
+
+8. Delete the remote and local issue branch after successful merge and verification unless the user explicitly asks to keep it.
+
+### Required completion evidence
+When reporting completion of an issue, include:
+- issue branch name
+- final commit SHA on branch
+- final commit SHA on `main` after merge, if different
+- validation commands run
+- explicit confirmation that `main` contains the completed work
+- confirmation that the issue was closed
+- confirmation that the branch was deleted, or note that it was intentionally retained
+
+### Prohibited behaviors
+- Do not work issue-to-completion only on a branch and then close the issue without merging.
+- Do not commit directly to `main` unless the user explicitly says to do so.
+- Do not assume the issue is complete until `main` is verified.
+- Do not leave both branch and `main` with divergent implementations of the same issue.
+
 ## Skills and long procedures
 Use repo-local skills for repeatable workflows instead of bloating this file with long procedures. This file should stay focused on durable repo facts, hard constraints, and always-on working agreements.
