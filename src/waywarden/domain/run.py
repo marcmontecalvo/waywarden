@@ -20,14 +20,10 @@ RunState = Literal[
 _VALID_STATES: frozenset[str] = frozenset(get_args(RunState))
 
 _PolicyPreset = Literal["yolo", "ask", "allowlist", "custom"]
-_VALID_POLICY_PRESETS: frozenset[str] = frozenset(
-    ["yolo", "ask", "allowlist", "custom"]
-)
+_VALID_POLICY_PRESETS: frozenset[str] = frozenset(["yolo", "ask", "allowlist", "custom"])
 
 _Entrypoint = Literal["api", "cli", "scheduler", "internal"]
-_VALID_ENTRYPOINTS: frozenset[str] = frozenset(
-    ["api", "cli", "scheduler", "internal"]
-)
+_VALID_ENTRYPOINTS: frozenset[str] = frozenset(["api", "cli", "scheduler", "internal"])
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:
@@ -61,22 +57,18 @@ def _normalize_state(value: RunState | str) -> RunState:
 def _normalize_policy_preset(value: _PolicyPreset | str) -> _PolicyPreset:
     normalized = _require_non_empty_text(value, field_name="policy_preset")
     if normalized not in _VALID_POLICY_PRESETS:
-        raise ValueError(
-            "policy_preset must be one of 'yolo', 'ask', 'allowlist', or 'custom'"
-        )
+        raise ValueError("policy_preset must be one of 'yolo', 'ask', 'allowlist', or 'custom'")
     return cast(_PolicyPreset, normalized)
 
 
 def _normalize_entrypoint(value: _Entrypoint | str) -> _Entrypoint:
     normalized = _require_non_empty_text(value, field_name="entrypoint")
     if normalized not in _VALID_ENTRYPOINTS:
-        raise ValueError(
-            "entrypoint must be one of 'api', 'cli', 'scheduler', or 'internal'"
-        )
+        raise ValueError("entrypoint must be one of 'api', 'cli', 'scheduler', or 'internal'")
     return cast(_Entrypoint, normalized)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, weakref_slot=True)
 class Run:
     """Immutable run record aligned to the RT-002 run lifecycle."""
 
@@ -101,9 +93,7 @@ class Run:
         object.__setattr__(
             self,
             "instance_id",
-            InstanceId(
-                _require_non_empty_text(self.instance_id, field_name="instance_id")
-            ),
+            InstanceId(_require_non_empty_text(self.instance_id, field_name="instance_id")),
         )
         if self.task_id is not None:
             from waywarden.domain.ids import TaskId as _TaskId
@@ -111,9 +101,7 @@ class Run:
             object.__setattr__(
                 self,
                 "task_id",
-                _TaskId(
-                    _require_non_empty_text(self.task_id, field_name="task_id")
-                ),
+                _TaskId(_require_non_empty_text(self.task_id, field_name="task_id")),
             )
         object.__setattr__(
             self,
@@ -137,12 +125,8 @@ class Run:
         )
         object.__setattr__(self, "state", _normalize_state(self.state))
 
-        created_at = _require_aware_datetime(
-            self.created_at, field_name="created_at"
-        )
-        updated_at = _require_aware_datetime(
-            self.updated_at, field_name="updated_at"
-        )
+        created_at = _require_aware_datetime(self.created_at, field_name="created_at")
+        updated_at = _require_aware_datetime(self.updated_at, field_name="updated_at")
         if updated_at < created_at:
             raise ValueError("updated_at must not be before created_at")
 

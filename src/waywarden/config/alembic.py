@@ -4,8 +4,7 @@ from sqlalchemy import MetaData
 
 from waywarden.config.loader import ConfigLoadError, load_app_config
 from waywarden.config.settings import DatabaseUrlMissing
-
-ALEMBIC_METADATA = MetaData()
+from waywarden.infra.db.metadata import metadata as ALEMBIC_METADATA
 
 
 def load_alembic_database_url(config_dir: Path | None = None, cwd: Path | None = None) -> str:
