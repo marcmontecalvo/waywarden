@@ -77,3 +77,8 @@ strict = true
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "aiosqlite>=0.22.1",
+]
