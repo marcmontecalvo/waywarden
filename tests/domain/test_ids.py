@@ -1,6 +1,14 @@
 from typing import assert_type
 
-from waywarden.domain.ids import ApprovalId, InstanceId, MessageId, RunId, SessionId, TaskId
+from waywarden.domain.ids import (
+    ApprovalId,
+    InstanceId,
+    MessageId,
+    RunEventId,
+    RunId,
+    SessionId,
+    TaskId,
+)
 
 
 def _needs_session_id(value: SessionId) -> SessionId:
@@ -27,6 +35,10 @@ def _needs_run_id(value: RunId) -> RunId:
     return value
 
 
+def _needs_run_event_id(value: RunEventId) -> RunEventId:
+    return value
+
+
 def test_newtypes_distinguish_at_type_level() -> None:
     session_id = SessionId("session-1")
     message_id = MessageId("message-1")
@@ -34,6 +46,7 @@ def test_newtypes_distinguish_at_type_level() -> None:
     task_id = TaskId("task-1")
     approval_id = ApprovalId("approval-1")
     run_id = RunId("run-1")
+    run_event_id = RunEventId("evt-1")
 
     assert_type(_needs_session_id(session_id), SessionId)
     assert_type(_needs_message_id(message_id), MessageId)
@@ -41,3 +54,4 @@ def test_newtypes_distinguish_at_type_level() -> None:
     assert_type(_needs_task_id(task_id), TaskId)
     assert_type(_needs_approval_id(approval_id), ApprovalId)
     assert_type(_needs_run_id(run_id), RunId)
+    assert_type(_needs_run_event_id(run_event_id), RunEventId)
