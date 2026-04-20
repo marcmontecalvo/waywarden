@@ -96,11 +96,18 @@ def test_causation_requires_at_least_one_field() -> None:
 
 
 def test_seq_must_be_positive() -> None:
+    created_payload = MappingProxyType({
+        "instance_id": "i-1",
+        "profile": "default",
+        "policy_preset": "yolo",
+        "manifest_ref": "m://v1",
+        "entrypoint": "api",
+    })
     base = {
         "id": RunEventId("evt-1"),
         "run_id": RunId("run-1"),
         "type": "run.created",
-        "payload": MappingProxyType({}),
+        "payload": created_payload,
         "timestamp": datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
         "causation": None,
         "actor": None,
@@ -118,12 +125,19 @@ def test_seq_must_be_positive() -> None:
 
 
 def test_timestamp_must_be_utc_aware() -> None:
+    created_payload = MappingProxyType({
+        "instance_id": "i-1",
+        "profile": "default",
+        "policy_preset": "yolo",
+        "manifest_ref": "m://v1",
+        "entrypoint": "api",
+    })
     base = {
         "id": RunEventId("evt-1"),
         "run_id": RunId("run-1"),
         "seq": 1,
         "type": "run.created",
-        "payload": MappingProxyType({}),
+        "payload": created_payload,
         "causation": None,
         "actor": None,
     }
@@ -135,17 +149,64 @@ def test_timestamp_must_be_utc_aware() -> None:
         )
 
 
-def test_actor_kind_literal() -> None:
-    """Actor accepts all valid kinds; invalid kind passes at runtime (Literal is static)."""
+def test_actor_kind_rejected_at_runtime() -> None:
+    """Invalid Actor.kind raises ValueError at construction time."""
+    with pytest.raises(ValueError, match="kind must be one of"):
+        Actor(kind="invalid", id=None, display=None)  # type: ignore[arg-type]
+
+
+def test_actor_kind_literal_accepted() -> None:
+    """All valid Actor kinds pass at runtime."""
     Actor(kind="operator", id="user:marc", display="Marc")
     Actor(kind="system", id=None, display=None)
     Actor(kind="policy-engine", id=None, display="Policy")
     Actor(kind="scheduler", id=None, display=None)
     Actor(kind="worker", id=None, display=None)
 
-    # Literal is a static type hint — runtime accepts any string.
-    # mypy --strict would flag this, which is the intended enforcement surface.
-    Actor(kind="invalid", id=None, display=None)  # type: ignore[arg-type]
+
+def test_payload_frozen_at_construction() -> None:
+    """RunEvent payload is immutable (MappingProxyType) after construction."""
+    mutable_payload: dict[str, object] = {
+        "instance_id": "i-1",
+        "profile": "default",
+        "policy_preset": "yolo",
+        "manifest_ref": "m://v1",
+        "entrypoint": "api",
+    }
+    event = RunEvent(
+        id=RunEventId("evt-1"),
+        run_id=RunId("run-1"),
+        seq=1,
+        type="run.created",
+        payload=mutable_payload,
+        timestamp=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
+        causation=None,
+        actor=None,
+    )
+    # Original mutable dict should still be unchanged
+    assert "instance_id" in mutable_payload
+
+    # Event payload should be frozen
+    with pytest.raises(TypeError, match="item assignment"):
+        event.payload["instance_id"] = "hacked"  # type: ignore[index]
+
+    # Should be MappingProxyType
+    assert isinstance(event.payload, MappingProxyType)
+
+
+def test_run_event_rejects_missing_payload_fields() -> None:
+    """RunEvent construction rejects payloads missing required fields for the event type."""
+    with pytest.raises(ValueError, match="requires payload fields"):
+        RunEvent(
+            id=RunEventId("evt-1"),
+            run_id=RunId("run-1"),
+            seq=1,
+            type="run.created",
+            payload=MappingProxyType({"instance_id": "i-1"}),  # missing fields
+            timestamp=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
+            causation=None,
+            actor=None,
+        )
 
 
 def test_valid_run_event() -> None:

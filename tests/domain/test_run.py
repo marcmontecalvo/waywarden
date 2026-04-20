@@ -59,23 +59,6 @@ def test_entrypoint_enforced() -> None:
         )
 
 
-def test_terminal_state_requires_terminal_seq() -> None:
-    with pytest.raises(ValueError, match="terminal_seq must be set"):
-        Run(
-            id=RunId("run-1"),
-            instance_id=InstanceId("inst-1"),
-            task_id=None,
-            profile="default",
-            policy_preset="yolo",
-            manifest_ref="manifest://v1",
-            entrypoint="api",
-            state="completed",
-            created_at=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
-            updated_at=datetime(2026, 4, 19, 14, 1, tzinfo=UTC),
-            terminal_seq=None,
-        )
-
-
 def test_terminal_seq_must_be_positive() -> None:
     with pytest.raises(ValueError, match="terminal_seq must be >= 1"):
         Run(

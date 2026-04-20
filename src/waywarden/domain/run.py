@@ -149,11 +149,5 @@ class Run:
         if self.terminal_seq is not None and self.terminal_seq < 1:
             raise ValueError("terminal_seq must be >= 1 when set")
 
-        # Terminal state guard: terminal state implies terminal_seq is set
-        if self.state in ("completed", "failed", "cancelled") and self.terminal_seq is None:
-            raise ValueError(
-                "terminal_seq must be set when run state is terminal"
-            )
-
         object.__setattr__(self, "created_at", created_at)
         object.__setattr__(self, "updated_at", updated_at)

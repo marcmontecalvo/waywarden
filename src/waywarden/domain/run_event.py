@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Literal
+from types import MappingProxyType
+from typing import Literal, cast, get_args
 
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event_types import RunEventType
@@ -14,7 +15,7 @@ from waywarden.domain.run_event_types import RunEventType
 # Payload validation — required fields per event type (RT-002 §Event payload)
 # ---------------------------------------------------------------------------
 
-_REQUIRED_PAYLOAD_FIELDS: dict[RunEventType, frozenset[str]] = {
+_REQUIRED_PAYLOAD_FIELDS: dict[str, frozenset[str]] = {
     "run.created": frozenset(
         ["instance_id", "profile", "policy_preset", "manifest_ref", "entrypoint"]
     ),
@@ -55,6 +56,7 @@ def validate_payload(event_type: str, payload: Mapping[str, object]) -> None:
             f"{', '.join(sorted(missing))}"
         )
 
+
 # ---------------------------------------------------------------------------
 # Causation
 # ---------------------------------------------------------------------------
@@ -81,11 +83,23 @@ class Causation:
                 "At least one of event_id, action, or request_id must be set"
             )
 
+
 # ---------------------------------------------------------------------------
 # Actor
 # ---------------------------------------------------------------------------
 
 _ActorKind = Literal["operator", "system", "scheduler", "worker", "policy-engine"]
+_VALID_ACTOR_KINDS: frozenset[str] = frozenset(get_args(_ActorKind))
+
+
+def _normalize_actor_kind(value: _ActorKind | str) -> _ActorKind:
+    normalized = str(value)
+    if normalized not in _VALID_ACTOR_KINDS:
+        raise ValueError(
+            "kind must be one of 'operator', 'system', 'scheduler', "
+            "'worker', or 'policy-engine'"
+        )
+    return cast(_ActorKind, normalized)
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +109,10 @@ class Actor:
     kind: _ActorKind
     id: str | None
     display: str | None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "kind", _normalize_actor_kind(self.kind))
+
 
 # ---------------------------------------------------------------------------
 # RunEvent envelope
@@ -126,3 +144,9 @@ class RunEvent:
         object.__setattr__(
             self, "timestamp", self.timestamp.astimezone(UTC)
         )
+
+        if not isinstance(self.payload, Mapping):
+            raise TypeError("payload must be a Mapping[str, object]")
+        frozen_payload = MappingProxyType(dict(self.payload))
+        validate_payload(self.type, frozen_payload)
+        object.__setattr__(self, "payload", frozen_payload)
