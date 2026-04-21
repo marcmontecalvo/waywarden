@@ -133,8 +133,6 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Typecheck
-        # Keep mypy Linux-only for this slice: Windows coverage is focused on the
-        # path/runtime-sensitive lint and pytest jobs required by P1-11.
         run: uv run mypy --strict src tests
 
   test:
@@ -173,12 +171,72 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Test
-        run: uv run pytest
+        # Windows runners do not guarantee docker-compose; skip integration
+        # tests there. Linux runs all tests including integration against the
+        # Postgres service below.
+        run: uv run pytest -m "not integration"
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report-${{ matrix.os }}
+          path: coverage.xml
+          retention-days: 14
+
+  integration-linux:
+    name: integration (linux)
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: waywarden
+          POSTGRES_PASSWORD: waywarden
+          POSTGRES_DB: waywarden_dev
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - name: Cache uv downloads
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.UV_CACHE_DIR }}
+          key: ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-${{ env.PYTHON_VERSION }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --extra dev --frozen
+
+      - name: Apply Alembic migrations
+        run: uv run alembic upgrade head
+
+      - name: Run integration tests
+        run: uv run pytest -m integration
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage-report-integration-linux
           path: coverage.xml
           retention-days: 14

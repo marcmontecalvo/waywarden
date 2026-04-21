@@ -51,17 +51,18 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--cov=src/waywarden --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
+addopts = "--cov=src/waywarden --cov=alembic --cov-report=term-missing --cov-report=xml --cov-fail-under=80"
 markers = [
   "integration: marks integration tests that require external services",
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["src/waywarden"]
+source = ["src/waywarden", "alembic"]
 omit = [
   "src/waywarden/__init__.py",
   "src/waywarden/infra/tracing/otel.py",
+  "alembic/versions/*.py",
 ]
 
 [tool.coverage.report]
