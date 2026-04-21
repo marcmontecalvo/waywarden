@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: bootstrap dev lint format secret-scan test run migrate migrate-down
+.PHONY: bootstrap dev lint format secret-scan test run migrate migrate-down db-up db-down db-nuke test-integration
 
 bootstrap:
 	uv sync --extra dev
@@ -30,3 +30,15 @@ migrate:
 
 migrate-down:
 	uv run alembic downgrade -1
+
+db-up:
+	docker compose -f infra/docker-compose.db.yaml up -d --wait
+
+db-down:
+	docker compose -f infra/docker-compose.db.yaml down
+
+db-nuke:
+	docker compose -f infra/docker-compose.db.yaml down -v
+
+test-integration:
+	uv run pytest -m integration
