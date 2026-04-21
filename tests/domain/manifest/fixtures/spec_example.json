@@ -1,0 +1,88 @@
+{
+  "inputs": [
+    {
+      "name": "repo",
+      "kind": "directory",
+      "source_ref": "artifact://workspace/repo",
+      "target_path": "/workspace/repo",
+      "read_only": true,
+      "required": true,
+      "description": "Operator-provided repository checkout"
+    },
+    {
+      "name": "task-brief",
+      "kind": "file",
+      "source_ref": "artifact://runs/run_123/brief.md",
+      "target_path": "/workspace/context/brief.md",
+      "read_only": true,
+      "required": true
+    }
+  ],
+  "writable_paths": [
+    {
+      "path": "/workspace/run",
+      "purpose": "task-scratch",
+      "retention": "ephemeral"
+    },
+    {
+      "path": "/workspace/output",
+      "purpose": "declared-output",
+      "retention": "artifact-promoted"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "final-report",
+      "path": "/workspace/output/report.json",
+      "kind": "json",
+      "required": true,
+      "promote_to_artifact": true
+    }
+  ],
+  "network_policy": {
+    "mode": "allowlist",
+    "allow": [
+      {
+        "host_pattern": "api.github.com",
+        "scheme": "https",
+        "purpose": "issue-and-pr-metadata"
+      }
+    ],
+    "deny": []
+  },
+  "tool_policy": {
+    "preset": "ask",
+    "default_decision": "approval-required",
+    "rules": [
+      {
+        "tool": "shell",
+        "action": "read",
+        "decision": "auto-allow"
+      },
+      {
+        "tool": "shell",
+        "action": "write",
+        "decision": "approval-required"
+      }
+    ]
+  },
+  "secret_scope": {
+    "mode": "brokered",
+    "allowed_secret_refs": ["github.default"],
+    "mount_env": [],
+    "redaction_level": "full"
+  },
+  "snapshot_policy": {
+    "on_start": false,
+    "on_completion": true,
+    "on_failure": true,
+    "before_destructive_actions": true,
+    "max_snapshots": 3,
+    "include_paths": [
+      "/workspace/output"
+    ],
+    "exclude_paths": [
+      "/workspace/run/tmp"
+    ]
+  }
+}
