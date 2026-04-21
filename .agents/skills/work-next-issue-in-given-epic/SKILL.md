@@ -62,6 +62,52 @@ For every issue worked with this skill, follow this exact sequence unless the us
 7. Close the issue
 8. Delete the branch
 
+## Canonical GitHub CLI reads
+Use `gh` CLI only for GitHub operations.
+
+### Issue read commands
+Start with the minimum stable issue read:
+
+```bash
+gh issue view <issue-number> --json number,title,body,state,url,labels
+```
+*If the issue has comments that may contain relevant information, add `comments` to the JSON fields*
+
+### If more metadata is specifically needed, only use fields confirmed by gh:
+- assignees
+- author
+- body
+- closed
+- closedAt
+- comments
+- createdAt
+- id
+- labels
+- milestone
+- number
+- projectCards
+- reactionGroups
+- state
+- title
+- updatedAt
+- url
+
+### Never request unsupported fields such as:
+
+- reactions
+- subIssues
+
+### If a gh command fails because of an invalid JSON field:
+
+1) stop retrying variants blindly
+2) fall back immediately to:
+``` bash
+gh issue view <issue-number> --json number,title,body,state,url,labels
+```
+3) continue from there
+
+
+
 ### Branch naming
 Use:
 - `issue-<issue-number>-<short-slug>`

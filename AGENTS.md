@@ -132,5 +132,29 @@ When reporting completion of an issue, include:
 - Do not assume the issue is complete until `main` is verified.
 - Do not leave both branch and `main` with divergent implementations of the same issue.
 
-## Skills and long procedures
-Use repo-local skills for repeatable workflows instead of bloating this file with long procedures. This file should stay focused on durable repo facts, hard constraints, and always-on working agreements.
+## Repo-local skill loading
+Repo-local skills are authoritative for repeatable workflows.
+
+Skill location convention:
+- `.agents/skills/<skill-name>/SKILL.md`
+
+When the user references a repo skill by name:
+1. Do **not** call a global or built-in `Skill(<name>)` resolver first.
+2. Open `.agents/skills/<skill-name>/SKILL.md` directly from the repo.
+3. Treat that file as the authoritative workflow.
+4. Then open and follow any files referenced by that skill under its `assets/` directory.
+5. If the exact path was given by the user, use that exact path immediately instead of searching.
+6. If only the skill name was given and the path is not obvious, run a single targeted repo search for:
+   - `.agents/skills/<skill-name>/SKILL.md`
+7. Do not spend multiple turns “discovering” a skill that already has an explicit repo path.
+
+Prompting note:
+- If a user gives both a skill name and a repo path, prioritize the repo path.
+- Repo-local skills are preferred over any global skill registry for this repository.
+
+## Task Shorthand
+If the user says `ww-next <number-or-url>`, that is a direct instruction to:
+- open `.agents/skills/work-next-issue-in-given-epic/SKILL.md`
+- use it as the authoritative workflow
+- treat the provided number or URL as the EPIC input
+- do not attempt a global skill lookup first

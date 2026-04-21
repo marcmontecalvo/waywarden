@@ -62,5 +62,30 @@ GitHub Issues are the active source of truth. Do not re-introduce a markdown bac
 
 When asked to work an epic, determine the next actionable child issue, implement it fully, adversarially review it, fix defects, then update and close the issue truthfully.
 
-## Skills vs instructions
-Keep long procedures in skills, not here. This file should stay focused on durable rules, repo facts, architecture boundaries, and repeated corrections.
+## Repo-local skill loading
+Repo-local skills are authoritative for repeatable workflows.
+
+Skill location convention:
+- `.agents/skills/<skill-name>/SKILL.md`
+
+When the user references a repo skill by name:
+1. Do **not** call a global or built-in `Skill(<name>)` resolver first.
+2. Open `.agents/skills/<skill-name>/SKILL.md` directly from the repo.
+3. Treat that file as the authoritative workflow.
+4. Then open and follow any files referenced by that skill under its `assets/` directory.
+5. If the exact path was given by the user, use that exact path immediately instead of searching.
+6. If only the skill name was given and the path is not obvious, run a single targeted repo search for:
+   - `.agents/skills/<skill-name>/SKILL.md`
+7. Do not spend multiple turns “discovering” a skill that already has an explicit repo path.
+
+Prompting note:
+- If a user gives both a skill name and a repo path, prioritize the repo path.
+- Repo-local skills are preferred over any global skill registry for this repository.
+
+
+## Task Shorthand
+If the user says `ww-next <number-or-url>`, that is a direct instruction to:
+- open `.agents/skills/work-next-issue-in-given-epic/SKILL.md`
+- use it as the authoritative workflow
+- treat the provided number or URL as the EPIC input
+- do not attempt a global skill lookup first
