@@ -26,6 +26,10 @@ dev = [
   "types-PyYAML==6.0.12.20260408",
   "httpx==0.28.1",
 ]
+otel = [
+  "opentelemetry-api>=1.36.0",
+  "opentelemetry-sdk>=1.36.0",
+]
 
 [project.scripts]
 waywarden = "waywarden.cli.main:run"
@@ -57,6 +61,7 @@ branch = true
 source = ["src/waywarden"]
 omit = [
   "src/waywarden/__init__.py",
+  "src/waywarden/infra/tracing/otel.py",
 ]
 
 [tool.coverage.report]
@@ -69,6 +74,10 @@ exclude_also = [
 [tool.mypy]
 python_version = "3.13"
 check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "waywarden.infra.tracing.otel"
+disable_error_code = "import-not-found"
 
 [[tool.mypy.overrides]]
 module = "waywarden.*"

@@ -2,6 +2,7 @@ from pathlib import Path
 
 from waywarden.config.loader import ConfigLoadError, load_app_config
 from waywarden.config.settings import DatabaseUrlMissing
+from waywarden.infra.db.metadata import metadata as ALEMBIC_METADATA  # noqa: F401
 
 
 def load_alembic_database_url(config_dir: Path | None = None, cwd: Path | None = None) -> str:

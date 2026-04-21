@@ -32,6 +32,8 @@ class AppConfig(BaseSettings):
     commit_sha: str = ""
     expose_commit_sha: bool = False
     database_url: str = ""
+    tracer: Literal["noop", "otel"] = "noop"
+    tracer_endpoint: str | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -66,6 +68,14 @@ class AppConfig(BaseSettings):
         env = info.data.get("env", "development")
         if env in {"production", "test"} and not value:
             raise ValueError("must be set to a non-empty string when env is 'production' or 'test'")
+        return value
+
+    @field_validator("tracer_endpoint")
+    @classmethod
+    def validate_tracer_endpoint(cls, value: str | None, info: ValidationInfo) -> str | None:
+        tracer = info.data.get("tracer", "noop")
+        if tracer == "otel" and not value:
+            raise ValueError("tracer_endpoint must be set when tracer is 'otel'")
         return value
 
 
