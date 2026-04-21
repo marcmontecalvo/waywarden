@@ -12,6 +12,7 @@ from waywarden.domain.run import Run
 from waywarden.domain.run_event import RunEvent
 from waywarden.domain.session import Session
 from waywarden.domain.task import Task
+from waywarden.domain.token_usage import TokenUsage, TokenUsageSummary
 
 
 class TerminalRunStateError(Exception):
@@ -102,3 +103,12 @@ class CheckpointRepository(Protocol):
     async def get(self, id: str) -> Checkpoint | None: ...
     async def save(self, checkpoint: Checkpoint) -> Checkpoint: ...
     async def list_by_run(self, run_id: str) -> list[Checkpoint]: ...
+
+
+@runtime_checkable
+class TokenUsageRepository(Protocol):
+    """Persist per-call token usage records outside the RT-002 event log."""
+
+    async def append(self, entry: TokenUsage) -> TokenUsage: ...
+    async def list(self, run_id: str) -> list[TokenUsage]: ...
+    async def summarize(self, run_id: str) -> TokenUsageSummary: ...

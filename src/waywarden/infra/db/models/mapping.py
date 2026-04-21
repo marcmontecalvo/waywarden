@@ -18,6 +18,7 @@ from waywarden.domain.run import Run
 from waywarden.domain.run_event import RunEvent
 from waywarden.domain.session import Session
 from waywarden.domain.task import Task
+from waywarden.domain.token_usage import TokenUsage
 
 from . import approval as approval_table
 from . import checkpoint as checkpoint_table
@@ -65,7 +66,7 @@ def map_checkpoint() -> None:
 
 
 def map_token_usage() -> None:
-    _mapper.map_imperatively(type("TokenUsage", (), {}), token_usage_table.token_usage)
+    _mapper.map_imperatively(TokenUsage, token_usage_table.token_usage)
 
 
 def map_all() -> None:

@@ -16,6 +16,7 @@ from .protocols import (
     SessionRepository,
     TaskRepository,
     TerminalRunStateError,
+    TokenUsageRepository,
     WorkspaceManifestRepository,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "SessionRepository",
     "TaskRepository",
     "TerminalRunStateError",
+    "TokenUsageRepository",
     "WorkspaceManifestRepository",
 ]
