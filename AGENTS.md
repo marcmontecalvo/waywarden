@@ -43,7 +43,8 @@ The same deployment should support multiple named instances side by side, for ex
 - `infra/` — sidecars and local infra support
 - `docs/architecture/` — ADRs and architecture decisions
 - `docs/research/` — outside references and ideas worth borrowing selectively
-- `docs/issues/` — historical planning only; active execution tracking is in GitHub Issues
+- `docs/contributing.md` — Definition of Done, label taxonomy, milestones, phase map
+- Active execution tracking lives in GitHub Issues, not in repo markdown
 
 ## Tooling and commands
 - Python: `3.13`
@@ -75,7 +76,7 @@ The same deployment should support multiple named instances side by side, for ex
 
 ## GitHub workflow
 - Treat GitHub Issues as the source of truth for active work.
-- Do not create new markdown backlog files under `docs/issues/`.
+- Do not re-introduce a markdown backlog under `docs/`. Planning conventions live in `docs/contributing.md`; execution lives in GitHub Issues.
 - When working from an epic, complete the next actionable child issue in order unless issue text clearly allows parallelism.
 - After implementation, adversarially review your own work, fix defects, then update the issue with notes grounded in what actually changed.
 - **Always use the `gh` CLI for all GitHub operations** (reading issues, posting comments, closing issues, listing PRs, etc.). Never launch a browser or browser subagent for GitHub tasks. The `gh` CLI is authenticated and is the correct tool.

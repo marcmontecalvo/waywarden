@@ -34,7 +34,7 @@ Do not steer the codebase toward:
 - Config: `config/`
 - Infra helpers: `infra/`
 - Architecture docs: `docs/architecture/`
-- Historical backlog docs: `docs/issues/`
+- Contributing conventions (DoD, labels, milestones, phase map): `docs/contributing.md`
 - Active execution tracking: GitHub Issues
 
 ## Build and test
@@ -58,7 +58,7 @@ Use `uv` and the existing Python tooling instead of inventing alternate local wo
 - Do an adversarial self-review after implementation.
 
 ## Issue discipline
-GitHub Issues are the active source of truth. Do not create new issue-tracking markdown files under `docs/issues/`.
+GitHub Issues are the active source of truth. Do not re-introduce a markdown backlog. See `docs/contributing.md` for the Definition of Done, label taxonomy, milestones, and phase map.
 
 When asked to work an epic, determine the next actionable child issue, implement it fully, adversarially review it, fix defects, then update and close the issue truthfully.
 

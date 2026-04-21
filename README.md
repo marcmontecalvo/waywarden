@@ -178,7 +178,7 @@ It intentionally avoids inheriting any one project’s full runtime assumptions.
 ## Repository map
 
 - `docs/architecture/`: ADRs and architecture decisions
-- `docs/issues/`: historical phased backlog — **active tracking is on [GitHub Issues](https://github.com/marcmontecalvo/waywarden/issues)** (see [docs/issues/README.md](docs/issues/README.md))
+- `docs/contributing.md`: Definition of Done, label taxonomy, milestones, and phase map. Active tracking is on [GitHub Issues](https://github.com/marcmontecalvo/waywarden/issues).
 - `docs/prompts/`: prompts for coding agents
 - `docs/research/`: external products, repos, and UX patterns worth borrowing from selectively
 - `config/`: runtime/provider/profile/policy config

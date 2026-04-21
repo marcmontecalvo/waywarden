@@ -59,7 +59,7 @@ Before producing output, check the following:
 - tag quality
 - whether `relates_to_adrs` is empty but should not be
 - whether the content belongs in research at all
-- before proposing any issue, grep `docs/issues/ordered-issues.md` for existing entries covering the same scope
+- before proposing any issue, query GitHub with `gh issue list --state all --search "<keywords>"` for existing entries covering the same scope
 - before proposing any spec, check `docs/specs/` tree for existing files in adjacent areas
 - before proposing any ADR, check `docs/architecture/` for existing ADRs covering the decision space
 - verify source_url returns 200 before accepting research claims at face value
@@ -70,7 +70,7 @@ Before producing any output sections, perform and record these verification step
 
 1. **Source URL check:** Fetch the `source_url` from the note's frontmatter. Record the HTTP status. If it returns 404 or is otherwise inaccessible, flag it — the note's claims about the source are unverified and proprietary/OSS analysis may be wrong.
 
-2. **Issue duplication check:** Read `docs/issues/ordered-issues.md` end-to-end. Grep for keywords from the note's title and key concepts. Record any existing ordered-issue numbers that cover the same scope. If a matching issue exists, route to *enriching that issue*, not creating a new one.
+2. **Issue duplication check:** Run `gh issue list --state all --limit 200 --search "<keywords from title + key concepts>"` against the Waywarden repo. Also run `gh issue list --state all --label epic` to scan open and closed epics. Record any existing issue numbers that cover the same scope. If a matching issue exists, route to *enriching that issue* (via `gh issue comment` or reopening), not creating a new one.
 
 3. **Spec duplication check:** List `docs/specs/` recursively. Identify any existing spec in an adjacent area (same phase, same profile, same capability domain). Record matches by path.
 
@@ -80,9 +80,9 @@ Before producing any output sections, perform and record these verification step
    - any ADR covering roadmap, extension contracts, or prompt/routine policy (these frequently contain scope commitments that constrain routing)
    Record not just topic matches but also scope commitments (e.g., "ADR 0006 lists X as V2 scope") and implementation-mode constraints (e.g., "ADR 0008 requires routine, not prompt").
 
-5. **Milestone/epic scope check:** Read `docs/issues/milestones.md` and `docs/issues/epics.md`. Record whether the note's topic is already scoped to a specific milestone, epic, or profile. Routing must respect that scope — do not land a profile-specific capability in harness-core, or vice versa.
+5. **Milestone/epic scope check:** Run `gh api repos/marcmontecalvo/waywarden/milestones?state=all` and `gh issue list --state all --label epic --json number,title,labels,milestone`. Record whether the note's topic is already scoped to a specific milestone, epic, or profile. Routing must respect that scope — do not land a profile-specific capability in harness-core, or vice versa. Cross-reference `docs/contributing.md` for the phase map and label taxonomy.
 
-6. **Convention check:** Inspect 2–3 existing files in each target bucket (`docs/specs/`, `docs/prompts/`, `docs/issues/`) to confirm proposed paths match actual naming and subdirectory patterns. Record the reference files used.
+6. **Convention check:** Inspect 2–3 existing files in `docs/specs/` and `docs/prompts/`, and inspect 2–3 existing open issues via `gh issue view <number>` to confirm proposed paths and issue body shape match actual naming and subdirectory patterns. Record the reference files/issues used.
 
 # Required extraction questions
 
@@ -114,7 +114,7 @@ Choose exactly one primary class:
 Report the results of each required pre-flight check. Do not write "checked" without naming what was checked. If a check could not be performed, say why.
 
 - **Source URL status:** [HTTP status code or "inaccessible — reason"]
-- **Ordered-issues matches:** [list of issue numbers + titles, or "none found after grepping for: X, Y, Z"]
+- **GitHub issue matches:** [list of issue numbers + titles from `gh issue list --state all --search "..."`, or "none found after searching for: X, Y, Z"]
 - **Existing spec matches:** [list of paths, or "none found in: <paths scanned>"]
 - **Existing ADR matches:** [list of ADR numbers + titles, or "none found in <paths scanned>"]
 - **Milestone/epic scope:** [milestone/epic ID owning this topic, or "not yet scoped"]
@@ -234,7 +234,7 @@ After self-critique passes, execute the routing decisions automatically. Do not 
    - title from the candidate
    - body containing: link to research note, link to spec stub (if created), concrete next action verbatim from Section 4
    - labels applied per the labeling rules below
-5. **Enrich existing ordered-issues.md entries** if Section 0.5 found matches — append acceptance criteria under the existing numbered item, do not renumber.
+5. **Enrich existing GitHub issues** if Section 0.5 found matches — append acceptance criteria via `gh issue comment <number>` on the matched issue; do not create a duplicate.
 6. **Emit an execution report** as the final response section listing every file created, every issue created (with URL), every file modified.
 
 ### Labeling rules for `gh issue create`
@@ -287,7 +287,7 @@ If any of the following are true, STOP and report instead of executing:
 - If any candidate is omitted, the rationale must appear in that section, not be left blank or "none".
 - If Forced Classification is `prompt/behavior-driving`, Final Verdict must be `Keep and graduate to spec/issues` (prompts ship via issues) or `Keep and enrich` if prompts already exist.
 - Section 0.5 must be fully populated. Any "checked" entry without specifics (file paths, issue numbers, HTTP status) fails the check.
-- If Section 0.5 reports an ordered-issues match, Section 4's Issue candidates must reference that existing issue number, not propose a duplicate.
+- If Section 0.5 reports a GitHub issue match, Section 4's Issue candidates must reference that existing issue number, not propose a duplicate.
 - If Section 0.5 reports an existing spec match, Section 3 must either route to enrichment of that spec or justify the new spec in Section 4's Spec candidates.
 
 # Execution guidance
@@ -458,7 +458,7 @@ Issues created:
 - #48 Add checkpoint hook to harness execution loop (https://github.com/marcmontecalvo/waywarden/issues/48) [labels: next, blocked, harness-core] [milestone: v1-harness] [blocked-by: #47]
 
 Enriched:
-- None (pre-flight found no ordered-issues.md match)
+- None (pre-flight found no GitHub issue match)
 
 Skipped:
 - Prompt candidate (explicitly declined in Section 4 — not applicable for infrastructure)
