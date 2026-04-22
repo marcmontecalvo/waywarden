@@ -20,11 +20,11 @@ def test_factory_returns_noop_when_explicitly_set() -> None:
 def test_factory_dispatches_otel_when_endpoint_provided() -> None:
     """Factory should attempt OtelTracer when tracer='otel' and endpoint is set.
 
-    OTel is not installed in the base dev environment, so this test verifies
-    the factory dispatches to the otel branch by checking the import path is taken.
+    OTel is not installed in the base dev environment, so the lazy import of
+    OtelTracer fails with ImportError/ModuleNotFoundError.
     """
     cfg = AppConfig(
         host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317"
     )
-    with pytest.raises(ImportError):
+    with pytest.raises((ImportError, ModuleNotFoundError)):
         build_tracer(cfg)

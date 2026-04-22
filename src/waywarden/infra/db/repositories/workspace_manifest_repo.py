@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import json
-from dataclasses import fields
+from dataclasses import fields, is_dataclass
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from waywarden.domain.ids import RunId
@@ -26,7 +27,6 @@ class WorkspaceManifestRepositoryImpl:
         self._session = session
 
     async def save(self, manifest: WorkspaceManifest) -> WorkspaceManifest:
-        from sqlalchemy.dialects.postgresql import insert as pg_insert
 
         body_dict = _manifest_to_dict(manifest)
         body_json = json.dumps(body_dict)
@@ -70,8 +70,6 @@ class WorkspaceManifestRepositoryImpl:
 
 def _dc_to_dict(obj: Any) -> dict[str, Any]:
     """Convert a frozen dataclass to a dict, recursively handling nested dataclasses."""
-    from dataclasses import is_dataclass
-
     if not is_dataclass(obj):
         return obj  # type: ignore[return-value]
     result: dict[str, Any] = {}

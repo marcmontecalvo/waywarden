@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-from contextlib import AbstractContextManager
+from contextlib import contextmanager
 from typing import Any
-
-from waywarden.infra.tracing.base import Span
 
 
 class NoopSpan:
@@ -36,23 +34,11 @@ class NoopTracer:
 
     __slots__ = ()
 
+    @contextmanager
     def start_span(
         self,
         name: str,
         *,
         attributes: dict[str, str | int | float | bool] | None = None,
-    ) -> AbstractContextManager[Span]:
-        return _NoopSpanContext()
-
-
-class _NoopSpanContext(AbstractContextManager[Span]):
-    __slots__ = ("_span",)
-
-    def __init__(self) -> None:
-        self._span = NoopSpan()
-
-    def __enter__(self) -> Span:
-        return self._span
-
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
-        pass
+    ) -> Any:
+        yield NoopSpan()

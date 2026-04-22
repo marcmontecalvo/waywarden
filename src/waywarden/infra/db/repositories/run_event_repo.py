@@ -24,6 +24,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from waywarden.domain.repositories import (
     TerminalRunStateError,
 )
+from waywarden.domain.run_event import Actor as _Actor
+from waywarden.domain.run_event import Causation as _Causation
 from waywarden.domain.run_event import RunEvent
 from waywarden.infra.db.models.run import runs
 from waywarden.infra.db.models.run_event import run_events
@@ -63,9 +65,6 @@ def _event_to_row(event: RunEvent) -> dict[str, object]:
 
 def _row_to_event(row: Any) -> RunEvent:
     """Convert a raw run_events row to a RunEvent domain instance."""
-    from waywarden.domain.run_event import Actor as _Actor
-    from waywarden.domain.run_event import Causation as _Causation
-
     causation: _Causation | None = None
     if row.causation:
         d = json.loads(row.causation)
