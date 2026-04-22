@@ -35,18 +35,20 @@ def test_event_type_catalog_is_exact() -> None:
 
     from waywarden.domain.run_event_types import RunEventType as _RunEventType
 
-    expected = frozenset([
-        "run.created",
-        "run.plan_ready",
-        "run.execution_started",
-        "run.progress",
-        "run.approval_waiting",
-        "run.resumed",
-        "run.artifact_created",
-        "run.completed",
-        "run.failed",
-        "run.cancelled",
-    ])
+    expected = frozenset(
+        [
+            "run.created",
+            "run.plan_ready",
+            "run.execution_started",
+            "run.progress",
+            "run.approval_waiting",
+            "run.resumed",
+            "run.artifact_created",
+            "run.completed",
+            "run.failed",
+            "run.cancelled",
+        ]
+    )
     assert set(get_args(_RunEventType)) == expected
 
 
@@ -96,13 +98,15 @@ def test_causation_requires_at_least_one_field() -> None:
 
 
 def test_seq_must_be_positive() -> None:
-    created_payload = MappingProxyType({
-        "instance_id": "i-1",
-        "profile": "default",
-        "policy_preset": "yolo",
-        "manifest_ref": "m://v1",
-        "entrypoint": "api",
-    })
+    created_payload = MappingProxyType(
+        {
+            "instance_id": "i-1",
+            "profile": "default",
+            "policy_preset": "yolo",
+            "manifest_ref": "m://v1",
+            "entrypoint": "api",
+        }
+    )
     base = {
         "id": RunEventId("evt-1"),
         "run_id": RunId("run-1"),
@@ -125,13 +129,15 @@ def test_seq_must_be_positive() -> None:
 
 
 def test_timestamp_must_be_utc_aware() -> None:
-    created_payload = MappingProxyType({
-        "instance_id": "i-1",
-        "profile": "default",
-        "policy_preset": "yolo",
-        "manifest_ref": "m://v1",
-        "entrypoint": "api",
-    })
+    created_payload = MappingProxyType(
+        {
+            "instance_id": "i-1",
+            "profile": "default",
+            "policy_preset": "yolo",
+            "manifest_ref": "m://v1",
+            "entrypoint": "api",
+        }
+    )
     base = {
         "id": RunEventId("evt-1"),
         "run_id": RunId("run-1"),
@@ -210,13 +216,15 @@ def test_run_event_rejects_missing_payload_fields() -> None:
 
 
 def test_valid_run_event() -> None:
-    payload = MappingProxyType({
-        "instance_id": "i-1",
-        "profile": "default",
-        "policy_preset": "yolo",
-        "manifest_ref": "m://v1",
-        "entrypoint": "api",
-    })
+    payload = MappingProxyType(
+        {
+            "instance_id": "i-1",
+            "profile": "default",
+            "policy_preset": "yolo",
+            "manifest_ref": "m://v1",
+            "entrypoint": "api",
+        }
+    )
     event = RunEvent(
         id=RunEventId("evt-1"),
         run_id=RunId("run-1"),

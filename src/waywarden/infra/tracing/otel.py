@@ -73,8 +73,9 @@ class OtelTracer:
                 provider = TracerProvider()
                 provider.add_span_processor(
                     # pyright: ignore[reportAttributeAccessIssue]
-                    __import__("opentelemetry.sdk.trace.export", fromlist=["SimpleSpanProcessor"])
-                    .SimpleSpanProcessor(ConsoleSpanExporter())
+                    __import__(
+                        "opentelemetry.sdk.trace.export", fromlist=["SimpleSpanProcessor"]
+                    ).SimpleSpanProcessor(ConsoleSpanExporter())
                 )
                 # pyright: ignore[reportPossiblyUnboundVariable]
                 trace_api.set_tracer_provider(provider)

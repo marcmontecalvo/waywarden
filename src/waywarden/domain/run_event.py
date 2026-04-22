@@ -19,20 +19,12 @@ _REQUIRED_PAYLOAD_FIELDS: dict[str, frozenset[str]] = {
     "run.created": frozenset(
         ["instance_id", "profile", "policy_preset", "manifest_ref", "entrypoint"]
     ),
-    "run.plan_ready": frozenset(
-        ["plan_ref", "summary", "revision", "approval_required"]
-    ),
-    "run.execution_started": frozenset(
-        ["worker_session_ref", "attempt", "resume_kind"]
-    ),
+    "run.plan_ready": frozenset(["plan_ref", "summary", "revision", "approval_required"]),
+    "run.execution_started": frozenset(["worker_session_ref", "attempt", "resume_kind"]),
     "run.progress": frozenset(["phase", "milestone"]),
-    "run.approval_waiting": frozenset(
-        ["approval_id", "approval_kind", "summary"]
-    ),
+    "run.approval_waiting": frozenset(["approval_id", "approval_kind", "summary"]),
     "run.resumed": frozenset(["resume_kind", "resumed_from_seq"]),
-    "run.artifact_created": frozenset(
-        ["artifact_ref", "artifact_kind", "label"]
-    ),
+    "run.artifact_created": frozenset(["artifact_ref", "artifact_kind", "label"]),
     "run.completed": frozenset(["outcome"]),
     "run.failed": frozenset(["failure_code", "message", "retryable"]),
     "run.cancelled": frozenset(["reason"]),
@@ -52,8 +44,7 @@ def validate_payload(event_type: str, payload: Mapping[str, object]) -> None:
     missing = required - set(payload.keys())
     if missing:
         raise ValueError(
-            f"Event type {event_type!r} requires payload fields: "
-            f"{', '.join(sorted(missing))}"
+            f"Event type {event_type!r} requires payload fields: {', '.join(sorted(missing))}"
         )
 
 
@@ -74,14 +65,8 @@ class Causation:
     request_id: str | None
 
     def __post_init__(self) -> None:
-        if (
-            self.event_id is None
-            and self.action is None
-            and self.request_id is None
-        ):
-            raise ValueError(
-                "At least one of event_id, action, or request_id must be set"
-            )
+        if self.event_id is None and self.action is None and self.request_id is None:
+            raise ValueError("At least one of event_id, action, or request_id must be set")
 
 
 # ---------------------------------------------------------------------------
@@ -96,8 +81,7 @@ def _normalize_actor_kind(value: _ActorKind | str) -> _ActorKind:
     normalized = str(value)
     if normalized not in _VALID_ACTOR_KINDS:
         raise ValueError(
-            "kind must be one of 'operator', 'system', 'scheduler', "
-            "'worker', or 'policy-engine'"
+            "kind must be one of 'operator', 'system', 'scheduler', 'worker', or 'policy-engine'"
         )
     return cast(_ActorKind, normalized)
 
@@ -141,9 +125,7 @@ class RunEvent:
         if self.timestamp.tzinfo is None or self.timestamp.utcoffset() is None:
             raise ValueError("timestamp must be timezone-aware (UTC)")
         # Normalise to UTC
-        object.__setattr__(
-            self, "timestamp", self.timestamp.astimezone(UTC)
-        )
+        object.__setattr__(self, "timestamp", self.timestamp.astimezone(UTC))
 
         if not isinstance(self.payload, Mapping):
             raise TypeError("payload must be a Mapping[str, object]")

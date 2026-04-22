@@ -13,9 +13,7 @@ def test_integration_marker_registered() -> None:
     config = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     markers = config["tool"]["pytest"]["ini_options"]["markers"]
     marker_names = [m.split(":")[0].strip('"').strip("'") for m in markers]
-    assert "integration" in marker_names, (
-        "pytest markers must declare 'integration'"
-    )
+    assert "integration" in marker_names, "pytest markers must declare 'integration'"
 
 
 def test_no_strict_mode_violation() -> None:
@@ -26,6 +24,4 @@ def test_no_strict_mode_violation() -> None:
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"--strict-markers failed: {result.stderr}"
-    )
+    assert result.returncode == 0, f"--strict-markers failed: {result.stderr}"

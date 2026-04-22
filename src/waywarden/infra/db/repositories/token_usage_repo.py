@@ -93,9 +93,7 @@ class TokenUsageRepositoryImpl:
     async def list(self, run_id: str) -> list[TokenUsage]:
         """Return all usage records for *run_id*, ordered by seq ascending."""
         stmt = (
-            token_usage.select()
-            .where(token_usage.c.run_id == run_id)
-            .order_by(token_usage.c.seq)
+            token_usage.select().where(token_usage.c.run_id == run_id).order_by(token_usage.c.seq)
         )
         result = await self._session.execute(stmt)
         rows = result.fetchall()
@@ -104,9 +102,7 @@ class TokenUsageRepositoryImpl:
     async def summarize(self, run_id: str) -> TokenUsageSummary:
         """Aggregate token usage for *run_id* into a summary with per-model rollups."""
         stmt = (
-            token_usage.select()
-            .where(token_usage.c.run_id == run_id)
-            .order_by(token_usage.c.seq)
+            token_usage.select().where(token_usage.c.run_id == run_id).order_by(token_usage.c.seq)
         )
         result = await self._session.execute(stmt)
         rows = result.fetchall()
@@ -172,17 +168,9 @@ class TokenUsageRepositoryImpl:
                 "FROM (SELECT seq FROM token_usage "
                 "WHERE run_id = :run_id FOR UPDATE) sub"
             )
-            result = await self._session.execute(
-                stmt, {"run_id": run_id}
-            )
+            result = await self._session.execute(stmt, {"run_id": run_id})
         except Exception:
-            stmt = text(
-                "SELECT COALESCE(MAX(seq), 0) + 1 "
-                "FROM token_usage "
-                "WHERE run_id = :run_id"
-            )
-            result = await self._session.execute(
-                stmt, {"run_id": run_id}
-            )
+            stmt = text("SELECT COALESCE(MAX(seq), 0) + 1 FROM token_usage WHERE run_id = :run_id")
+            result = await self._session.execute(stmt, {"run_id": run_id})
         next_seq = result.scalar_one()
         return int(next_seq)

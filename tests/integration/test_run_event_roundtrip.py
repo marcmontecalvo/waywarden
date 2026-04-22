@@ -66,15 +66,16 @@ DATABASE_URL = "postgresql+psycopg://waywarden:waywarden@127.0.0.1:5432/waywarde
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="session")
-def _engine() -> AsyncEngine:
+@pytest_asyncio.fixture(scope="session")
+async def _engine() -> AsyncEngine:
     """Create a shared async engine for the test session."""
     engine = create_async_engine(DATABASE_URL, echo=False)
-    return engine
+    yield engine
+    await engine.dispose()
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _apply_migrations(_engine: AsyncEngine) -> None:
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _apply_migrations(_engine: AsyncEngine) -> None:
     """Apply Alembic migrations to head before any integration test runs."""
     import os
 
@@ -84,8 +85,8 @@ def _apply_migrations(_engine: AsyncEngine) -> None:
     alembic_command.upgrade(alembic_cfg, "head")
 
 
-@pytest_asyncio.fixture()  # type: ignore[type-var]
-async def session(_engine: AsyncEngine) -> AsyncSession:  # type: ignore[misc]
+@pytest_asyncio.fixture()
+async def session(_engine: AsyncEngine) -> AsyncSession:
     """Fresh session per test, bound to the shared engine."""
     sm = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
     async with sm() as s:

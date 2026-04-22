@@ -39,18 +39,3 @@ def test_compose_reports_healthy() -> None:
     assert inspect.returncode == 0, "container not found in docker inspect"
     status = inspect.stdout.strip().strip("{}")
     assert status == "healthy", f"expected healthy, got {status!r}"
-
-    # Cleanup: nuke the container and volume so repeated runs start clean
-    subprocess.run(
-        [
-            "docker",
-            "compose",
-            "-f",
-            "infra/docker-compose.db.yaml",
-            "down",
-            "-v",
-        ],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )

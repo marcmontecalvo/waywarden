@@ -14,9 +14,7 @@ def test_protocols_have_no_sqlalchemy_import() -> None:
         src = py.read_text()
         tree = ast.parse(src)
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and node.module:
-                if "sqlalchemy" in node.module:
-                    raise AssertionError(
-                        f"{py.relative_to(domain_root.parent)} imports "
-                        f"sqlalchemy ({node.module})"
-                    )
+            if isinstance(node, ast.ImportFrom) and node.module and "sqlalchemy" in node.module:
+                raise AssertionError(
+                    f"{py.relative_to(domain_root.parent)} imports sqlalchemy ({node.module})"
+                )

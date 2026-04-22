@@ -23,6 +23,8 @@ def test_factory_dispatches_otel_when_endpoint_provided() -> None:
     OTel is not installed in the base dev environment, so this test verifies
     the factory dispatches to the otel branch by checking the import path is taken.
     """
-    cfg = AppConfig(host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317")
+    cfg = AppConfig(
+        host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317"
+    )
     with pytest.raises(ImportError):
         build_tracer(cfg)

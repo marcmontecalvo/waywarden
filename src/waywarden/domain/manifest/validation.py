@@ -30,29 +30,21 @@ def _validate_manifest(manifest: WorkspaceManifest) -> None:
 
     for wp in manifest.writable_paths:
         if not _is_absolute_normalized(wp.path):
-            raise ValueError(
-                f"writable_path must be absolute and normalized: {wp.path!r}"
-            )
+            raise ValueError(f"writable_path must be absolute and normalized: {wp.path!r}")
 
     for out in manifest.outputs:
         if not _is_absolute_normalized(out.path):
-            raise ValueError(
-                f"output path must be absolute and normalized: {out.path!r}"
-            )
+            raise ValueError(f"output path must be absolute and normalized: {out.path!r}")
 
     _seen_targets: set[str] = set()
     for inp in manifest.inputs:
         if inp.target_path in _seen_targets:
-            raise ValueError(
-                f"duplicate input target_path: {inp.target_path!r}"
-            )
+            raise ValueError(f"duplicate input target_path: {inp.target_path!r}")
         _seen_targets.add(inp.target_path)
 
     for out in manifest.outputs:
         if not _is_inside_any(out.path, manifest.writable_paths):
-            raise ValueError(
-                f"output path {out.path!r} is not inside any writable_path"
-            )
+            raise ValueError(f"output path {out.path!r} is not inside any writable_path")
 
     if manifest.network_policy.mode == "allowlist" and not manifest.network_policy.allow:
         raise ValueError(

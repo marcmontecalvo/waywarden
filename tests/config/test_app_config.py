@@ -44,7 +44,9 @@ def test_tracer_field_literal_enforced() -> None:
     cfg = AppConfig(host="localhost", port=8080)
     assert cfg.tracer == "noop"
 
-    cfg_otel = AppConfig(host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317")
+    cfg_otel = AppConfig(
+        host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317"
+    )
     assert cfg_otel.tracer == "otel"
 
     with pytest.raises(ValidationError):
@@ -54,4 +56,3 @@ def test_tracer_field_literal_enforced() -> None:
 def test_tracer_otel_requires_endpoint() -> None:
     with pytest.raises(ValidationError, match="tracer_endpoint"):
         AppConfig(host="localhost", port=8080, tracer="otel", tracer_endpoint=None)
-

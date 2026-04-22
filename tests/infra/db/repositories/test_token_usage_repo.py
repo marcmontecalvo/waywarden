@@ -118,20 +118,32 @@ async def test_summarize_by_model(session: AsyncSession) -> None:
 
     await repo.append(
         _make_usage(
-            run_id=run_id, seq=1, provider="openai",
-            model="gpt-4", prompt_tokens=100, completion_tokens=50
+            run_id=run_id,
+            seq=1,
+            provider="openai",
+            model="gpt-4",
+            prompt_tokens=100,
+            completion_tokens=50,
         )
     )
     await repo.append(
         _make_usage(
-            run_id=run_id, seq=2, provider="openai",
-            model="gpt-4", prompt_tokens=200, completion_tokens=100
+            run_id=run_id,
+            seq=2,
+            provider="openai",
+            model="gpt-4",
+            prompt_tokens=200,
+            completion_tokens=100,
         )
     )
     await repo.append(
         _make_usage(
-            run_id=run_id, seq=3, provider="openai",
-            model="gpt-3.5", prompt_tokens=50, completion_tokens=25
+            run_id=run_id,
+            seq=3,
+            provider="openai",
+            model="gpt-3.5",
+            prompt_tokens=50,
+            completion_tokens=25,
         )
     )
 
@@ -183,8 +195,14 @@ async def test_summarize_returns_immutable_mapping(session: AsyncSession) -> Non
     run_id = "run_immutable"
 
     await repo.append(
-        _make_usage(run_id=run_id, seq=1, provider="openai", model="gpt-4",
-                    prompt_tokens=100, completion_tokens=50)
+        _make_usage(
+            run_id=run_id,
+            seq=1,
+            provider="openai",
+            model="gpt-4",
+            prompt_tokens=100,
+            completion_tokens=50,
+        )
     )
 
     summary = await repo.summarize(run_id)
@@ -192,7 +210,7 @@ async def test_summarize_returns_immutable_mapping(session: AsyncSession) -> Non
     # Verify it's truly immutable — MappingProxyType raises TypeError on item assignment
     try:
         summary.by_model["gpt-4"] = summary.by_model["gpt-4"]  # type: ignore[assignment]
-        assert False, "Expected TypeError on mutation"
+        raise AssertionError("Expected TypeError on mutation")
     except TypeError:
         pass
     # Also verify the underlying data is correct
@@ -209,7 +227,10 @@ async def test_no_run_usage_event_emitted() -> None:
     import sys
 
     result = subprocess.run(
-        [sys.executable, "-c", r"""
+        [
+            sys.executable,
+            "-c",
+            r"""
 import pathlib, sys
 
 src = pathlib.Path("src")
@@ -227,11 +248,10 @@ if hits:
         print(h)
     sys.exit(1)
 sys.exit(0)
-"""],
+""",
+        ],
         cwd=".",
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"Found 'run.usage' references in source:\n{result.stdout}"
-    )
+    assert result.returncode == 0, f"Found 'run.usage' references in source:\n{result.stdout}"

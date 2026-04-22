@@ -35,9 +35,7 @@ class TokenUsage:
         if self.prompt_tokens < 0 or self.completion_tokens < 0 or self.total_tokens < 0:
             raise ValueError("token counts must be non-negative")
         if self.total_tokens != self.prompt_tokens + self.completion_tokens:
-            raise ValueError(
-                "total_tokens must equal prompt_tokens + completion_tokens"
-            )
+            raise ValueError("total_tokens must equal prompt_tokens + completion_tokens")
         if self.seq < 1:
             raise ValueError("seq must be >= 1")
         if not isinstance(self.provider, str) or not self.provider.strip():

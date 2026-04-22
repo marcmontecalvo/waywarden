@@ -11,9 +11,7 @@ def test_fail_under_eighty() -> None:
     pyproject = ROOT / "pyproject.toml"
     config = tomllib.loads(pyproject.read_text(encoding="utf-8"))
     addopts = config["tool"]["pytest"]["ini_options"]["addopts"]
-    assert "--cov-fail-under=80" in addopts, (
-        "coverage gate must be >= 80"
-    )
+    assert "--cov-fail-under=80" in addopts, "coverage gate must be >= 80"
 
 
 def test_coverage_source_includes_alembic() -> None:
