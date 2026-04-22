@@ -10,7 +10,14 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from waywarden.domain.ids import RunId
+from waywarden.domain.manifest.input_mount import InputMount
 from waywarden.domain.manifest.manifest import WorkspaceManifest
+from waywarden.domain.manifest.network_policy import NetworkAllowRule, NetworkPolicy
+from waywarden.domain.manifest.output_contract import OutputContract
+from waywarden.domain.manifest.secret_scope import SecretScope
+from waywarden.domain.manifest.snapshot_policy import SnapshotPolicy
+from waywarden.domain.manifest.tool_policy import ToolDecisionRule, ToolPolicy
+from waywarden.domain.manifest.writable_path import WritablePath
 from waywarden.infra.db.models.workspace_manifest import workspace_manifests
 
 
@@ -38,7 +45,7 @@ class WorkspaceManifestRepositoryImpl:
                 .on_conflict_do_update(
                     constraint="uq_workspace_manifests_run_id",
                     set_=dict(
-                        body=workspace_manifests.c.body,  # type: ignore[union-attr]
+                        body=body_json,
                     ),
                 )
             )
@@ -93,13 +100,34 @@ def _manifest_to_dict(m: WorkspaceManifest) -> dict[str, Any]:
 
 def _dict_to_manifest(run_id: str, body: str) -> WorkspaceManifest:
     data = json.loads(body)
-    return WorkspaceManifest(  # type: ignore[arg-type]
+    return WorkspaceManifest(
         run_id=RunId(run_id),
-        inputs=[type("IM", (), d) for d in data["inputs"]],  # type: ignore[list-item]
-        writable_paths=[type("WP", (), d) for d in data["writable_paths"]],  # type: ignore[list-item]
-        outputs=[type("OC", (), d) for d in data["outputs"]],  # type: ignore[list-item]
-        network_policy=type("NP", (), data["network_policy"]),  # type: ignore[arg-type]
-        tool_policy=type("TP", (), data["tool_policy"]),  # type: ignore[arg-type]
-        secret_scope=type("SS", (), data["secret_scope"]),  # type: ignore[arg-type]
-        snapshot_policy=type("SP", (), data["snapshot_policy"]),  # type: ignore[arg-type]
+        inputs=[InputMount(**d) for d in data["inputs"]],
+        writable_paths=[WritablePath(**d) for d in data["writable_paths"]],
+        outputs=[OutputContract(**d) for d in data["outputs"]],
+        network_policy=NetworkPolicy(
+            mode=data["network_policy"]["mode"],
+            allow=[NetworkAllowRule(**r) for r in data["network_policy"]["allow"]],
+            deny=data["network_policy"]["deny"],
+        ),
+        tool_policy=ToolPolicy(
+            preset=data["tool_policy"]["preset"],
+            rules=[ToolDecisionRule(**r) for r in data["tool_policy"]["rules"]],
+            default_decision=data["tool_policy"]["default_decision"],
+        ),
+        secret_scope=SecretScope(
+            mode=data["secret_scope"]["mode"],
+            allowed_secret_refs=data["secret_scope"]["allowed_secret_refs"],
+            mount_env=data["secret_scope"]["mount_env"],
+            redaction_level=data["secret_scope"]["redaction_level"],
+        ),
+        snapshot_policy=SnapshotPolicy(
+            on_start=data["snapshot_policy"]["on_start"],
+            on_completion=data["snapshot_policy"]["on_completion"],
+            on_failure=data["snapshot_policy"]["on_failure"],
+            before_destructive_actions=data["snapshot_policy"]["before_destructive_actions"],
+            max_snapshots=data["snapshot_policy"]["max_snapshots"],
+            include_paths=data["snapshot_policy"]["include_paths"],
+            exclude_paths=data["snapshot_policy"]["exclude_paths"],
+        ),
     )

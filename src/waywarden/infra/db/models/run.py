@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from sqlalchemy import (
+    INTEGER,
     TIMESTAMP,
     CheckConstraint,
     Column,
@@ -29,7 +30,7 @@ runs = Table(
     Column("state", String, nullable=False, server_default="created"),
     Column("created_at", TIMESTAMP(timezone=True), nullable=False),
     Column("updated_at", TIMESTAMP(timezone=True), nullable=False),
-    Column("terminal_seq", String),
+    Column("terminal_seq", INTEGER),
     CheckConstraint(
         "policy_preset IN ('yolo', 'ask', 'allowlist', 'custom')",
         name="ck_runs_policy_preset",

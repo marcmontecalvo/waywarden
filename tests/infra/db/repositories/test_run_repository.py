@@ -49,7 +49,7 @@ async def session() -> AsyncSession:
                     state TEXT NOT NULL DEFAULT 'created',
                     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                    terminal_seq TEXT,
+                    terminal_seq INTEGER,
                     CHECK (policy_preset IN ('yolo', 'ask', 'allowlist', 'custom')),
                     CHECK (state IN ('created', 'planning', 'executing',
                         'waiting_approval', 'completed', 'failed', 'cancelled'))
@@ -117,3 +117,23 @@ async def test_load_latest_state_matches_get(session: AsyncSession) -> None:
     assert latest is not None
     assert latest.id == direct.id
     assert latest.state == direct.state
+
+
+async def test_update_state_returns_full_run(session: AsyncSession) -> None:
+    """update_state() returns a complete Run with all original fields intact."""
+    run = _make_run("run_update_full")
+    repo = RunRepositoryImpl(session)
+    await repo.create(run)
+
+    updated = await repo.update_state(str(run.id), "completed", 1)
+    assert updated is not None
+    assert updated.id == run.id
+    assert updated.instance_id == run.instance_id
+    assert updated.task_id == run.task_id
+    assert updated.profile == run.profile
+    assert updated.policy_preset == run.policy_preset
+    assert updated.manifest_ref == run.manifest_ref
+    assert updated.entrypoint == run.entrypoint
+    assert updated.state == "completed"
+    assert updated.terminal_seq == 1
+    assert isinstance(updated.terminal_seq, int)

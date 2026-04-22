@@ -69,7 +69,7 @@ class RunRepositoryImpl:
             .values(
                 state=new_state,
                 updated_at=datetime.now(UTC),
-                terminal_seq=str(terminal_seq) if terminal_seq else None,
+                terminal_seq=terminal_seq,
             )
         )
         await self._session.execute(stmt)
