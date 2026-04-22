@@ -88,7 +88,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("updated_at", sa.TIMESTAMP(timezone=True), nullable=False),
-        sa.Column("terminal_seq", sa.String()),
+        sa.Column("terminal_seq", sa.Integer()),
         sa.CheckConstraint(
             "policy_preset IN ('yolo', 'ask', 'allowlist', 'custom')",
             name="ck_runs_policy_preset",

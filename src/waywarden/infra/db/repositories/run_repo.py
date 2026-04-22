@@ -49,7 +49,7 @@ class RunRepositoryImpl:
             state=row.state,
             created_at=_parse_ts(row.created_at),
             updated_at=_parse_ts(row.updated_at),
-            terminal_seq=row.terminal_seq,
+            terminal_seq=int(row.terminal_seq) if row.terminal_seq is not None else None,
         )
 
     async def load_latest_state(self, run_id: str) -> Run | None:
