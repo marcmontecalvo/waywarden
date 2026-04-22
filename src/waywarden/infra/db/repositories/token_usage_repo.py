@@ -160,15 +160,16 @@ class TokenUsageRepositoryImpl:
     async def _compute_next_seq(self, run_id: str) -> int:
         """Compute next seq under ``FOR UPDATE`` lock.
 
+        Uses a subquery to lock rows while computing MAX(seq), avoiding
+        Postgres's restriction on FOR UPDATE with aggregate functions.
         Falls back to a non-locking query on databases that don't support
         ``FOR UPDATE`` (e.g. SQLite in tests).
         """
         try:
             stmt = text(
                 "SELECT COALESCE(MAX(seq), 0) + 1 "
-                "FROM token_usage "
-                "WHERE run_id = :run_id "
-                "FOR UPDATE"
+                "FROM (SELECT seq FROM token_usage "
+                "WHERE run_id = :run_id FOR UPDATE) sub"
             )
             result = await self._session.execute(
                 stmt, {"run_id": run_id}

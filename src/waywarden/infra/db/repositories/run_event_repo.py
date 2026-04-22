@@ -119,10 +119,6 @@ class RunEventRepositoryImpl:
         row_data = _event_to_row(event)
         # Override seq with the computed value
         row_data["seq"] = str(next_seq)
-        # Re-serialize payload with the correct seq
-        row_data["payload"] = json.dumps(
-            {**dict(event.payload), "_assigned_seq": next_seq}
-        )
 
         insert_stmt = run_events.insert().values(**row_data)
         await self._session.execute(insert_stmt)
@@ -166,8 +162,7 @@ class RunEventRepositoryImpl:
     async def latest_seq(self, run_id: str) -> int:
         """Return the highest seq for *run_id*, or 0 if no events exist."""
         stmt = text(
-            "SELECT COALESCE(MAX(CAST(seq AS INTEGER)), 0) "
-            "FROM run_events WHERE run_id = :run_id"
+            "SELECT COALESCE(MAX(CAST(seq AS INTEGER)), 0) FROM run_events WHERE run_id = :run_id"
         )
         result = await self._session.execute(stmt, {"run_id": run_id})
         row = result.scalar_one()
@@ -185,15 +180,16 @@ class RunEventRepositoryImpl:
     async def _compute_next_seq(self, run_id: str) -> int:
         """Compute next seq under ``FOR UPDATE`` lock on the run_events row.
 
+        Uses a subquery to lock rows while computing MAX(seq), avoiding
+        Postgres's restriction on FOR UPDATE with aggregate functions.
         Falls back to a non-locking query on databases that don't support
         ``FOR UPDATE`` (e.g. SQLite in tests).
         """
         try:
             stmt = text(
-                "SELECT COALESCE(MAX(CAST(seq AS INTEGER)), 0) + 1 "
-                "FROM run_events "
-                "WHERE run_id = :run_id "
-                "FOR UPDATE"
+                "SELECT COALESCE(MAX(seq), 0) + 1 "
+                "FROM (SELECT CAST(seq AS INTEGER) AS seq FROM run_events "
+                "WHERE run_id = :run_id FOR UPDATE) sub"
             )
             result = await self._session.execute(stmt, {"run_id": run_id})
         except Exception:

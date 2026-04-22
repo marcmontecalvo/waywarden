@@ -143,7 +143,10 @@ def _normalized_json(obj: object) -> str:
 
 
 def _make_manifest(run_id: str) -> WorkspaceManifest:
+    from waywarden.domain.ids import RunId
+
     return WorkspaceManifest(
+        run_id=RunId(run_id),
         inputs=[
             InputMount(
                 name="repo",
@@ -401,8 +404,8 @@ async def test_full_lifecycle_roundtrip(session: AsyncSession) -> None:
     assert summary.total_prompt == 100
     assert summary.total_completion == 50
     assert summary.total_total == 150
-    assert "openai" in summary.by_model
-    assert summary.by_model["openai"].call_count == 1
+    assert "gpt-4" in summary.by_model
+    assert summary.by_model["gpt-4"].call_count == 1
 
     expected_ref = summary_artifact_ref(run_id)
     assert expected_ref == f"artifact://runs/{run_id}/usage-summary"
