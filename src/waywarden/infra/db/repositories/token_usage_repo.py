@@ -8,6 +8,7 @@ emitted — usage records live outside the RT-002 event log per spec.
 from __future__ import annotations
 
 from datetime import datetime
+from types import MappingProxyType
 from typing import Any
 
 from sqlalchemy import text
@@ -152,7 +153,7 @@ class TokenUsageRepositoryImpl:
             total_prompt=total_prompt,
             total_completion=total_completion,
             total_total=total_total,
-            by_model=rollups,
+            by_model=MappingProxyType(rollups),
         )
 
     # -- private helpers -----------------------------------------------------

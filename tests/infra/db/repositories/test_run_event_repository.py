@@ -197,8 +197,9 @@ async def test_append_after_terminal_rejected(session: AsyncSession) -> None:
 
     # Mark run as completed
     await session.execute(
-        text("UPDATE runs SET state = 'completed', terminal_seq = '1' WHERE id = :rid")
-        .bindparams(rid=run_id)
+        text("UPDATE runs SET state = 'completed', terminal_seq = '1' WHERE id = :rid").bindparams(
+            rid=run_id
+        )
     )
     await session.flush()
 
@@ -240,3 +241,38 @@ async def test_latest_seq_returns_zero_for_empty_run(session: AsyncSession) -> N
 
     repo = RunEventRepositoryImpl(session)
     assert await repo.latest_seq(str(run.id)) == 0
+
+
+async def test_payload_identity_roundtrip(run_and_repo) -> None:
+    """Payload survives JSON roundtrip without _assigned_seq injection."""
+    run, repo = run_and_repo
+    run_id = str(run.id)
+
+    original_payload = {
+        "instance_id": "inst_001",
+        "profile": "test",
+        "policy_preset": "ask",
+        "manifest_ref": "m",
+        "entrypoint": "cli",
+    }
+    evt = RunEvent(
+        id=f"evt_{uuid4().hex[:12]}",
+        run_id=RunId(run_id),
+        seq=1,
+        type="run.created",
+        payload=original_payload,
+        timestamp=datetime.now(UTC),
+        causation=Causation(
+            event_id=f"ca_{uuid4().hex[:8]}",
+            action=None,
+            request_id=None,
+        ),
+        actor=Actor(kind="system", id=None, display=None),
+    )
+    await repo.append(evt)
+
+    events = await repo.list(run_id)
+    assert len(events) == 1
+    loaded_payload = dict(events[0].payload)
+    assert "_assigned_seq" not in loaded_payload
+    assert loaded_payload == original_payload

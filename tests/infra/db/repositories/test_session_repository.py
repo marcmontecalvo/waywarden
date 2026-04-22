@@ -93,3 +93,12 @@ async def test_closed_session_roundtrip(session: AsyncSession) -> None:
     assert loaded is not None
     assert loaded.closed_at is not None
     assert loaded.closed_at.tzinfo is not None
+
+
+async def test_save_returns_same_instance(session: AsyncSession) -> None:
+    """save() returns the same instance for frozen dataclass semantics."""
+    sess = _make_session(session_id="sess_return")
+    repo = SessionRepositoryImpl(session)
+
+    result = await repo.save(sess)
+    assert result is sess

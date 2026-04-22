@@ -142,3 +142,35 @@ async def test_get_nonexistent_returns_none(session: AsyncSession) -> None:
     repo = WorkspaceManifestRepositoryImpl(session)
     loaded = await repo.get("nonexistent")
     assert loaded is None
+
+
+async def test_nested_dataclass_fields_survive_roundtrip(session: AsyncSession) -> None:
+    """Nested dataclass fields (network_policy, tool_policy, etc.) survive save+get."""
+    manifest = _make_manifest("run_nested")
+    repo = WorkspaceManifestRepositoryImpl(session)
+
+    await repo.save(manifest)
+    loaded = await repo.get("run_nested")
+    assert loaded is not None
+
+    # Verify nested dataclass fields are proper dataclass instances, not type() objects
+    assert isinstance(loaded.network_policy, NetworkPolicy)
+    assert loaded.network_policy.mode == "allowlist"
+    assert len(loaded.network_policy.allow) == 1
+    assert loaded.network_policy.allow[0].host_pattern == "api.example.com"
+
+    assert isinstance(loaded.tool_policy, ToolPolicy)
+    assert loaded.tool_policy.preset == "ask"
+    assert loaded.tool_policy.default_decision == "approval-required"
+    assert len(loaded.tool_policy.rules) == 1
+    assert loaded.tool_policy.rules[0].tool == "shell"
+
+    assert isinstance(loaded.secret_scope, SecretScope)
+    assert loaded.secret_scope.mode == "brokered"
+    assert loaded.secret_scope.redaction_level == "full"
+
+    assert isinstance(loaded.snapshot_policy, SnapshotPolicy)
+    assert loaded.snapshot_policy.on_start is False
+    assert loaded.snapshot_policy.on_completion is True
+    assert loaded.snapshot_policy.max_snapshots == 3
+    assert "/workspace/output" in loaded.snapshot_policy.include_paths

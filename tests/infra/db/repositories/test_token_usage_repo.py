@@ -175,6 +175,31 @@ async def test_summary_artifact_ref_format() -> None:
     assert ref == "artifact://runs/run_001/usage-summary"
 
 
+async def test_summarize_returns_immutable_mapping(session: AsyncSession) -> None:
+    """summarize().by_model is an immutable Mapping, not a plain dict."""
+    from types import MappingProxyType
+
+    repo = TokenUsageRepositoryImpl(session)
+    run_id = "run_immutable"
+
+    await repo.append(
+        _make_usage(run_id=run_id, seq=1, provider="openai", model="gpt-4",
+                    prompt_tokens=100, completion_tokens=50)
+    )
+
+    summary = await repo.summarize(run_id)
+    assert isinstance(summary.by_model, MappingProxyType)
+    # Verify it's truly immutable — MappingProxyType raises TypeError on item assignment
+    try:
+        summary.by_model["gpt-4"] = summary.by_model["gpt-4"]  # type: ignore[assignment]
+        assert False, "Expected TypeError on mutation"
+    except TypeError:
+        pass
+    # Also verify the underlying data is correct
+    original_gpt4 = summary.by_model["gpt-4"]
+    assert original_gpt4.prompt_tokens == 100
+
+
 async def test_no_run_usage_event_emitted() -> None:
     """Static grep: no code in src/ emits 'run.usage' event type.
 

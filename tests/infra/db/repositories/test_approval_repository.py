@@ -130,3 +130,12 @@ async def test_granted_approval_with_decided_at(session: AsyncSession) -> None:
     assert loaded.state == "granted"
     assert loaded.decided_at is not None
     assert loaded.decided_by == "user_1"
+
+
+async def test_save_returns_same_instance(session: AsyncSession) -> None:
+    """save() returns the same instance for frozen dataclass semantics."""
+    appr = _make_approval(approval_id="appr_return")
+    repo = ApprovalRepositoryImpl(session)
+
+    result = await repo.save(appr)
+    assert result is appr

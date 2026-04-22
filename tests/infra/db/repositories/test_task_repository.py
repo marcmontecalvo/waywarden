@@ -89,3 +89,12 @@ async def test_state_roundtrip(session: AsyncSession) -> None:
     loaded = await repo.get("task_state")
     assert loaded is not None
     assert loaded.state == "executing"
+
+
+async def test_save_returns_same_instance(session: AsyncSession) -> None:
+    """save() returns the same instance for frozen dataclass semantics."""
+    task = _make_task(task_id="task_return")
+    repo = TaskRepositoryImpl(session)
+
+    result = await repo.save(task)
+    assert result is task
