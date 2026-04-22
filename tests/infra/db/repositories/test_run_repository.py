@@ -79,3 +79,41 @@ async def test_load_after_insert_roundtrips(session: AsyncSession) -> None:
     assert loaded.policy_preset == run.policy_preset
     assert loaded.manifest_ref == run.manifest_ref
     assert loaded.entrypoint == run.entrypoint
+
+
+async def test_terminal_seq_type_roundtrip(session: AsyncSession) -> None:
+    """update_state sets terminal_seq as int; get() reloads as int."""
+    run = _make_run("run_seq_test")
+    repo = RunRepositoryImpl(session)
+    await repo.create(run)
+
+    # Update state with a terminal_seq value
+    updated = await repo.update_state(str(run.id), "completed", 9)
+    assert updated.terminal_seq == 9
+    assert isinstance(updated.terminal_seq, int)
+
+    # Reload via get() — must return int, not str
+    loaded = await repo.get(str(run.id))
+    assert loaded is not None
+    assert loaded.terminal_seq == 9
+    assert isinstance(loaded.terminal_seq, int)
+
+
+async def test_get_nonexistent_returns_none(session: AsyncSession) -> None:
+    """get() returns None for a run_id that was never created."""
+    repo = RunRepositoryImpl(session)
+    loaded = await repo.get("nonexistent")
+    assert loaded is None
+
+
+async def test_load_latest_state_matches_get(session: AsyncSession) -> None:
+    """load_latest_state() returns the same result as get()."""
+    run = _make_run("run_latest")
+    repo = RunRepositoryImpl(session)
+    await repo.create(run)
+
+    latest = await repo.load_latest_state(str(run.id))
+    direct = await repo.get(str(run.id))
+    assert latest is not None
+    assert latest.id == direct.id
+    assert latest.state == direct.state
