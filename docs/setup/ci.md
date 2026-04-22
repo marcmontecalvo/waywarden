@@ -14,7 +14,7 @@
 ### Why integration tests are Linux-only
 
 Windows runners in GitHub Actions do not support Docker services the same way
-Linux runners do. The `integration-linux` job spins up a `postgres:16.4-alpine`
+Linux runners do. The `integration-linux` job spins up a `postgres:18.3-alpine3.23`
 service and runs all `@pytest.mark.integration` tests against it.
 
 On Windows the `test` job runs with `-m "not integration"` so unit tests stay

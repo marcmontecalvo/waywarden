@@ -125,7 +125,7 @@ def upgrade() -> None:
             "'run.failed', 'run.cancelled')",
             name="ck_run_events_type",
         ),
-        sa.CheckConstraint("seq >= 1", name="ck_run_events_seq_positive"),
+        sa.CheckConstraint("CAST(seq AS INTEGER) >= 1", name="ck_run_events_seq_positive"),
         comment="RT-002 event log",
     )
     op.create_index("ix_run_events_run_id_seq", "run_events", ["run_id", "seq"])
@@ -183,16 +183,29 @@ def upgrade() -> None:
         "token_usage",
         sa.Column("id", sa.String(), primary_key=True),
         sa.Column("run_id", sa.String(), nullable=False),
+        sa.Column("seq", sa.Integer(), nullable=False),
+        sa.Column("provider", sa.String(), nullable=False),
         sa.Column("model", sa.String(), nullable=False),
-        sa.Column("direction", sa.String(), nullable=False),
-        sa.Column("kind", sa.String()),
-        sa.Column("count", sa.String()),
+        sa.Column("prompt_tokens", sa.Integer(), nullable=False),
+        sa.Column("completion_tokens", sa.Integer(), nullable=False),
+        sa.Column("total_tokens", sa.Integer(), nullable=False),
         sa.Column(
-            "created_at",
-            sa.TIMESTAMP(timezone=True),
+            "recorded_at",
+            sa.String(),
             nullable=False,
         ),
-        comment="Token usage accounting (scaffold)",
+        sa.Column("call_ref", sa.String()),
+        sa.UniqueConstraint("run_id", "seq", name="uq_token_usage_run_id_seq"),
+        sa.CheckConstraint("seq >= 1", name="ck_token_usage_seq_positive"),
+        sa.CheckConstraint(
+            "total_tokens = prompt_tokens + completion_tokens",
+            name="ck_token_usage_total_eq_sum",
+        ),
+        sa.CheckConstraint(
+            "prompt_tokens >= 0 AND completion_tokens >= 0 AND total_tokens >= 0",
+            name="ck_token_usage_non_negative",
+        ),
+        comment="Token usage accounting (persisted outside RT-002 event log)",
     )
 
 

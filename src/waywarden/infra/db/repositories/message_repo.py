@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from typing import cast
 
@@ -31,15 +32,13 @@ class MessageRepositoryImpl:
         )
 
     async def save(self, message: Message) -> Message:
-        import json
-
         stmt = messages.insert().values(
             id=message.id,
             session_id=message.session_id,
             role=message.role,
             content=message.content,
             created_at=message.created_at,
-            metadata=json.dumps(dict(message.metadata)),
+            metadata=dict(message.metadata),
         )
         await self._session.execute(stmt)
         await self._session.flush()
@@ -83,9 +82,9 @@ def _parse_ts(value: datetime | str | None) -> datetime:
     return datetime.fromisoformat(value)
 
 
-def _parse_metadata(value: str | None) -> dict[str, str]:
+def _parse_metadata(value: dict[str, str] | str | None) -> dict[str, str]:
     if value is None:
         return {}
-    import json
-
+    if isinstance(value, dict):
+        return value
     return cast(dict[str, str], json.loads(value))

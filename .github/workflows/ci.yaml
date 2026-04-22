@@ -190,7 +190,7 @@ jobs:
     needs: [lint, typecheck]
     services:
       postgres:
-        image: postgres:16.4-alpine
+        image: postgres:18.3-alpine3.23
         ports:
           - 5432:5432
         env:

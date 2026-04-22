@@ -26,7 +26,7 @@ make db-down      # stop the container (keeps data)
 
 ## Details
 
-- **Image**: `postgres:16.4-alpine` (pinned minor version)
+- **Image**: `postgres:18.3-alpine3.23` (pinned minor version)
 - **Credentials**: user `waywarden`, password `waywarden`, database `waywarden_dev`
 - **Port**: `127.0.0.1:5432` (loopback-bound)
 - **Data volume**: `waywarden_pg_data` (ephemeral; wiped by `make db-nuke`)
