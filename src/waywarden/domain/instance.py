@@ -11,18 +11,9 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, TypedDict
+from typing import Any
 
 from waywarden.domain.ids import InstanceId
-
-
-class InstanceManifest(TypedDict):
-    """Typed shape for entries in ``config/instances.yaml``."""
-
-    id: str
-    display_name: str
-    profile_id: str
-    config_path: str
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:

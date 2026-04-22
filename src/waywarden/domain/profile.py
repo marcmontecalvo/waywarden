@@ -12,7 +12,7 @@ import re
 from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import NewType, TypedDict
+from typing import NewType
 
 ProfileId = NewType("ProfileId", str)
 CURRENT_PROFILE_EXTENSION_EXAMPLES: frozenset[str] = frozenset(
@@ -38,15 +38,6 @@ SEMVER_PATTERN = re.compile(
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
 )
 PROFILE_EXTENSION_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:-[a-z0-9_]+)*$")
-
-
-class ProfileManifest(TypedDict):
-    """Typed shape for ``profiles/<id>/profile.yaml`` documents."""
-
-    id: str
-    display_name: str
-    version: str
-    supported_extensions: list[str]
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:

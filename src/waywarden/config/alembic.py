@@ -20,6 +20,10 @@ def load_alembic_database_url(config_dir: Path | None = None, cwd: Path | None =
 
 
 def _database_url_missing(exc: ConfigLoadError) -> bool:
+    # ConfigLoadError strings are formatted by _format_validation_errors in loader.py
+    # as "{path}: field `{field}`: {reason} (after env > .env > yaml precedence)".
+    # Checking for the field name in the formatted message is stable because the
+    # formatter is a single shared function with a fixed template.
     return any("field `database_url`" in error for error in exc.errors)
 
 

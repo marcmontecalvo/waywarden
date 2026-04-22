@@ -52,6 +52,12 @@ def test_duplicate_name_different_version_rejected() -> None:
         reg.register(ext_b)
 
 
+def test_duplicate_extension_error_is_not_key_error() -> None:
+    """DuplicateExtensionError must not subclass KeyError — it is a conflict, not a missing key."""
+    assert not issubclass(DuplicateExtensionError, KeyError)
+    assert isinstance(DuplicateExtensionError("test"), Exception)
+
+
 def test_duplicate_name_same_version_idempotent() -> None:
     reg = ExtensionRegistry()
     ext = _TestExt(name="foo", version="1.0.0")

@@ -7,7 +7,7 @@ class ExtensionConfigError(ValueError):
     """Raised when an extension's validate() detects invalid configuration."""
 
 
-class DuplicateExtensionError(KeyError):
+class DuplicateExtensionError(Exception):
     """Raised when registering an extension whose name already exists with a different version."""
 
 

@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import warnings
-from contextlib import AbstractContextManager
+from contextlib import contextmanager
 from typing import Any
 
 from opentelemetry.trace import get_tracer
 from opentelemetry.trace.span import Span as OtelSpan
-
-from waywarden.infra.tracing.base import Span
 
 
 class _OtelSpanBridge:
@@ -79,35 +76,27 @@ class OtelTracer:
                 )
                 # pyright: ignore[reportPossiblyUnboundVariable]
                 trace_api.set_tracer_provider(provider)
-            except ImportError:
-                warnings.warn(
-                    "OTel SDK not fully available; falling back to basic Tracer",
-                    stacklevel=2,
-                )
+            except ImportError as err:
+                raise RuntimeError(
+                    "OTel SDK not fully available: the API is installed but the SDK is not. "
+                    "Install opentelemetry-sdk to enable tracing."
+                ) from err
 
         self._tracer = get_tracer(name, version)
 
+    @contextmanager
     def start_span(
         self,
         name: str,
         *,
         attributes: dict[str, str | int | float | bool] | None = None,
-    ) -> AbstractContextManager[Span]:
+    ) -> Any:
         kwargs: dict[str, Any] = {"name": name}
         if attributes is not None:
             kwargs["attributes"] = attributes
         otel_span = self._tracer.start_span(**kwargs)
-        return _OtelSpanContext(otel_span)
-
-
-class _OtelSpanContext(AbstractContextManager[Span]):
-    __slots__ = ("_span",)
-
-    def __init__(self, otel_span: OtelSpan) -> None:
-        self._span = _OtelSpanBridge(otel_span)
-
-    def __enter__(self) -> Span:
-        return self._span
-
-    def __exit__(self, *args: Any, **kwargs: Any) -> None:
-        self._span.end()
+        bridge = _OtelSpanBridge(otel_span)
+        try:
+            yield bridge
+        finally:
+            bridge.end()
