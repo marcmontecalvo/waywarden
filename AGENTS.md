@@ -47,8 +47,13 @@ The same deployment should support multiple named instances side by side, for ex
 - Active execution tracking lives in GitHub Issues, not in repo markdown
 
 ## Tooling and commands
-- Python: `3.13`
+- Python version: `3.13`
+- Python execution in this repo: **always via `uv`**
 - Package/dev runner: `uv`
+- Install deps: `uv sync`
+- Run Python module: `uv run -m <module>`
+- Run a Python script: `uv run <script>.py`
+- Run pytest directly: `uv run pytest ...`
 - Lint: `make lint`
 - Format: `make format`
 - Tests: `make test`
@@ -56,6 +61,12 @@ The same deployment should support multiple named instances side by side, for ex
 - Dev server: `make dev`
 - Sidecar Postgres: `make db-up`
 - Migrations: `make migrate`
+
+### Command prohibitions
+- Do **not** use bare `python`, `python3`, `pip`, or `pytest` in this repo.
+- Do **not** assume `python` is on PATH.
+- Do **not** invent alternate commands when the repo already defines a `make` target or `uv` workflow.
+- If a task involves Python, default to `uv run ...` or the documented `make` target.
 
 ## Working rules
 - For Codex runs, default to `rtk` for any shell command likely to emit more than a small screen of output; only use raw commands when unfiltered output is necessary.
@@ -73,6 +84,14 @@ The same deployment should support multiple named instances side by side, for ex
 - Prefer typed, explicit code over clever implicit behavior.
 - Keep placeholders honest: never return fake-success responses for unimplemented behavior.
 - Keep issue scope tight unless a directly related defect must be fixed to make the requested work actually correct.
+- This repo is `uv`-managed. For any Python-related command, use `uv run ...` unless a repo `make` target is the clearer canonical entrypoint.
+- For tests, prefer:
+  1. targeted: `uv run pytest <targeted paths>`
+  2. broad repo validation: `make test`
+- For lint/format/migrations/app lifecycle, prefer the documented `make` targets over ad hoc shell commands.
+- Never fall back to bare `python -m ...`, bare `pytest`, or bare `pip`.
+- If a command fails because a tool is missing, stop and use the repo’s documented command path rather than guessing another interpreter command.
+- When showing or logging validation commands, preserve the exact `uv run ...` or `make ...` form actually used.
 
 ## GitHub workflow
 - Treat GitHub Issues as the source of truth for active work.
@@ -137,6 +156,12 @@ Repo-local skills are authoritative for repeatable workflows.
 
 Skill location convention:
 - `.agents/skills/<skill-name>/SKILL.md`
+
+Path rules:
+- Do not invent alternate directories.
+- Do not use `.magents/`.
+- Do not attempt a global skill resolver when a repo-local skill is expected.
+- If the repo-local path is missing, verify with one targeted search, then stop guessing.
 
 When the user references a repo skill by name:
 1. Do **not** call a global or built-in `Skill(<name>)` resolver first.
