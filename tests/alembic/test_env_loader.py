@@ -12,11 +12,31 @@ import pytest
 from waywarden.config import DatabaseUrlMissing, load_alembic_database_url
 
 
+def _write_checked_in_profile(tmp_path: Path) -> None:
+    profiles_dir = tmp_path / "profiles" / "ea"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "profile.yaml").write_text(
+        (
+            "id: ea\n"
+            "display_name: Executive Assistant\n"
+            "version: 1.0.0\n"
+            "required_providers:\n"
+            "  model: fake-model\n"
+            "  memory: fake-memory\n"
+            "  knowledge: fake-knowledge\n"
+            "supported_extensions:\n"
+            "  - skill\n"
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_env_raises_when_database_url_missing(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
-        "host: 127.0.0.1\nport: 8080\nenv: development\n",
+        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\nenv: development\n",
         encoding="utf-8",
     )
 

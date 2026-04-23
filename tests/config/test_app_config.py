@@ -95,6 +95,24 @@ def test_tracer_otel_requires_endpoint() -> None:
         )
 
 
+def test_anthropic_key_required_when_selected() -> None:
+    with pytest.raises(ValidationError, match="anthropic_api_key"):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            model_router="anthropic",
+        )
+
+
+def test_model_router_defaults_to_fake() -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
+
+    assert cfg.model_router == "fake"
+    assert cfg.model_router_default_provider == "fake"
+    assert cfg.anthropic_api_key is None
+
+
 def test_active_profile_required(tmp_path: Path) -> None:
     _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"

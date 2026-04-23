@@ -8,10 +8,10 @@ Precedence is highest to lowest:
 """
 
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, Self, cast
 
 from fastapi import Request
-from pydantic import ValidationInfo, field_validator
+from pydantic import SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -35,6 +35,9 @@ class AppConfig(BaseSettings):
     database_url: str = ""
     tracer: Literal["noop", "otel"] = "noop"
     tracer_endpoint: str | None = None
+    model_router: Literal["fake", "anthropic"] = "fake"
+    model_router_default_provider: str = "fake"
+    anthropic_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -88,6 +91,22 @@ class AppConfig(BaseSettings):
         if tracer == "otel" and not value:
             raise ValueError("tracer_endpoint must be set when tracer is 'otel'")
         return value
+
+    @field_validator("model_router_default_provider", mode="before")
+    @classmethod
+    def normalize_model_router_default_provider(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise TypeError("model_router_default_provider must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("model_router_default_provider must not be empty")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_model_router(self) -> Self:
+        if self.model_router == "anthropic" and self.anthropic_api_key is None:
+            raise ValueError("anthropic_api_key must be set when model_router is 'anthropic'")
+        return self
 
 
 def build_app_config_class(yaml_file: Path | None) -> type[AppConfig]:

@@ -27,6 +27,4 @@ def test_no_shared_base() -> None:
     }
 
     extra = shared - allowed
-    assert not extra, (
-        f"MemoryProvider and KnowledgeProvider share unexpected bases: {extra}"
-    )
+    assert not extra, f"MemoryProvider and KnowledgeProvider share unexpected bases: {extra}"

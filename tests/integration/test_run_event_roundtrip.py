@@ -20,6 +20,7 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 from alembic.config import Config as AlembicConfig
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -80,10 +81,19 @@ async def _apply_migrations(_engine: AsyncEngine) -> None:
     """Apply Alembic migrations to head before any integration test runs."""
     import os
 
-    os.environ["WAYWARDEN_DATABASE_URL"] = DATABASE_URL
-    alembic_cfg = AlembicConfig(str(ALEMBIC_INI))
-    alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
-    alembic_command.upgrade(alembic_cfg, "head")
+    previous_database_url = os.environ.get("WAYWARDEN_DATABASE_URL")
+    try:
+        os.environ["WAYWARDEN_DATABASE_URL"] = DATABASE_URL
+        alembic_cfg = AlembicConfig(str(ALEMBIC_INI))
+        alembic_cfg.set_main_option("sqlalchemy.url", DATABASE_URL)
+        alembic_command.upgrade(alembic_cfg, "head")
+    except OperationalError as exc:
+        pytest.skip(f"Postgres unavailable: {exc}")
+    finally:
+        if previous_database_url is None:
+            os.environ.pop("WAYWARDEN_DATABASE_URL", None)
+        else:
+            os.environ["WAYWARDEN_DATABASE_URL"] = previous_database_url
 
 
 @pytest_asyncio.fixture()

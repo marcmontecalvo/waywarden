@@ -6,13 +6,13 @@ import pytest
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(
-    not hasattr(subprocess, "run"),
-    reason="docker compose not available",
-)
 def test_compose_reports_healthy() -> None:
     """docker compose -f infra/docker-compose.db.yaml up --wait exits 0 and the
     healthcheck reports healthy within 30s on a clean host."""
+    docker = subprocess.run(["docker", "version"], capture_output=True, text=True, timeout=10)
+    if docker.returncode != 0:
+        pytest.skip(f"docker compose not available: {docker.stdout}{docker.stderr}")
+
     result = subprocess.run(
         [
             "docker",
