@@ -41,6 +41,10 @@ class AppConfig(BaseSettings):
     memory_provider: Literal["fake", "honcho"] = "fake"
     honcho_endpoint: str | None = None
     honcho_api_key: SecretStr | None = None
+    knowledge_provider: Literal["filesystem", "llm_wiki"] = "filesystem"
+    knowledge_filesystem_root: str = "assets/knowledge"
+    llm_wiki_endpoint: str | None = None
+    llm_wiki_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -117,6 +121,18 @@ class AppConfig(BaseSettings):
                 "honcho_endpoint and honcho_api_key must be set when "
                 "memory_provider is 'honcho'"
             )
+        knowledge = self.knowledge_provider
+        if knowledge == "llm_wiki":
+            if not self.llm_wiki_endpoint:
+                raise ValueError(
+                    "llm_wiki_endpoint must be set when "
+                    "knowledge_provider is 'llm_wiki'"
+                )
+            if self.llm_wiki_api_key is None:
+                raise ValueError(
+                    "llm_wiki_api_key must be set when "
+                    "knowledge_provider is 'llm_wiki'"
+                )
         return self
 
 

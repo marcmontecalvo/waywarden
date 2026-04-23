@@ -166,3 +166,43 @@ def test_honcho_succeeds_when_both_provided() -> None:
 def test_memory_provider_defaults_to_fake() -> None:
     cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     assert cfg.memory_provider == "fake"
+
+
+def test_knowledge_provider_defaults_to_filesystem() -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
+    assert cfg.knowledge_provider == "filesystem"
+
+
+def test_llm_wiki_requires_endpoint_and_key() -> None:
+    with pytest.raises(ValidationError, match="llm_wiki_endpoint"):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            knowledge_provider="llm_wiki",
+        )
+
+
+def test_llm_wiki_requires_both_endpoint_and_key() -> None:
+    """If only one is provided, validation should still fail."""
+    with pytest.raises(ValidationError, match="llm_wiki_endpoint|llm_wiki_api_key"):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            knowledge_provider="llm_wiki",
+            llm_wiki_endpoint="http://localhost:8000",
+        )
+
+
+def test_llm_wiki_succeeds_when_both_provided() -> None:
+    cfg = AppConfig(
+        host="localhost",
+        port=8080,
+        active_profile="ea",
+        knowledge_provider="llm_wiki",
+        llm_wiki_endpoint="http://localhost:8000",
+        llm_wiki_api_key=SecretStr("test-key"),
+    )
+    assert cfg.knowledge_provider == "llm_wiki"
+    assert cfg.llm_wiki_endpoint == "http://localhost:8000"
