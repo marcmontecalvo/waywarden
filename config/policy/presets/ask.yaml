@@ -1,0 +1,59 @@
+preset: ask
+default_decision: approval-required
+rules:
+  - tool: shell
+    action: read
+    decision: auto-allow
+    reason: Read-only shell operations are safe and frequent
+  - tool: shell
+    action: write
+    decision: approval-required
+    reason: File write can modify committed sources or config
+  - tool: shell
+    action: exec
+    decision: approval-required
+    reason: Arbitrary command execution needs operator scrutiny
+  - tool: shell
+    action: delete
+    decision: approval-required
+    reason: Deletion of arbitrary files is potentially destructive
+  - tool: http
+    action: get
+    decision: auto-allow
+    reason: Read-only HTTP retrieval is low risk
+  - tool: http
+    action: post
+    decision: approval-required
+    reason: Outbound POST can trigger external state changes
+  - tool: memory
+    action: read
+    decision: auto-allow
+    reason: Memory reads are non-destructive lookups
+  - tool: memory
+    action: write
+    decision: approval-required
+    reason: Memory writes modify persistent context
+  - tool: knowledge
+    action: read
+    decision: auto-allow
+    reason: Knowledge reads are non-destructive lookups
+  - tool: calendar
+    action: read
+    decision: auto-allow
+    reason: Calendar read does not modify schedule
+  - tool: calendar
+    action: write
+    decision: approval-required
+    reason: Calendar write can affect others' schedules
+  - tool: email
+    action: send
+    decision: approval-required
+    reason: Sending email is irreversible and external
+  - tool: filesystem
+    action: list
+    decision: auto-allow
+    reason: Directory listing is read-only
+  - tool: secrets
+    action: import
+    decision: approval-required
+    reason: Secret import may change access credentials
