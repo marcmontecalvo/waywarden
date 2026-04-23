@@ -41,6 +41,8 @@ class AppConfig(BaseSettings):
     memory_provider: Literal["fake", "honcho"] = "fake"
     honcho_endpoint: str | None = None
     honcho_api_key: SecretStr | None = None
+    context_memory_char_cap: int = 2000
+    context_knowledge_char_cap: int = 2000
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
