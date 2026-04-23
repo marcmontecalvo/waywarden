@@ -206,3 +206,27 @@ def test_llm_wiki_succeeds_when_both_provided() -> None:
     )
     assert cfg.knowledge_provider == "llm_wiki"
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
+
+
+def test_policy_preset_default_is_ask() -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
+    assert cfg.policy_preset == "ask"
+
+
+@pytest.mark.parametrize(
+    "preset",
+    ["yolo", "ask", "allowlist", "custom"],
+)
+def test_policy_preset_literal_enforced(preset: str) -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset=preset)
+    assert cfg.policy_preset == preset  # type: ignore[comparison-overlap]
+
+
+def test_policy_preset_invalid_literal_rejected() -> None:
+    with pytest.raises(ValidationError):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            policy_preset="nonexistent",  # type: ignore[arg-type]
+        )
