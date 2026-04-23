@@ -38,9 +38,9 @@ def _event_to_row(event: RunEvent) -> dict[str, object]:
     return {
         "id": event.id,
         "run_id": event.run_id,
-        "seq": str(event.seq),
+        "seq": event.seq,
         "type": event.type,
-        "payload": json.dumps(dict(event.payload)),
+        "payload": dict(event.payload),
         "timestamp": event.timestamp,
         "causation": json.dumps(
             {
@@ -75,7 +75,7 @@ def _row_to_event(row: Any) -> RunEvent:
         d = json.loads(row.actor)
         actor = _Actor(**d)
 
-    payload: dict[str, object] = json.loads(row.payload) if row.payload else {}
+    payload: dict[str, object] = row.payload if row.payload else {}
 
     ts = row.timestamp
     if isinstance(ts, str):
@@ -147,11 +147,11 @@ class RunEventRepositoryImpl:
             run_events.select()
             .where(
                 run_events.c.run_id == run_id,
-                text(f"{run_events.c.seq} > :since_seq"),
+                run_events.c.seq > since_seq,
             )
             .order_by(run_events.c.seq)
         )
-        params: dict[str, str] = {"since_seq": str(since_seq)}
+        params: dict[str, int] = {"since_seq": since_seq}
         if limit is not None:
             stmt = stmt.limit(limit)
         result = await self._session.execute(stmt, params)
@@ -160,9 +160,7 @@ class RunEventRepositoryImpl:
 
     async def latest_seq(self, run_id: str) -> int:
         """Return the highest seq for *run_id*, or 0 if no events exist."""
-        stmt = text(
-            "SELECT COALESCE(MAX(CAST(seq AS INTEGER)), 0) FROM run_events WHERE run_id = :run_id"
-        )
+        stmt = text("SELECT COALESCE(MAX(seq), 0) FROM run_events WHERE run_id = :run_id")
         result = await self._session.execute(stmt, {"run_id": run_id})
         row = result.scalar_one()
         return int(row) if row else 0
@@ -187,17 +185,13 @@ class RunEventRepositoryImpl:
         try:
             stmt = text(
                 "SELECT COALESCE(MAX(seq), 0) + 1 "
-                "FROM (SELECT CAST(seq AS INTEGER) AS seq FROM run_events "
+                "FROM (SELECT seq FROM run_events "
                 "WHERE run_id = :run_id FOR UPDATE) sub"
             )
             result = await self._session.execute(stmt, {"run_id": run_id})
         except Exception:
             # SQLite doesn't support FOR UPDATE — fall back
-            stmt = text(
-                "SELECT COALESCE(MAX(CAST(seq AS INTEGER)), 0) + 1 "
-                "FROM run_events "
-                "WHERE run_id = :run_id"
-            )
+            stmt = text("SELECT COALESCE(MAX(seq), 0) + 1 FROM run_events WHERE run_id = :run_id")
             result = await self._session.execute(stmt, {"run_id": run_id})
         next_seq = result.scalar_one()
         return int(next_seq)

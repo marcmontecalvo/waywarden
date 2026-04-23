@@ -132,7 +132,7 @@ class TestTokenUsageModelRollup:
             call_count=1,
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
-            rollup.prompt_tokens = 200
+            rollup.prompt_tokens = 200  # type: ignore[misc]
 
 
 class TestTokenUsageSummary:
@@ -145,4 +145,4 @@ class TestTokenUsageSummary:
             by_model={},
         )
         with pytest.raises(dataclasses.FrozenInstanceError):
-            summary.run_id = "other"
+            summary.run_id = "other"  # type: ignore[misc]

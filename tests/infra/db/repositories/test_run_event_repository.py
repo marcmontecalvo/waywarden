@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -10,10 +11,11 @@ import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from waywarden.domain.ids import InstanceId, RunId, TaskId
+from waywarden.domain.ids import InstanceId, RunEventId, RunId, TaskId
 from waywarden.domain.repositories import TerminalRunStateError
 from waywarden.domain.run import Run
 from waywarden.domain.run_event import Actor, Causation, RunEvent
+from waywarden.domain.run_event_types import RunEventType
 from waywarden.infra.db.models.run import runs
 from waywarden.infra.db.repositories.run_event_repo import RunEventRepositoryImpl
 
@@ -38,10 +40,10 @@ def _make_run(run_id: str = "run_001") -> Run:
 def _make_event(
     run_id: str = "run_001",
     seq: int = 1,
-    event_type: str = "run.created",
+    event_type: RunEventType = "run.created",
 ) -> RunEvent:
     return RunEvent(
-        id=f"evt_{uuid4().hex[:12]}",
+        id=RunEventId(f"evt_{uuid4().hex[:12]}"),
         run_id=RunId(run_id),
         seq=seq,
         type=event_type,
@@ -63,7 +65,7 @@ def _make_event(
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     from sqlalchemy.ext.asyncio import (
         AsyncSession,
         async_sessionmaker,
@@ -100,7 +102,7 @@ async def session() -> AsyncSession:
                 """CREATE TABLE run_events (
                     id TEXT PRIMARY KEY,
                     run_id TEXT NOT NULL,
-                    seq TEXT NOT NULL,
+                    seq INTEGER NOT NULL,
                     type TEXT NOT NULL,
                     payload TEXT,
                     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -124,7 +126,7 @@ async def session() -> AsyncSession:
 
 
 @pytest_asyncio.fixture
-async def run_and_repo(session: AsyncSession):
+async def run_and_repo(session: AsyncSession) -> tuple[Run, RunEventRepositoryImpl]:
     """Insert a run and return (run, repo)."""
     run = _make_run()
     stmt = runs.insert().values(
@@ -146,7 +148,9 @@ async def run_and_repo(session: AsyncSession):
     return (run, repo)
 
 
-async def test_append_assigns_monotonic_seq(run_and_repo) -> None:
+async def test_append_assigns_monotonic_seq(
+    run_and_repo: tuple[Run, RunEventRepositoryImpl],
+) -> None:
     """append() assigns strictly increasing seq starting at 1."""
     run, repo = run_and_repo
     run_id = str(run.id)
@@ -156,7 +160,9 @@ async def test_append_assigns_monotonic_seq(run_and_repo) -> None:
         assert result.seq == i + 1
 
 
-async def test_concurrent_appends_strictly_increase_seq(run_and_repo) -> None:
+async def test_concurrent_appends_strictly_increase_seq(
+    run_and_repo: tuple[Run, RunEventRepositoryImpl],
+) -> None:
     """20 sequential appends produce no duplicate seq (SQLite serializes)."""
     run, repo = run_and_repo
     run_id = str(run.id)
@@ -197,7 +203,7 @@ async def test_append_after_terminal_rejected(session: AsyncSession) -> None:
 
     # Mark run as completed
     await session.execute(
-        text("UPDATE runs SET state = 'completed', terminal_seq = '1' WHERE id = :rid").bindparams(
+        text("UPDATE runs SET state = 'completed', terminal_seq = 1 WHERE id = :rid").bindparams(
             rid=run_id
         )
     )
@@ -208,7 +214,9 @@ async def test_append_after_terminal_rejected(session: AsyncSession) -> None:
         await repo.append(_make_event(run_id=run_id, seq=1))
 
 
-async def test_list_since_seq_returns_tail(run_and_repo) -> None:
+async def test_list_since_seq_returns_tail(
+    run_and_repo: tuple[Run, RunEventRepositoryImpl],
+) -> None:
     """list(since_seq=N) returns events with seq > N, ordered ascending."""
     run, repo = run_and_repo
     run_id = str(run.id)
@@ -243,7 +251,7 @@ async def test_latest_seq_returns_zero_for_empty_run(session: AsyncSession) -> N
     assert await repo.latest_seq(str(run.id)) == 0
 
 
-async def test_payload_identity_roundtrip(run_and_repo) -> None:
+async def test_payload_identity_roundtrip(run_and_repo: tuple[Run, RunEventRepositoryImpl]) -> None:
     """Payload survives JSON roundtrip without _assigned_seq injection."""
     run, repo = run_and_repo
     run_id = str(run.id)
@@ -256,7 +264,7 @@ async def test_payload_identity_roundtrip(run_and_repo) -> None:
         "entrypoint": "cli",
     }
     evt = RunEvent(
-        id=f"evt_{uuid4().hex[:12]}",
+        id=RunEventId(f"evt_{uuid4().hex[:12]}"),
         run_id=RunId(run_id),
         seq=1,
         type="run.created",

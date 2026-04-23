@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 import pytest_asyncio
@@ -14,7 +15,7 @@ from waywarden.infra.db.repositories.message_repo import MessageRepositoryImpl
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -42,7 +43,7 @@ async def test_metadata_jsonb_roundtrip(session: AsyncSession) -> None:
     """Metadata survives save+reload as dict, not double-encoded string."""
     now = datetime.now(UTC)
     msg = Message(
-        id=str(MessageId("msg_001")),
+        id=MessageId("msg_001"),
         session_id=SessionId("session_001"),
         role="user",
         content="Hello",
@@ -61,7 +62,7 @@ async def test_list_by_session_returns_metadata(session: AsyncSession) -> None:
     """list_by_session returns messages with correct metadata."""
     now = datetime.now(UTC)
     msg = Message(
-        id=str(MessageId("msg_002")),
+        id=MessageId("msg_002"),
         session_id=SessionId("session_002"),
         role="assistant",
         content="Hi there",
@@ -89,7 +90,7 @@ async def test_list_by_session_with_limit(session: AsyncSession) -> None:
     for i in range(5):
         now = datetime.now(UTC)
         msg = Message(
-            id=str(MessageId(f"msg_limit_{i}")),
+            id=MessageId(f"msg_limit_{i}"),
             session_id=SessionId("session_limit"),
             role="user",
             content=f"Message {i}",

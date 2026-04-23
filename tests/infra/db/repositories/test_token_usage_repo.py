@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -43,7 +44,7 @@ def _make_usage(
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     from sqlalchemy.ext.asyncio import (
         AsyncSession,
         async_sessionmaker,
@@ -209,7 +210,7 @@ async def test_summarize_returns_immutable_mapping(session: AsyncSession) -> Non
     assert isinstance(summary.by_model, MappingProxyType)
     # Verify it's truly immutable — MappingProxyType raises TypeError on item assignment
     try:
-        summary.by_model["gpt-4"] = summary.by_model["gpt-4"]  # type: ignore[assignment]
+        summary.by_model["gpt-4"] = summary.by_model["gpt-4"]  # type: ignore[index]
         raise AssertionError("Expected TypeError on mutation")
     except TypeError:
         pass

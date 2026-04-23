@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 import pytest_asyncio
@@ -29,7 +30,7 @@ def _make_checkpoint(
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

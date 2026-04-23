@@ -50,7 +50,7 @@ def test_tracer_field_literal_enforced() -> None:
     assert cfg_otel.tracer == "otel"
 
     with pytest.raises(ValidationError):
-        AppConfig(host="localhost", port=8080, tracer="invalid")
+        AppConfig(host="localhost", port=8080, tracer="invalid")  # type: ignore[arg-type]
 
 
 def test_tracer_otel_requires_endpoint() -> None:

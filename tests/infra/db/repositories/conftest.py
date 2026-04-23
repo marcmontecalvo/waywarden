@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Generator
 
 import pytest
 import pytest_asyncio
@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import (
 
 
 @pytest.fixture(scope="session")
-def event_loop() -> AsyncIterator[asyncio.AbstractEventLoop]:
+def event_loop() -> Generator[asyncio.AbstractEventLoop]:
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()

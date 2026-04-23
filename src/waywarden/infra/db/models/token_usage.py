@@ -7,6 +7,7 @@ Schema: id, run_id, seq, provider, model, prompt_tokens, completion_tokens,
 from __future__ import annotations
 
 from sqlalchemy import (
+    TIMESTAMP,
     CheckConstraint,
     Column,
     Index,
@@ -29,7 +30,7 @@ token_usage = Table(
     Column("prompt_tokens", Integer, nullable=False),
     Column("completion_tokens", Integer, nullable=False),
     Column("total_tokens", Integer, nullable=False),
-    Column("recorded_at", String, nullable=False),
+    Column("recorded_at", TIMESTAMP(timezone=True), nullable=False),
     Column("call_ref", String, nullable=True),
     UniqueConstraint("run_id", "seq", name="uq_token_usage_run_id_seq"),
     Index("ix_token_usage_run_id_seq", "run_id", "seq"),

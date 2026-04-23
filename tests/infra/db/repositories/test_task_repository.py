@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from typing import Literal
 
 import pytest_asyncio
 from sqlalchemy import text
@@ -16,7 +18,15 @@ from waywarden.infra.db.repositories.task_repo import TaskRepositoryImpl
 def _make_task(
     task_id: str = "task_001",
     session_id: str = "sess_001",
-    state: str = "draft",
+    state: Literal[
+        "draft",
+        "planning",
+        "executing",
+        "waiting_approval",
+        "completed",
+        "failed",
+        "cancelled",
+    ] = "draft",
 ) -> Task:
     now = datetime.now(UTC)
     return Task(
@@ -31,7 +41,7 @@ def _make_task(
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

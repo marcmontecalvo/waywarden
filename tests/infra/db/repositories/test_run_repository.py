@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 
 import pytest_asyncio
@@ -31,7 +32,7 @@ def _make_run(run_id: str = "run_001") -> Run:
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
@@ -115,6 +116,7 @@ async def test_load_latest_state_matches_get(session: AsyncSession) -> None:
     latest = await repo.load_latest_state(str(run.id))
     direct = await repo.get(str(run.id))
     assert latest is not None
+    assert direct is not None
     assert latest.id == direct.id
     assert latest.state == direct.state
 

@@ -107,24 +107,42 @@ def test_seq_must_be_positive() -> None:
             "entrypoint": "api",
         }
     )
-    base = {
-        "id": RunEventId("evt-1"),
-        "run_id": RunId("run-1"),
-        "type": "run.created",
-        "payload": created_payload,
-        "timestamp": datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
-        "causation": None,
-        "actor": None,
-    }
 
     with pytest.raises(ValueError, match="seq must be an integer >= 1"):
-        RunEvent(seq=0, **base)  # type: ignore[arg-type]
+        RunEvent(
+            id=RunEventId("evt-1"),
+            run_id=RunId("run-1"),
+            seq=0,
+            type="run.created",
+            payload=created_payload,
+            timestamp=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
+            causation=None,
+            actor=None,
+        )
 
     with pytest.raises(ValueError, match="seq must be an integer >= 1"):
-        RunEvent(seq=-1, **base)  # type: ignore[arg-type]
+        RunEvent(
+            id=RunEventId("evt-1"),
+            run_id=RunId("run-1"),
+            seq=-1,
+            type="run.created",
+            payload=created_payload,
+            timestamp=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
+            causation=None,
+            actor=None,
+        )
 
     # seq=1 is valid
-    event = RunEvent(seq=1, **base)
+    event = RunEvent(
+        id=RunEventId("evt-1"),
+        run_id=RunId("run-1"),
+        seq=1,
+        type="run.created",
+        payload=created_payload,
+        timestamp=datetime(2026, 4, 19, 14, 0, tzinfo=UTC),
+        causation=None,
+        actor=None,
+    )
     assert event.seq == 1
 
 
@@ -138,20 +156,17 @@ def test_timestamp_must_be_utc_aware() -> None:
             "entrypoint": "api",
         }
     )
-    base = {
-        "id": RunEventId("evt-1"),
-        "run_id": RunId("run-1"),
-        "seq": 1,
-        "type": "run.created",
-        "payload": created_payload,
-        "causation": None,
-        "actor": None,
-    }
 
     with pytest.raises(ValueError, match="timezone-aware"):
         RunEvent(
+            id=RunEventId("evt-1"),
+            run_id=RunId("run-1"),
+            seq=1,
+            type="run.created",
+            payload=created_payload,
             timestamp=datetime(2026, 4, 19, 14, 0),  # naive
-            **base,
+            causation=None,
+            actor=None,
         )
 
 

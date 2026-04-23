@@ -22,7 +22,7 @@ def test_subclass_without_validate_is_abstract() -> None:
         pass
 
     with pytest.raises(TypeError, match="Can't instantiate abstract class"):
-        BadExtension(name="bad", version="1.0.0")
+        BadExtension(name="bad", version="1.0.0")  # type: ignore[abstract]
 
 
 def test_concrete_extension_instantiates() -> None:

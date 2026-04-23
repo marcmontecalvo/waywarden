@@ -7,7 +7,6 @@ from dataclasses import fields, is_dataclass
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from waywarden.domain.ids import RunId
@@ -27,7 +26,6 @@ class WorkspaceManifestRepositoryImpl:
         self._session = session
 
     async def save(self, manifest: WorkspaceManifest) -> WorkspaceManifest:
-
         body_dict = _manifest_to_dict(manifest)
         body_json = json.dumps(body_dict)
         run_id_val = str(manifest.run_id)
@@ -35,19 +33,18 @@ class WorkspaceManifestRepositoryImpl:
 
         # Use Postgres upsert when running on Postgres; plain insert for SQLite.
         if self._session.bind.dialect.name == "postgresql":
-            stmt = (
-                pg_insert(workspace_manifests)
-                .values(  # type: ignore[arg-type]
-                    id=manifest_id,
-                    run_id=run_id_val,
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+            stmt: Any = pg_insert(workspace_manifests).values(
+                id=manifest_id,
+                run_id=run_id_val,
+                body=body_json,
+            )
+            stmt = stmt.on_conflict_do_update(
+                constraint="uq_workspace_manifests_run_id",
+                set_=dict(
                     body=body_json,
-                )
-                .on_conflict_do_update(
-                    constraint="uq_workspace_manifests_run_id",
-                    set_=dict(
-                        body=body_json,
-                    ),
-                )
+                ),
             )
         else:
             stmt = workspace_manifests.insert().values(
@@ -68,10 +65,10 @@ class WorkspaceManifestRepositoryImpl:
         return _dict_to_manifest(row.run_id, row.body)
 
 
-def _dc_to_dict(obj: Any) -> dict[str, Any]:
+def _dc_to_dict(obj: Any) -> Any:
     """Convert a frozen dataclass to a dict, recursively handling nested dataclasses."""
     if not is_dataclass(obj):
-        return obj  # type: ignore[return-value]
+        return obj
     result: dict[str, Any] = {}
     for f in fields(obj):
         val = getattr(obj, f.name)
@@ -84,7 +81,7 @@ def _dc_to_dict(obj: Any) -> dict[str, Any]:
     return result
 
 
-def _manifest_to_dict(m: WorkspaceManifest) -> dict[str, Any]:
+def _manifest_to_dict(m: WorkspaceManifest) -> Any:
     return {
         "inputs": [_dc_to_dict(i) for i in m.inputs],
         "writable_paths": [_dc_to_dict(p) for p in m.writable_paths],

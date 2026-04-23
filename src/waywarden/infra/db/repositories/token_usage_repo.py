@@ -7,7 +7,7 @@ emitted — usage records live outside the RT-002 event log per spec.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from types import MappingProxyType
 from typing import Any
 
@@ -26,7 +26,12 @@ def _row_to_usage(row: Any) -> TokenUsage:
     """Convert a token_usage row to a domain instance."""
     recorded_at = row.recorded_at
     if isinstance(recorded_at, str):
-        recorded_at = datetime.fromisoformat(recorded_at)
+        parsed = datetime.fromisoformat(recorded_at)
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            parsed = parsed.replace(tzinfo=UTC)
+        recorded_at = parsed
+    elif recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
+        recorded_at = recorded_at.replace(tzinfo=UTC)
     return TokenUsage(
         id=row.id,
         run_id=row.run_id,
@@ -52,7 +57,7 @@ def _usage_to_values(entry: TokenUsage) -> dict[str, object]:
         "prompt_tokens": entry.prompt_tokens,
         "completion_tokens": entry.completion_tokens,
         "total_tokens": entry.total_tokens,
-        "recorded_at": entry.recorded_at.isoformat(),
+        "recorded_at": entry.recorded_at,
         "call_ref": entry.call_ref,
     }
 

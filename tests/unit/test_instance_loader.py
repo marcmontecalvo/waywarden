@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from waywarden.config import InstanceLoadError, load_instances
-from waywarden.domain.instance import InstanceId
+from waywarden.domain.ids import InstanceId
 
 
 def test_load_instances_loads_checked_in_fixture() -> None:

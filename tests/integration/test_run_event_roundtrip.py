@@ -11,9 +11,10 @@ This is the P2 exit gate.
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 from uuid import uuid4
 
 import pytest
@@ -67,7 +68,7 @@ DATABASE_URL = "postgresql+psycopg://waywarden:waywarden@127.0.0.1:5432/waywarde
 
 
 @pytest_asyncio.fixture(scope="session")
-async def _engine() -> AsyncEngine:
+async def _engine() -> AsyncIterator[AsyncEngine]:
     """Create a shared async engine for the test session."""
     engine = create_async_engine(DATABASE_URL, echo=False)
     yield engine
@@ -86,7 +87,7 @@ async def _apply_migrations(_engine: AsyncEngine) -> None:
 
 
 @pytest_asyncio.fixture()
-async def session(_engine: AsyncEngine) -> AsyncSession:
+async def session(_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
     """Fresh session per test, bound to the shared engine."""
     sm = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
     async with sm() as s:
@@ -100,7 +101,15 @@ async def session(_engine: AsyncEngine) -> AsyncSession:
 
 def _make_run(
     run_id: str = "run-int-001",
-    state: str = "created",
+    state: Literal[
+        "created",
+        "planning",
+        "executing",
+        "waiting_approval",
+        "completed",
+        "failed",
+        "cancelled",
+    ] = "created",
     terminal_seq: int | None = None,
 ) -> Run:
     return Run(
@@ -120,7 +129,18 @@ def _make_run(
 
 def _make_event(
     run_id: str,
-    event_type: str,
+    event_type: Literal[
+        "run.created",
+        "run.plan_ready",
+        "run.execution_started",
+        "run.progress",
+        "run.approval_waiting",
+        "run.resumed",
+        "run.artifact_created",
+        "run.completed",
+        "run.failed",
+        "run.cancelled",
+    ],
     seq: int,
     payload: Mapping[str, object],
     causation: Causation | None = None,
@@ -339,7 +359,7 @@ async def test_full_lifecycle_roundtrip(session: AsyncSession) -> None:
     for i, evt in enumerate(events, start=1):
         assert evt.seq == i
 
-    # -- Verify: all 9 event types exercised --------------------------------
+    # -- Verify: all 8 event types exercised in this test ------------------
     event_types_seen = {evt.type for evt in events}
     expected_types: frozenset[str] = frozenset(
         [
@@ -354,6 +374,26 @@ async def test_full_lifecycle_roundtrip(session: AsyncSession) -> None:
         ]
     )
     assert event_types_seen == expected_types
+
+    # -- Verify: the full 10-type RT-002 catalog is covered across tests ---
+    # test_full_lifecycle_roundtrip covers 8 types above.
+    # test_failed_and_cancelled_event_types covers run.failed and run.cancelled.
+    # Together they cover all 10 RT-002 event types.
+    all_rt002_types: frozenset[str] = frozenset(
+        [
+            "run.created",
+            "run.plan_ready",
+            "run.execution_started",
+            "run.progress",
+            "run.approval_waiting",
+            "run.resumed",
+            "run.artifact_created",
+            "run.completed",
+            "run.failed",
+            "run.cancelled",
+        ]
+    )
+    assert event_types_seen | {"run.failed", "run.cancelled"} == all_rt002_types
 
     # -- Verify: payloads survive JSONB roundtrip (normalized dict equality) --
     expected_payloads = [
@@ -494,13 +534,117 @@ async def test_manifest_roundtrip_equals_fixture(session: AsyncSession) -> None:
     assert _normalized_json(loaded_dict) == _normalized_json(fixture_data)
 
 
+# ---------------------------------------------------------------------------
+# Test 4: run.failed and run.cancelled event types (RT-002 full catalog)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.integration
+async def test_failed_and_cancelled_event_types(session: AsyncSession) -> None:
+    """Prove run.failed and run.cancelled persist and reload correctly.
+
+    This test covers the two RT-002 event types not exercised by the
+    lifecycle roundtrip (completed path), ensuring the full 10-type
+    catalog is integration-tested.
+    """
+    run_repo = RunRepositoryImpl(session)
+    event_repo = RunEventRepositoryImpl(session)
+
+    # -- Failed run path ---------------------------------------------------
+    failed_run_id = "run-failed-001"
+    run = _make_run(failed_run_id, state="executing")
+    await run_repo.create(run)
+
+    # run.created
+    created_payload = {
+        "instance_id": "inst-failed-001",
+        "profile": "coding",
+        "policy_preset": "ask",
+        "manifest_ref": "manifest://v1",
+        "entrypoint": "api",
+    }
+    evt1 = _make_event(failed_run_id, "run.created", 1, created_payload)
+    await event_repo.append(evt1)
+
+    # run.execution_started
+    exec_payload = {
+        "worker_session_ref": "ws://session-failed",
+        "attempt": 1,
+        "resume_kind": "post_approval",
+    }
+    evt2 = _make_event(failed_run_id, "run.execution_started", 2, exec_payload)
+    await event_repo.append(evt2)
+
+    # run.progress
+    progress_payload = {"phase": "execute", "milestone": "tool_invoked"}
+    evt3 = _make_event(failed_run_id, "run.progress", 3, progress_payload)
+    await event_repo.append(evt3)
+
+    # run.failed (terminal)
+    failed_payload = {
+        "failure_code": "TOOL_ERROR",
+        "message": "Shell command exited with code 1",
+        "retryable": False,
+    }
+    evt4 = _make_event(failed_run_id, "run.failed", 4, failed_payload)
+    await event_repo.append(evt4)
+
+    await run_repo.update_state(failed_run_id, "failed", 4)
+    await session.flush()
+
+    events = await event_repo.list(failed_run_id)
+    assert len(events) == 4
+    event_types_seen = {evt.type for evt in events}
+    assert "run.failed" in event_types_seen
+
+    # Verify failed payload roundtrip
+    failed_evt = [e for e in events if e.type == "run.failed"][0]
+    assert failed_evt.payload["failure_code"] == "TOOL_ERROR"
+    assert failed_evt.payload["retryable"] is False
+
+    # -- Cancelled run path ------------------------------------------------
+    cancelled_run_id = "run-cancelled-001"
+    run2 = _make_run(cancelled_run_id, state="waiting_approval")
+    await run_repo.create(run2)
+
+    # run.created
+    evt_c1 = _make_event(cancelled_run_id, "run.created", 1, created_payload)
+    await event_repo.append(evt_c1)
+
+    # run.approval_waiting
+    approval_payload = {
+        "approval_id": "apv-cancel-001",
+        "approval_kind": "shell.write",
+        "summary": "Requires approval",
+    }
+    evt_c2 = _make_event(cancelled_run_id, "run.approval_waiting", 2, approval_payload)
+    await event_repo.append(evt_c2)
+
+    # run.cancelled (terminal)
+    cancelled_payload = {"reason": "operator_aborted"}
+    evt_c3 = _make_event(cancelled_run_id, "run.cancelled", 3, cancelled_payload)
+    await event_repo.append(evt_c3)
+
+    await run_repo.update_state(cancelled_run_id, "cancelled", 3)
+    await session.flush()
+
+    events_c = await event_repo.list(cancelled_run_id)
+    assert len(events_c) == 3
+    event_types_seen_c = {evt.type for evt in events_c}
+    assert "run.cancelled" in event_types_seen_c
+
+    # Verify cancelled payload roundtrip
+    cancelled_evt = [e for e in events_c if e.type == "run.cancelled"][0]
+    assert cancelled_evt.payload["reason"] == "operator_aborted"
+
+
 def _manifest_to_dict(m: WorkspaceManifest) -> dict[str, object]:
     """Convert a WorkspaceManifest (or dynamic equivalent) to a serializable dict."""
-    from dataclasses import fields
+    from dataclasses import fields, is_dataclass
 
     def _to_dict(obj: object) -> object:
         # Real frozen dataclasses with slots=True have no __dict__
-        if hasattr(obj, "__dataclass_fields__"):
+        if is_dataclass(obj):
             return {f.name: _to_dict(getattr(obj, f.name)) for f in fields(obj)}
         if isinstance(obj, list):
             return [_to_dict(item) for item in obj]
@@ -518,14 +662,13 @@ def _manifest_to_dict(m: WorkspaceManifest) -> dict[str, object]:
             return [_strip_nulls(item) for item in obj]
         return obj
 
-    return _strip_nulls(
-        {
-            "inputs": [_to_dict(i) for i in m.inputs],
-            "writable_paths": [_to_dict(p) for p in m.writable_paths],
-            "outputs": [_to_dict(o) for o in m.outputs],
-            "network_policy": _to_dict(m.network_policy),
-            "tool_policy": _to_dict(m.tool_policy),
-            "secret_scope": _to_dict(m.secret_scope),
-            "snapshot_policy": _to_dict(m.snapshot_policy),
-        },
-    )
+    result: dict[str, object] = {
+        "inputs": [_to_dict(i) for i in m.inputs],
+        "writable_paths": [_to_dict(p) for p in m.writable_paths],
+        "outputs": [_to_dict(o) for o in m.outputs],
+        "network_policy": _to_dict(m.network_policy),
+        "tool_policy": _to_dict(m.tool_policy),
+        "secret_scope": _to_dict(m.secret_scope),
+        "snapshot_policy": _to_dict(m.snapshot_policy),
+    }
+    return _strip_nulls(result)  # type: ignore[return-value]

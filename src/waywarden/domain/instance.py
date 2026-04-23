@@ -15,6 +15,8 @@ from typing import Any
 
 from waywarden.domain.ids import InstanceId
 
+__all__ = ["InstanceId", "InstanceDescriptor", "InstanceConfig", "InstanceRegistry"]
+
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:
     trimmed = value.strip()

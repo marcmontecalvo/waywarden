@@ -5,9 +5,11 @@ pytest.importorskip("opentelemetry_sdk")
 
 
 def test_otel_records_span() -> None:
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
-    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+    from opentelemetry.sdk.trace import TracerProvider  # type: ignore[import-not-found]
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor  # type: ignore[import-not-found]
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import (  # type: ignore[import-not-found]
+        InMemorySpanExporter,
+    )
 
     from waywarden.infra.tracing.otel import OtelTracer
 
@@ -16,7 +18,7 @@ def test_otel_records_span() -> None:
     provider.add_span_processor(SimpleSpanProcessor(exporter))
 
     # Install the provider so get_tracer picks it up.
-    from opentelemetry import trace as trace_api
+    from opentelemetry import trace as trace_api  # type: ignore[import-not-found]
 
     trace_api.set_tracer_provider(provider)
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from typing import Literal
 
 import pytest_asyncio
 from sqlalchemy import text
@@ -16,7 +18,7 @@ from waywarden.infra.db.repositories.approval_repo import ApprovalRepositoryImpl
 def _make_approval(
     approval_id: str = "appr_001",
     run_id: str = "run_001",
-    state: str = "pending",
+    state: Literal["pending", "granted", "denied", "timeout"] = "pending",
     decided_at: datetime | None = None,
     decided_by: str | None = None,
     expires_at: datetime | None = None,
@@ -37,7 +39,7 @@ def _make_approval(
 
 
 @pytest_asyncio.fixture
-async def session() -> AsyncSession:
+async def session() -> AsyncIterator[AsyncSession]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 

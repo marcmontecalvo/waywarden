@@ -1,21 +1,35 @@
 """Tests for CHECK constraints matching canonical vocabularies."""
 
+from __future__ import annotations
+
 from sqlalchemy.dialects import postgresql
 
 from waywarden.infra.db.metadata import metadata
 
 
-def _get_check_sql(table_name: str) -> list[str]:
-    """Return CHECK constraint SQL strings for a table."""
+def _get_check_sql(table_name: str) -> list[tuple[str, str]]:
+    """Return CHECK constraint (name, SQL) tuples for a table."""
     table = metadata.tables[table_name]
-    results = []
+    results: list[tuple[str, str]] = []
     for c in table.constraints:
-        if type(c).__name__ == "CheckConstraint":
-            compiled = c.sqltext.compile(
-                dialect=postgresql.dialect(),
+        # CheckConstraint is not fully typed in mypy stubs; use type name check.
+        _cname = type(c).__name__
+        if _cname != "CheckConstraint":
+            continue
+        sqltext = getattr(c, "sqltext", None)
+        if sqltext is None:
+            continue
+        # postgresql.dialect() is untyped in mypy stubs
+        _dialect = postgresql.dialect()  # type: ignore[no-untyped-call]
+        compiled_str = str(
+            sqltext.compile(
+                dialect=_dialect,
                 compile_kwargs={"literal_binds": True},
             )
-            results.append((c.name, str(compiled)))
+        )
+        name = c.name
+        if isinstance(name, str):
+            results.append((name, compiled_str))
     return results
 
 

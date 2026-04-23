@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from sqlalchemy import (
+    INTEGER,
     TIMESTAMP,
     CheckConstraint,
     Column,
@@ -11,6 +12,7 @@ from sqlalchemy import (
     Table,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 
 from waywarden.infra.db.metadata import metadata
 
@@ -19,13 +21,13 @@ run_events = Table(
     metadata,
     Column("id", String, primary_key=True),
     Column("run_id", String, nullable=False),
-    Column("seq", String, nullable=False),
+    Column("seq", INTEGER, nullable=False),
     Column(
         "type",
         String,
         nullable=False,
     ),
-    Column("payload", String),
+    Column("payload", JSONB),
     Column("timestamp", TIMESTAMP(timezone=True), nullable=False),
     Column("causation", String),
     Column("actor", String),

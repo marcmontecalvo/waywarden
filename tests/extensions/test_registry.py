@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 import pytest
 
@@ -26,8 +26,15 @@ class _TestExt(Extension):
             raise ExtensionConfigError("validation failed")
 
 
-def _make_ext(name: str, version: str = "1.0.0", fail: bool = False):
-    return lambda _config: _TestExt(name=name, version=version, fail=fail)
+def _make_ext(
+    name: str,
+    version: str = "1.0.0",
+    fail: bool = False,
+) -> Callable[[Mapping[str, object]], _TestExt]:
+    def _factory(cfg: Mapping[str, object]) -> _TestExt:
+        return _TestExt(name=name, version=version, fail=fail)
+
+    return _factory
 
 
 def _decl(name: str, version: str = "1.0.0", fail: bool = False) -> ExtensionDecl:
