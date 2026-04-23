@@ -1,6 +1,15 @@
 id: ea
 display_name: Executive Assistant
 version: 1.0.0
+required_providers:
+  model: fake-model
+  memory: fake-memory
+  knowledge: fake-knowledge
+  tool:
+    - fake-tool
+  channel:
+    - fake-channel
+  tracer: noop
 supported_extensions:
   - widget
   - command

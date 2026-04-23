@@ -6,7 +6,12 @@ from waywarden.config import AppConfig
 
 
 def test_healthz_omits_commit_sha_by_default() -> None:
-    settings = AppConfig(host="127.0.0.1", port=9001, commit_sha="abc123")
+    settings = AppConfig(
+        host="127.0.0.1",
+        port=9001,
+        active_profile="ea",
+        commit_sha="abc123",
+    )
     client = TestClient(create_app(settings))
     response = client.get("/healthz")
 
@@ -22,6 +27,7 @@ def test_healthz_includes_commit_sha_when_enabled() -> None:
     settings = AppConfig(
         host="127.0.0.1",
         port=9001,
+        active_profile="ea",
         commit_sha="abc123",
         expose_commit_sha=True,
     )

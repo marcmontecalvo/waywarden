@@ -6,13 +6,13 @@ from waywarden.infra.tracing.noop import NoopTracer
 
 
 def test_factory_returns_noop_by_default() -> None:
-    cfg = AppConfig(host="localhost", port=8080)
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     tracer = build_tracer(cfg)
     assert isinstance(tracer, NoopTracer)
 
 
 def test_factory_returns_noop_when_explicitly_set() -> None:
-    cfg = AppConfig(host="localhost", port=8080, tracer="noop")
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea", tracer="noop")
     tracer = build_tracer(cfg)
     assert isinstance(tracer, NoopTracer)
 
@@ -24,7 +24,11 @@ def test_factory_dispatches_otel_when_endpoint_provided() -> None:
     OtelTracer fails with ImportError/ModuleNotFoundError.
     """
     cfg = AppConfig(
-        host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317"
+        host="localhost",
+        port=8080,
+        active_profile="ea",
+        tracer="otel",
+        tracer_endpoint="http://localhost:4317",
     )
     with pytest.raises((ImportError, ModuleNotFoundError)):
         build_tracer(cfg)

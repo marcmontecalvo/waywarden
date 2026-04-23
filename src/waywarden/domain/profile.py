@@ -38,6 +38,9 @@ SEMVER_PATTERN = re.compile(
     r"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
 )
 PROFILE_EXTENSION_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:-[a-z0-9_]+)*$")
+PROVIDER_REF_PATTERN = re.compile(
+    r"^(?P<name>[a-z][a-z0-9_-]*)(?:@(?P<version>[A-Za-z0-9._*+-]+))?$"
+)
 
 
 def _require_non_empty_text(value: str, *, field_name: str) -> str:
@@ -100,6 +103,108 @@ def _normalize_supported_extensions(
 
 
 @dataclass(frozen=True, slots=True)
+class RequiredProviders:
+    """Typed provider requirements declared by a profile pack."""
+
+    model: str
+    memory: str
+    knowledge: str
+    tool: tuple[str, ...] = ()
+    channel: tuple[str, ...] = ()
+    tracer: str = "noop"
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "model",
+            _normalize_provider_ref(self.model, field_name="required_providers.model"),
+        )
+        object.__setattr__(
+            self,
+            "memory",
+            _normalize_provider_ref(self.memory, field_name="required_providers.memory"),
+        )
+        object.__setattr__(
+            self,
+            "knowledge",
+            _normalize_provider_ref(self.knowledge, field_name="required_providers.knowledge"),
+        )
+        object.__setattr__(
+            self,
+            "tool",
+            _normalize_provider_ref_list(self.tool, field_name="required_providers.tool"),
+        )
+        object.__setattr__(
+            self,
+            "channel",
+            _normalize_provider_ref_list(self.channel, field_name="required_providers.channel"),
+        )
+        object.__setattr__(
+            self,
+            "tracer",
+            _normalize_provider_ref(self.tracer, field_name="required_providers.tracer"),
+        )
+
+    def iter_provider_slots(self) -> Iterator[tuple[str, str]]:
+        """Yield each required provider reference with a slot key."""
+        yield ("model", self.model)
+        yield ("memory", self.memory)
+        yield ("knowledge", self.knowledge)
+        for index, ref in enumerate(self.tool):
+            yield (f"tool[{index}]", ref)
+        for index, ref in enumerate(self.channel):
+            yield (f"channel[{index}]", ref)
+        yield ("tracer", self.tracer)
+
+
+def parse_provider_ref(provider_ref: str) -> tuple[str, str | None]:
+    """Parse ``name`` or ``name@version`` provider references."""
+    normalized = _normalize_provider_ref(provider_ref, field_name="provider reference")
+    match = PROVIDER_REF_PATTERN.fullmatch(normalized)
+    if match is None:
+        raise ValueError("provider reference must use '<name>' or '<name>@<version>' format")
+    return match.group("name"), match.group("version")
+
+
+def _normalize_provider_ref(value: str, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{field_name} must be a string")
+
+    normalized = _require_non_empty_text(value, field_name=field_name)
+    if PROVIDER_REF_PATTERN.fullmatch(normalized) is None:
+        raise ValueError(
+            f"{field_name} must use '<name>' or '<name>@<version>' format "
+            "(for example 'fake-model' or 'fake-model@1.0.0')"
+        )
+    return normalized
+
+
+def _normalize_provider_ref_list(
+    values: tuple[str, ...] | list[str],
+    *,
+    field_name: str,
+) -> tuple[str, ...]:
+    if isinstance(values, str):
+        raise TypeError(f"{field_name} must be a sequence of strings")
+
+    normalized_values: list[str] = []
+    seen: set[str] = set()
+    for index, value in enumerate(values):
+        normalized = _normalize_provider_ref(value, field_name=f"{field_name}[{index}]")
+        if normalized in seen:
+            raise ValueError(f"{field_name}[{index}] duplicates {normalized!r}")
+        seen.add(normalized)
+        normalized_values.append(normalized)
+    return tuple(normalized_values)
+
+
+def _normalize_required_providers(value: RequiredProviders) -> RequiredProviders:
+    if isinstance(value, RequiredProviders):
+        return value
+    raise TypeError("required_providers must be a RequiredProviders object")
+
+
+@dataclass(frozen=True, slots=True)
 class ProfileDescriptor:
     """Describes one profile pack and its supported extension classes."""
 
@@ -107,6 +212,7 @@ class ProfileDescriptor:
     display_name: str
     version: str
     supported_extensions: tuple[str, ...]
+    required_providers: RequiredProviders
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -128,6 +234,11 @@ class ProfileDescriptor:
             self,
             "supported_extensions",
             _normalize_supported_extensions(list(self.supported_extensions)),
+        )
+        object.__setattr__(
+            self,
+            "required_providers",
+            _normalize_required_providers(self.required_providers),
         )
 
 

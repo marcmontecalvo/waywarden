@@ -5,6 +5,7 @@ import yaml
 from pydantic import ValidationError
 
 from waywarden.config.settings import AppConfig, build_app_config_class
+from waywarden.profiles import ProfileLoadError, load_profiles
 
 
 class ConfigLoadError(ValueError):
@@ -31,7 +32,10 @@ def load_app_config(config_dir: Path | None = None, cwd: Path | None = None) -> 
     if app_yaml_is_valid and app_config_path.is_file():
         settings_cls = build_app_config_class(app_config_path)
         try:
-            return settings_cls(_env_file=resolved_cwd / ".env")  # type: ignore[call-arg]
+            config = settings_cls(_env_file=resolved_cwd / ".env")  # type: ignore[call-arg]
+            _validate_active_profile(config, profiles_dir=resolved_cwd / "profiles", errors=errors)
+            if not errors:
+                return config
         except ValidationError as exc:
             errors.extend(_format_validation_errors(app_config_path, exc))
 
@@ -81,3 +85,18 @@ def _format_validation_errors(app_config_path: Path, exc: ValidationError) -> li
             "(after env > .env > yaml precedence)"
         )
     return errors
+
+
+def _validate_active_profile(config: AppConfig, *, profiles_dir: Path, errors: list[str]) -> None:
+    try:
+        profiles = load_profiles(profiles_dir)
+    except ProfileLoadError as exc:
+        errors.extend(f"profile validation prerequisite failed: {error}" for error in exc.errors)
+        return
+
+    if config.active_profile not in profiles:
+        errors.append(
+            f"{profiles_dir.as_posix()}: field `active_profile`: "
+            f"profile {config.active_profile!r} does not match any checked-in profile "
+            "(after env > .env > yaml precedence)"
+        )

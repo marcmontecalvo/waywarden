@@ -85,7 +85,7 @@ def test_run_list_instances_prints_checked_in_fixture(
 def test_run_serve_builds_app_and_passes_bind_settings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    settings = AppConfig(host="127.0.0.1", port=9001, log_level="WARNING")
+    settings = AppConfig(host="127.0.0.1", port=9001, active_profile="ea", log_level="WARNING")
     sentinel_app = object()
     calls: dict[str, Any] = {}
 

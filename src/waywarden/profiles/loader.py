@@ -7,7 +7,15 @@ from pathlib import Path
 
 import yaml
 
-from waywarden.domain.profile import ProfileDescriptor, ProfileId, ProfileRegistry
+from waywarden.domain.profile import (
+    ProfileDescriptor,
+    ProfileId,
+    ProfileRegistry,
+    RequiredProviders,
+    parse_provider_ref,
+)
+from waywarden.extensions.errors import UnknownExtensionError
+from waywarden.extensions.registry import ExtensionRegistry
 
 
 class ProfileLoadError(ValueError):
@@ -23,7 +31,24 @@ class ProfileLoadError(ValueError):
         return "\n".join(lines)
 
 
-def load_profiles(profiles_dir: Path | None = None) -> ProfileRegistry:
+class ProfileStartupError(ValueError):
+    """Aggregated startup validation errors for profile provider requirements."""
+
+    def __init__(self, errors: list[str]) -> None:
+        self.errors = errors
+        super().__init__(self.__str__())
+
+    def __str__(self) -> str:
+        lines = ["Profile startup validation failed:"]
+        lines.extend(f"- {error}" for error in self.errors)
+        return "\n".join(lines)
+
+
+def load_profiles(
+    profiles_dir: Path | None = None,
+    *,
+    extension_registry: ExtensionRegistry | None = None,
+) -> ProfileRegistry:
     """Load all profile manifests from ``profiles/*/profile.yaml``."""
 
     resolved_profiles_dir = (profiles_dir or Path("profiles")).resolve()
@@ -55,7 +80,61 @@ def load_profiles(profiles_dir: Path | None = None) -> ProfileRegistry:
             key=lambda item: item[1].id,
         )
     }
-    return ProfileRegistry(ordered_descriptors)
+    registry = ProfileRegistry(ordered_descriptors)
+    if extension_registry is not None:
+        validate_profile_startup(registry, extension_registry)
+    return registry
+
+
+def validate_profile_startup(
+    profiles: ProfileRegistry,
+    extension_registry: ExtensionRegistry,
+) -> None:
+    """Validate that profile-required providers exist and satisfy capabilities."""
+
+    errors: list[str] = []
+    for profile in profiles.values():
+        for slot, provider_ref in profile.required_providers.iter_provider_slots():
+            provider_name, version_spec = parse_provider_ref(provider_ref)
+            profile_context = f"profile {profile.id!r} required_providers.{slot}"
+            try:
+                extension = extension_registry.get(provider_name)
+            except UnknownExtensionError:
+                errors.append(f"{profile_context}: unknown provider {provider_name!r}")
+                continue
+
+            required_capabilities = _required_capabilities_for_slot(slot)
+            missing_capabilities = sorted(required_capabilities - extension.capabilities)
+            if missing_capabilities:
+                errors.append(
+                    f"{profile_context}: provider {provider_name!r} missing capabilities "
+                    f"{missing_capabilities}"
+                )
+
+            if version_spec is not None and extension.version != version_spec:
+                errors.append(
+                    f"{profile_context}: provider {provider_name!r} version "
+                    f"{extension.version!r} does not satisfy required version {version_spec!r}"
+                )
+
+    if errors:
+        raise ProfileStartupError(errors)
+
+
+def _required_capabilities_for_slot(slot: str) -> frozenset[str]:
+    if slot.startswith("tool["):
+        return frozenset({"tool"})
+    if slot.startswith("channel["):
+        return frozenset({"channel"})
+    if slot == "model":
+        return frozenset({"model"})
+    if slot == "memory":
+        return frozenset({"memory"})
+    if slot == "knowledge":
+        return frozenset({"knowledge"})
+    if slot == "tracer":
+        return frozenset({"tracer"})
+    raise ValueError(f"unsupported provider slot {slot!r}")
 
 
 def _load_profile_descriptor(
@@ -79,8 +158,21 @@ def _load_profile_descriptor(
         errors.append(f"{profile_path.as_posix()}: profile setting names must be strings")
         return None
 
+    normalized_content = dict(content)
+    raw_required_providers = normalized_content.get("required_providers")
+    if not isinstance(raw_required_providers, dict):
+        errors.append(
+            f"{profile_path.as_posix()}: required_providers must be a mapping with "
+            "model/memory/knowledge/tool/channel/tracer fields"
+        )
+        return None
+    if not all(isinstance(key, str) for key in raw_required_providers):
+        errors.append(f"{profile_path.as_posix()}: required_providers keys must be strings")
+        return None
+
     try:
-        return ProfileDescriptor(**content)
+        normalized_content["required_providers"] = RequiredProviders(**raw_required_providers)
+        return ProfileDescriptor(**normalized_content)
     except (TypeError, ValueError) as exc:
         errors.append(f"{profile_path.as_posix()}: {exc}")
         return None

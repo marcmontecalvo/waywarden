@@ -27,6 +27,7 @@ class DatabaseUrlMissing(RuntimeError):
 class AppConfig(BaseSettings):
     host: str
     port: int
+    active_profile: str
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     env: str = "development"
     commit_sha: str = ""
@@ -69,6 +70,16 @@ class AppConfig(BaseSettings):
         if env in {"production", "test"} and not value:
             raise ValueError("must be set to a non-empty string when env is 'production' or 'test'")
         return value
+
+    @field_validator("active_profile", mode="before")
+    @classmethod
+    def normalize_active_profile(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise TypeError("active_profile must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("active_profile must be set to a non-empty string")
+        return normalized
 
     @field_validator("tracer_endpoint")
     @classmethod

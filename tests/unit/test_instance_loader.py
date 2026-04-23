@@ -28,7 +28,14 @@ def test_load_instances_aggregates_invalid_schema_and_profile_reference(
     profiles_dir = tmp_path / "profiles"
     (profiles_dir / "ea").mkdir(parents=True)
     (profiles_dir / "ea" / "profile.yaml").write_text(
-        "id: ea\ndisplay_name: Executive Assistant\nversion: 1.0.0\nsupported_extensions:\n"
+        "id: ea\n"
+        "display_name: Executive Assistant\n"
+        "version: 1.0.0\n"
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
         "  - skill\n",
         encoding="utf-8",
     )
@@ -75,6 +82,10 @@ def test_load_instances_parses_multiple_instances_deterministically(tmp_path: Pa
             f"id: {profile_id}\n"
             f"display_name: {display_name}\n"
             "version: 1.0.0\n"
+            "required_providers:\n"
+            "  model: fake-model\n"
+            "  memory: fake-memory\n"
+            "  knowledge: fake-knowledge\n"
             "supported_extensions:\n"
             "  - skill\n",
             encoding="utf-8",

@@ -8,7 +8,12 @@ from waywarden.config import AppConfig, get_request_app_config
 
 
 def test_create_app_uses_injected_settings() -> None:
-    settings = AppConfig(host="127.0.0.1", port=9001, commit_sha="abc123")
+    settings = AppConfig(
+        host="127.0.0.1",
+        port=9001,
+        active_profile="ea",
+        commit_sha="abc123",
+    )
 
     app = create_app(settings)
 
@@ -18,7 +23,12 @@ def test_create_app_uses_injected_settings() -> None:
 
 
 def test_app_config_available_via_dependency_injection() -> None:
-    settings = AppConfig(host="127.0.0.1", port=9001, commit_sha="abc123")
+    settings = AppConfig(
+        host="127.0.0.1",
+        port=9001,
+        active_profile="ea",
+        commit_sha="abc123",
+    )
     app = create_app(settings)
 
     @app.get("/_test-config")

@@ -84,7 +84,7 @@ def _call_healthz(
     headers: dict[str, str] | None = None,
 ) -> tuple[Response, list[dict[str, object]]]:
     stderr = io.StringIO()
-    settings = AppConfig(host="127.0.0.1", port=9001, log_level="INFO")
+    settings = AppConfig(host="127.0.0.1", port=9001, active_profile="ea", log_level="INFO")
 
     with redirect_stderr(stderr):
         client = TestClient(create_app(settings))

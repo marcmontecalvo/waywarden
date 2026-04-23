@@ -48,7 +48,15 @@ def test_load_profiles_aggregates_invalid_profile_errors(tmp_path: Path) -> None
     profiles_dir = tmp_path / "profiles"
     (profiles_dir / "valid").mkdir(parents=True)
     (profiles_dir / "valid" / "profile.yaml").write_text(
-        "id: valid\ndisplay_name: Valid\nversion: 1.0.0\nsupported_extensions:\n  - skill\n",
+        "id: valid\n"
+        "display_name: Valid\n"
+        "version: 1.0.0\n"
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
+        "  - skill\n",
         encoding="utf-8",
     )
     (profiles_dir / "broken-yaml").mkdir()
@@ -58,7 +66,14 @@ def test_load_profiles_aggregates_invalid_profile_errors(tmp_path: Path) -> None
     )
     (profiles_dir / "broken-data").mkdir()
     (profiles_dir / "broken-data" / "profile.yaml").write_text(
-        'id: broken-data\ndisplay_name: Broken\nversion: "1.0"\nsupported_extensions: []\n',
+        "id: broken-data\n"
+        "display_name: Broken\n"
+        'version: "1.0"\n'
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions: []\n",
         encoding="utf-8",
     )
 
@@ -79,12 +94,28 @@ def test_load_profiles_rejects_duplicate_profile_ids_deterministically(
     profiles_dir = tmp_path / "profiles"
     (profiles_dir / "alpha").mkdir(parents=True)
     (profiles_dir / "alpha" / "profile.yaml").write_text(
-        "id: shared\ndisplay_name: Alpha\nversion: 1.0.0\nsupported_extensions:\n  - skill\n",
+        "id: shared\n"
+        "display_name: Alpha\n"
+        "version: 1.0.0\n"
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
+        "  - skill\n",
         encoding="utf-8",
     )
     (profiles_dir / "beta").mkdir()
     (profiles_dir / "beta" / "profile.yaml").write_text(
-        "id: shared\ndisplay_name: Beta\nversion: 1.0.0\nsupported_extensions:\n  - prompt\n",
+        "id: shared\n"
+        "display_name: Beta\n"
+        "version: 1.0.0\n"
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
+        "  - prompt\n",
         encoding="utf-8",
     )
 
@@ -102,7 +133,15 @@ def test_load_profiles_one_valid_profile(tmp_path: Path) -> None:
     profiles_dir = tmp_path / "profiles"
     (profiles_dir / "solo").mkdir(parents=True)
     (profiles_dir / "solo" / "profile.yaml").write_text(
-        "id: solo\ndisplay_name: Solo Profile\nversion: 1.0.0\nsupported_extensions:\n  - skill\n",
+        "id: solo\n"
+        "display_name: Solo Profile\n"
+        "version: 1.0.0\n"
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
+        "  - skill\n",
         encoding="utf-8",
     )
 
@@ -120,7 +159,15 @@ def test_load_profiles_one_invalid_profile(tmp_path: Path) -> None:
     (profiles_dir / "bad").mkdir(parents=True)
     # version "2.0" is not valid semver — must be "2.0.0"
     (profiles_dir / "bad" / "profile.yaml").write_text(
-        'id: bad\ndisplay_name: Bad Profile\nversion: "2.0"\nsupported_extensions:\n  - skill\n',
+        "id: bad\n"
+        "display_name: Bad Profile\n"
+        'version: "2.0"\n'
+        "required_providers:\n"
+        "  model: fake-model\n"
+        "  memory: fake-memory\n"
+        "  knowledge: fake-knowledge\n"
+        "supported_extensions:\n"
+        "  - skill\n",
         encoding="utf-8",
     )
 

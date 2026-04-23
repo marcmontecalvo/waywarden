@@ -7,11 +7,31 @@ from waywarden.config import ConfigLoadError, load_app_config
 from waywarden.config.settings import AppConfig
 
 
+def _write_checked_in_profile(tmp_path: Path) -> None:
+    profiles_dir = tmp_path / "profiles" / "ea"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "profile.yaml").write_text(
+        (
+            "id: ea\n"
+            "display_name: Executive Assistant\n"
+            "version: 1.0.0\n"
+            "required_providers:\n"
+            "  model: fake-model\n"
+            "  memory: fake-memory\n"
+            "  knowledge: fake-knowledge\n"
+            "supported_extensions:\n"
+            "  - skill\n"
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_database_url_required_in_production_raises(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
-        "host: 127.0.0.1\nport: 8080\nenv: production\n",
+        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\nenv: production\n",
         encoding="utf-8",
     )
 
@@ -23,12 +43,14 @@ def test_database_url_required_in_production_raises(tmp_path: Path) -> None:
 
 
 def test_database_url_accepts_dev_value(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
         (
             "host: 127.0.0.1\n"
             "port: 8080\n"
+            "active_profile: ea\n"
             "env: development\n"
             "database_url: postgresql+psycopg://dev:dev@127.0.0.1:5432/waywarden\n"
         ),
@@ -41,18 +63,48 @@ def test_database_url_accepts_dev_value(tmp_path: Path) -> None:
 
 
 def test_tracer_field_literal_enforced() -> None:
-    cfg = AppConfig(host="localhost", port=8080)
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     assert cfg.tracer == "noop"
 
     cfg_otel = AppConfig(
-        host="localhost", port=8080, tracer="otel", tracer_endpoint="http://localhost:4317"
+        host="localhost",
+        port=8080,
+        active_profile="ea",
+        tracer="otel",
+        tracer_endpoint="http://localhost:4317",
     )
     assert cfg_otel.tracer == "otel"
 
     with pytest.raises(ValidationError):
-        AppConfig(host="localhost", port=8080, tracer="invalid")  # type: ignore[arg-type]
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            tracer="invalid",
+        )  # type: ignore[arg-type]
 
 
 def test_tracer_otel_requires_endpoint() -> None:
     with pytest.raises(ValidationError, match="tracer_endpoint"):
-        AppConfig(host="localhost", port=8080, tracer="otel", tracer_endpoint=None)
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            tracer="otel",
+            tracer_endpoint=None,
+        )
+
+
+def test_active_profile_required(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "app.yaml").write_text(
+        "host: 127.0.0.1\nport: 8080\nenv: development\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigLoadError) as exc_info:
+        load_app_config(config_dir=config_dir, cwd=tmp_path)
+
+    assert "field `active_profile`" in str(exc_info.value)
