@@ -1,0 +1,39 @@
+# ask preset — default-ask policy per ADR-0005.
+#
+# Safe read operations are auto-allowed; write / exec / destructive operations
+# require explicit approval before execution.
+
+name: ask
+preset: ask
+default_decision: approval-required
+rules:
+  - tool: shell.read
+    decision: auto-allow
+    reason: "Read-only shell operations are safe"
+  - tool: shell.write
+    decision: approval-required
+    reason: "Write operations may affect project state"
+  - tool: http.get
+    decision: auto-allow
+    reason: "Read-only network requests are low-risk"
+  - tool: http.post
+    decision: approval-required
+    reason: "Outbound requests may leak data"
+  - tool: tool.exec
+    decision: approval-required
+    reason: "Arbitrary execution is dangerous"
+  - tool: filesystem.read
+    decision: auto-allow
+    reason: "Read-only filesystem access is safe"
+  - tool: filesystem.write
+    decision: approval-required
+    reason: "File writes may corrupt state"
+  - tool: filesystem.delete
+    decision: approval-required
+    reason: "File deletion is irreversible"
+  - tool: secret.export
+    decision: forbidden
+    reason: "Secret export is never auto-allowed"
+  - tool: shell.command
+    decision: approval-required
+    reason: "Arbitrary shell commands are dangerous"
