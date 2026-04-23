@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from waywarden.config import ConfigLoadError, load_app_config
 from waywarden.config.settings import AppConfig
@@ -126,3 +126,43 @@ def test_active_profile_required(tmp_path: Path) -> None:
         load_app_config(config_dir=config_dir, cwd=tmp_path)
 
     assert "field `active_profile`" in str(exc_info.value)
+
+
+def test_honcho_requires_endpoint_and_key() -> None:
+    with pytest.raises(ValidationError, match="honcho_endpoint"):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            memory_provider="honcho",
+        )
+
+
+def test_honcho_requires_both_endpoint_and_key() -> None:
+    """If only one is provided, validation should still fail."""
+    with pytest.raises(ValidationError, match="honcho_endpoint|honcho_api_key"):
+        AppConfig(
+            host="localhost",
+            port=8080,
+            active_profile="ea",
+            memory_provider="honcho",
+            honcho_endpoint="http://localhost:8000",
+        )
+
+
+def test_honcho_succeeds_when_both_provided() -> None:
+    cfg = AppConfig(
+        host="localhost",
+        port=8080,
+        active_profile="ea",
+        memory_provider="honcho",
+        honcho_endpoint="http://localhost:8000",
+        honcho_api_key=SecretStr("test-key"),
+    )
+    assert cfg.memory_provider == "honcho"
+    assert cfg.honcho_endpoint == "http://localhost:8000"
+
+
+def test_memory_provider_defaults_to_fake() -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
+    assert cfg.memory_provider == "fake"

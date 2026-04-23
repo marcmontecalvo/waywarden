@@ -38,6 +38,9 @@ class AppConfig(BaseSettings):
     model_router: Literal["fake", "anthropic"] = "fake"
     model_router_default_provider: str = "fake"
     anthropic_api_key: SecretStr | None = None
+    memory_provider: Literal["fake", "honcho"] = "fake"
+    honcho_endpoint: str | None = None
+    honcho_api_key: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -106,6 +109,14 @@ class AppConfig(BaseSettings):
     def validate_model_router(self) -> Self:
         if self.model_router == "anthropic" and self.anthropic_api_key is None:
             raise ValueError("anthropic_api_key must be set when model_router is 'anthropic'")
+        memory = self.memory_provider
+        has_endpoint = self.honcho_endpoint is not None
+        has_key = self.honcho_api_key is not None
+        if memory == "honcho" and (not has_endpoint or not has_key):
+            raise ValueError(
+                "honcho_endpoint and honcho_api_key must be set when "
+                "memory_provider is 'honcho'"
+            )
         return self
 
 
