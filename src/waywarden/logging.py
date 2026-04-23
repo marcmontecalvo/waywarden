@@ -51,7 +51,12 @@ class JsonLogFormatter(logging.Formatter):
 
 
 def configure_logging(level: str = "INFO", stream: IO[str] | None = None) -> None:
+    logging.disable(logging.NOTSET)
     root_logger = logging.getLogger()
+    root_logger.disabled = False
+    for logger_name in logging.root.manager.loggerDict:
+        if logger_name == "waywarden" or logger_name.startswith("waywarden."):
+            logging.getLogger(logger_name).disabled = False
     handler = logging.StreamHandler(stream or sys.stderr)
     handler.setFormatter(JsonLogFormatter())
     handler.addFilter(RequestContextFilter())

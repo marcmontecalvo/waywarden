@@ -1,0 +1,16 @@
+{
+  "id": "msg_test_001",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-3-5-sonnet-latest",
+  "content": [
+    {
+      "type": "text",
+      "text": "Cassette response from Anthropic."
+    }
+  ],
+  "usage": {
+    "input_tokens": 11,
+    "output_tokens": 5
+  }
+}

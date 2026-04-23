@@ -27,9 +27,9 @@ async def test_all_protocols_runtime_checkable() -> None:
         TracerProvider,
     ):
         # Verify the class is a Protocol subclass
-        assert hasattr(proto, "__protocol_attrs__") or hasattr(
-            proto, "__protocol__"
-        ), f"{proto.__name__} should be a Protocol"
+        assert hasattr(proto, "__protocol_attrs__") or hasattr(proto, "__protocol__"), (
+            f"{proto.__name__} should be a Protocol"
+        )
         # Verify it is marked runtime_checkable via the internal flag
         assert getattr(proto, "_is_runtime_protocol", False), (
             f"{proto.__name__} must be @runtime_checkable"

@@ -5,11 +5,31 @@ import pytest
 from waywarden.config import ConfigLoadError, load_app_config
 
 
+def _write_checked_in_profile(tmp_path: Path) -> None:
+    profiles_dir = tmp_path / "profiles" / "ea"
+    profiles_dir.mkdir(parents=True)
+    (profiles_dir / "profile.yaml").write_text(
+        (
+            "id: ea\n"
+            "display_name: Executive Assistant\n"
+            "version: 1.0.0\n"
+            "required_providers:\n"
+            "  model: fake-model\n"
+            "  memory: fake-memory\n"
+            "  knowledge: fake-knowledge\n"
+            "supported_extensions:\n"
+            "  - skill\n"
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_load_app_config_from_yaml(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
-        "host: 127.0.0.1\nport: 8080\nenv: staging\nlog_level: DEBUG\n",
+        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\nenv: staging\nlog_level: DEBUG\n",
         encoding="utf-8",
     )
 
@@ -82,10 +102,11 @@ def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _write_checked_in_profile(tmp_path)
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
-        "host: yaml-host\nport: 8080\nenv: yaml\nlog_level: WARNING\n",
+        "host: yaml-host\nport: 8080\nactive_profile: ea\nenv: yaml\nlog_level: WARNING\n",
         encoding="utf-8",
     )
     (tmp_path / ".env").write_text(
@@ -112,13 +133,20 @@ def test_load_app_config_precedence_env_over_dotenv_over_yaml_over_default(
 
 
 def test_load_app_config_does_not_leak_yaml_state_between_calls(tmp_path: Path) -> None:
+    _write_checked_in_profile(tmp_path)
     first_dir = tmp_path / "first"
     first_dir.mkdir()
-    (first_dir / "app.yaml").write_text("host: first-host\nport: 8080\n", encoding="utf-8")
+    (first_dir / "app.yaml").write_text(
+        "host: first-host\nport: 8080\nactive_profile: ea\n",
+        encoding="utf-8",
+    )
 
     second_dir = tmp_path / "second"
     second_dir.mkdir()
-    (second_dir / "app.yaml").write_text("host: second-host\nport: 9090\n", encoding="utf-8")
+    (second_dir / "app.yaml").write_text(
+        "host: second-host\nport: 9090\nactive_profile: ea\n",
+        encoding="utf-8",
+    )
 
     first = load_app_config(config_dir=first_dir, cwd=tmp_path)
     second = load_app_config(config_dir=second_dir, cwd=tmp_path)

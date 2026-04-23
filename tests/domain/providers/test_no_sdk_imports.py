@@ -28,8 +28,10 @@ def _scan_file(filepath: Path) -> list[str]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom) and node.module and not node.module.startswith(
-            "waywarden"
+        elif (
+            isinstance(node, ast.ImportFrom)
+            and node.module
+            and not node.module.startswith("waywarden")
         ):
             imports.append(node.module.split(".")[0])
     return imports
@@ -50,8 +52,7 @@ def test_domain_has_no_sdk_imports() -> None:
                 found_violations.append(f"{filepath.name}: imports {imp}")
 
     assert not found_violations, (
-        "Provider domain files must not import provider SDKs:\n"
-        + "\n".join(found_violations)
+        "Provider domain files must not import provider SDKs:\n" + "\n".join(found_violations)
     )
 
 
