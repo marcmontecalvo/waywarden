@@ -206,3 +206,23 @@ def test_llm_wiki_succeeds_when_both_provided() -> None:
     )
     assert cfg.knowledge_provider == "llm_wiki"
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
+
+
+def test_policy_preset_literal_enforced() -> None:
+    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
+    assert cfg.policy_preset == "ask"
+
+    cfg_ask = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="ask")
+    assert cfg_ask.policy_preset == "ask"
+
+    cfg_yolo = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="yolo")
+    assert cfg_yolo.policy_preset == "yolo"
+
+    cfg_allowlist = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="allowlist")
+    assert cfg_allowlist.policy_preset == "allowlist"
+
+    cfg_custom = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="custom")
+    assert cfg_custom.policy_preset == "custom"
+
+    with pytest.raises(ValidationError):
+        AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="invalid")  # type: ignore[arg-type]

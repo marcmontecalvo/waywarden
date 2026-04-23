@@ -10,6 +10,8 @@ Precedence is highest to lowest:
 from pathlib import Path
 from typing import Literal, Self, cast
 
+PolicyPresetLiteral = Literal["yolo", "ask", "allowlist", "custom"]
+
 from fastapi import Request
 from pydantic import SecretStr, ValidationInfo, field_validator, model_validator
 from pydantic_settings import (
@@ -47,6 +49,8 @@ class AppConfig(BaseSettings):
     llm_wiki_api_key: SecretStr | None = None
     context_memory_char_cap: int = 2000
     context_knowledge_char_cap: int = 2000
+    policy_preset: PolicyPresetLiteral = "ask"
+    policy_overrides_path: Path | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",

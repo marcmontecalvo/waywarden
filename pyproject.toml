@@ -87,6 +87,14 @@ module = "waywarden.infra.tracing.otel"
 disable_error_code = "import-not-found"
 
 [[tool.mypy.overrides]]
+module = "waywarden.policy.*"
+disable_error_code = [
+    "import-untyped",
+    "typeddict-unknown-key",
+    "type-arg",
+]
+
+[[tool.mypy.overrides]]
 module = "waywarden.*"
 strict = true
 
