@@ -45,6 +45,8 @@ class AppConfig(BaseSettings):
     knowledge_filesystem_root: str = "assets/knowledge"
     llm_wiki_endpoint: str | None = None
     llm_wiki_api_key: SecretStr | None = None
+    context_memory_char_cap: int = 2000
+    context_knowledge_char_cap: int = 2000
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",

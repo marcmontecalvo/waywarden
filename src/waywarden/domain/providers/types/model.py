@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from waywarden.domain.ids import SessionId
+from waywarden.domain.providers.types.knowledge import KnowledgeHit
+from waywarden.domain.providers.types.memory import MemoryEntry
 
 
 @dataclass(frozen=True, slots=True)
@@ -14,6 +16,8 @@ class PromptEnvelope:
 
     session_id: SessionId
     messages: list[str]
+    memory_block: tuple[MemoryEntry, ...] = ()
+    knowledge_block: tuple[KnowledgeHit, ...] = ()
     tools: list[str] | None = None
     system_prompt: str | None = None
 
