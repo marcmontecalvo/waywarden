@@ -1,3 +1,4 @@
+name: yolo
 preset: yolo
 default_decision: auto-allow
 rules:

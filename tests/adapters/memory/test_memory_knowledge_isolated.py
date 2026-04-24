@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import sys
 
 
 def test_no_cross_imports() -> None:

@@ -1,3 +1,4 @@
+name: allowlist
 preset: allowlist
 default_decision: forbidden
 rules:

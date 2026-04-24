@@ -6,9 +6,10 @@ Resolves a preset name plus optional overrides into a domain
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 import yaml
 
@@ -18,10 +19,12 @@ from waywarden.domain.manifest.tool_policy import (
 from waywarden.domain.manifest.tool_policy import (
     ToolPolicy as DomainToolPolicy,
 )
-from waywarden.policy.schema import PolicyPresetDoc, ToolDecisionRule as SchemaRule
+from waywarden.policy.schema import PolicyPresetDoc
+from waywarden.policy.schema import ToolDecisionRule as SchemaRule
 
 # Default preset directory — overridden for testing.
-_PRESETS_DIR: Path = Path(__file__).resolve().parent.parent.parent.parent.parent / "config" / "policy" / "presets"
+# parents[0]=policy, [1]=waywarden, [2]=src, [3]=repo root.
+_PRESETS_DIR: Path = Path(__file__).resolve().parents[3] / "config" / "policy" / "presets"
 
 
 class PolicyLoaderError(Exception):
@@ -45,6 +48,17 @@ class PolicyLoader:
     presets_dir: Path | None = None
 
     # --- public API ---------------------------------------------------------------
+
+    def list_presets(self) -> list[str]:
+        """Return sorted list of preset names discoverable in the presets directory.
+
+        Returns filenames (without extension) for every ``.yaml`` file
+        in the configured presets directory.
+        """
+        presets_dir = self.presets_dir or _PRESETS_DIR
+        if not presets_dir.is_dir():
+            return []
+        return sorted(p.stem for p in presets_dir.glob("*.yaml"))
 
     def load(
         self,
@@ -126,39 +140,43 @@ class PolicyLoader:
 
         Override precedence: an override rule for the same ``tool`` name
         replaces the base rule entirely.
+
+        Also supports overriding ``default_decision`` directly at the top level.
         """
         if not override:
             return doc
 
-        rules = list(doc.rules)
+        merged_rules = list(doc.rules)
+
+        # Handle rules overrides
         overrides_raw = override.get("rules", [])
-        if not isinstance(overrides_raw, list):
-            return doc
+        if isinstance(overrides_raw, list):
+            override_map: dict[str, SchemaRule] = {}
+            for ov in overrides_raw:
+                if not isinstance(ov, dict):
+                    continue
+                try:
+                    rule = SchemaRule.model_validate(ov)
+                except Exception:
+                    continue
+                override_map[rule.tool] = rule
 
-        override_map: dict[str, SchemaRule] = {}
-        for ov in overrides_raw:
-            if not isinstance(ov, dict):
-                continue
-            try:
-                rule = SchemaRule.model_validate(ov)
-            except Exception:
-                continue
-            override_map[rule.tool] = rule
+            existing: set[str] = set()
+            for rule in merged_rules:
+                if rule.tool in override_map:
+                    merged_rules[merged_rules.index(rule)] = override_map[rule.tool]
+                    existing.add(rule.tool)
+                else:
+                    existing.add(rule.tool)
 
-        existing: set[str] = set()
-        merged_rules: list[SchemaRule] = []
-        for rule in rules:
-            if rule.tool in override_map:
-                merged_rules.append(override_map[rule.tool])
-                existing.add(rule.tool)
-            else:
-                merged_rules.append(rule)
-                existing.add(rule.tool)
+            for tool_name, rule in override_map.items():
+                if tool_name not in existing:
+                    merged_rules.append(rule)
 
-        for tool_name, rule in override_map.items():
-            if tool_name not in existing:
-                merged_rules.append(rule)
-
+        if "default_decision" in override:
+            return doc.model_copy(
+                update={"rules": merged_rules, "default_decision": override["default_decision"]}
+            )
         return doc.model_copy(update={"rules": merged_rules})
 
     @staticmethod

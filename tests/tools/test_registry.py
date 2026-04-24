@@ -7,13 +7,13 @@ from typing import Any
 
 import pytest
 
-from waywarden.domain.manifest.tool_policy import ToolDecision, ToolDecisionRule, ToolPolicy
+from waywarden.domain.manifest.tool_policy import ToolDecisionRule, ToolPolicy
 from waywarden.domain.providers.types.tool import ToolResult
 from waywarden.tools.builtin.shell_read import ShellReadTool
 from waywarden.tools.errors import (
     DuplicateCapabilityError,
-    UnknownCapabilityError,
     UncoveredCapabilityError,
+    UnknownCapabilityError,
 )
 from waywarden.tools.model import ToolProvider
 from waywarden.tools.registry import ToolRegistry

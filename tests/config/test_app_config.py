@@ -208,10 +208,13 @@ def test_llm_wiki_succeeds_when_both_provided() -> None:
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
 
 
+<<<<<<< Updated upstream
     assert cfg.knowledge_provider == "llm_wiki"
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
 
 
+=======
+>>>>>>> Stashed changes
 def test_policy_preset_default_is_ask() -> None:
     cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     assert cfg.policy_preset == "ask"
@@ -234,6 +237,7 @@ def test_policy_preset_invalid_literal_rejected() -> None:
             active_profile="ea",
             policy_preset="nonexistent",  # type: ignore[arg-type]
         )
+<<<<<<< Updated upstream
 
 
 def test_active_instance_required(tmp_path: Path) -> None:
@@ -268,3 +272,5 @@ def test_active_instance_required(tmp_path: Path) -> None:
     message = str(exc_info.value)
     assert "active_instance" in message
 
+=======
+>>>>>>> Stashed changes
