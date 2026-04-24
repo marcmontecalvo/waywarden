@@ -13,6 +13,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
+from waywarden.domain.channel_binding import ChannelBinding
 from waywarden.domain.ids import InstanceId
 
 __all__ = ["InstanceId", "InstanceDescriptor", "InstanceConfig", "InstanceRegistry"]
@@ -41,6 +42,7 @@ class InstanceDescriptor:
     display_name: str
     profile_id: str
     config_path: Path
+    channels: tuple[ChannelBinding, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
         object.__setattr__(

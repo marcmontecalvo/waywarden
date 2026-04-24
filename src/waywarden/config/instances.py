@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 
+from waywarden.domain.channel_binding import ChannelBinding, get_channel_registry
 from waywarden.domain.instance import (
     InstanceConfig,
     InstanceDescriptor,
@@ -121,6 +122,26 @@ def _load_descriptor(
         return descriptor
 
     _ = _load_instance_config(config_path=config_path, errors=errors)
+
+    # Extract and validate channels from the instance config overlay.
+    channels = _load_channels(
+        config_path=config_path,
+        config_dir=config_dir,
+        errors=errors,
+    )
+
+    try:
+        descriptor = InstanceDescriptor(
+            id=descriptor.id,
+            display_name=descriptor.display_name,
+            profile_id=descriptor.profile_id,
+            config_path=descriptor.config_path,
+            channels=tuple(channels),
+        )
+    except (TypeError, ValueError) as exc:
+        errors.append(f"{entry_prefix}: {exc}")
+        return None
+
     return descriptor
 
 
@@ -142,6 +163,85 @@ def _load_instance_config(*, config_path: Path, errors: list[str]) -> InstanceCo
     except (TypeError, ValueError) as exc:
         errors.append(f"{config_path.as_posix()}: {exc}")
         return None
+
+
+def _load_channels(
+    *,
+    config_path: Path,
+    config_dir: Path,
+    errors: list[str],
+) -> list[ChannelBinding]:
+    """Parse and validate channels from the instance config overlay.
+
+    Channels live under ``overrides.channels`` in the instance YAML file.  They
+    must be a list of channel definitions (mapping keys to ``ChannelBinding``
+    sub-mappings).  Scalar or dict values are rejected.
+    """
+    content = _read_yaml_mapping(config_path, errors, mapping_label="instance config")
+    if content is None:
+        return []
+
+    raw_channels = content.get("overrides", {})
+    if not isinstance(raw_channels, dict):
+        errors.append(f"{config_path.as_posix()}: field `overrides` must be a mapping")
+        return []
+
+    raw_list = raw_channels.get("channels")
+    if raw_list is None:
+        return []
+
+    if not isinstance(raw_list, list):
+        errors.append(
+            f"{config_path.as_posix()}: field `overrides.channels` must be a list",
+        )
+        return []
+
+    bindings: list[ChannelBinding] = []
+    transport_path_pairs: list[tuple[str, str | None]] = []
+    registry = get_channel_registry()
+
+    for idx, raw_item in enumerate(raw_list):
+        item_prefix = f"{config_path.as_posix()}: overrides.channels[{idx}]"
+        if not isinstance(raw_item, dict):
+            errors.append(f"{item_prefix}: expected a channel definition mapping")
+            continue
+
+        try:
+            binding = ChannelBinding(
+                channel_name=raw_item["channel_name"],
+                transport=raw_item["transport"],
+                path=raw_item.get("path"),
+                enabled=raw_item.get("enabled", True),
+            )
+        except (TypeError, ValueError, KeyError) as exc:
+            errors.append(f"{item_prefix}: {exc}")
+            continue
+
+        # Validate channel name against registered ChannelProviders.
+        # When the registry is empty (no adapters implemented yet), channel
+        # names are accepted structurally; reject only when adapters exist.
+        if registry and binding.channel_name not in registry:
+            errors.append(
+                f"{item_prefix}: unknown channel {binding.channel_name!r} "
+                f"(not registered with any ChannelProvider; "
+                f"known: {sorted(registry)})",
+            )
+            continue
+
+        # Validate uniqueness of (transport, path) pairs.
+        for dup_idx, (existing_transport, existing_path) in enumerate(transport_path_pairs):
+            if binding.transport == existing_transport and binding.path == existing_path:
+                errors.append(
+                    f"{item_prefix}: duplicate (transport, path) pair "
+                    f"({binding.transport!r}, {binding.path!r}) "
+                    f"conflicts with overrides.channels[{dup_idx}]",
+                )
+                break
+
+        transport_path_pairs.append((binding.transport, binding.path))
+        bindings.append(binding)
+
+    return bindings
 
 
 def _mapping_field(

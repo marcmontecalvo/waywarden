@@ -208,26 +208,10 @@ def test_llm_wiki_succeeds_when_both_provided() -> None:
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
 
 
-<<<<<<< HEAD
-def test_policy_preset_literal_enforced() -> None:
-    cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
-    assert cfg.policy_preset == "ask"
+    assert cfg.knowledge_provider == "llm_wiki"
+    assert cfg.llm_wiki_endpoint == "http://localhost:8000"
 
-    cfg_ask = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="ask")
-    assert cfg_ask.policy_preset == "ask"
 
-    cfg_yolo = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="yolo")
-    assert cfg_yolo.policy_preset == "yolo"
-
-    cfg_allowlist = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="allowlist")
-    assert cfg_allowlist.policy_preset == "allowlist"
-
-    cfg_custom = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="custom")
-    assert cfg_custom.policy_preset == "custom"
-
-    with pytest.raises(ValidationError):
-        AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset="invalid")  # type: ignore[arg-type]
-=======
 def test_policy_preset_default_is_ask() -> None:
     cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     assert cfg.policy_preset == "ask"
@@ -250,4 +234,37 @@ def test_policy_preset_invalid_literal_rejected() -> None:
             active_profile="ea",
             policy_preset="nonexistent",  # type: ignore[arg-type]
         )
->>>>>>> 7c5089dabbd83f11c39650e78b76e58c185e571e
+
+
+def test_active_instance_required(tmp_path: Path) -> None:
+    """active_instance pointing at a non-existent instance fails AppConfig validation."""
+    profiles_dir = tmp_path / "profiles"
+    (profiles_dir / "ea").mkdir(parents=True)
+    (profiles_dir / "ea" / "profile.yaml").write_text(
+        (
+            "id: ea\n"
+            "display_name: Executive Assistant\n"
+            "version: 1.0.0\n"
+            "required_providers:\n"
+            "  model: fake-model\n"
+            "  memory: fake-memory\n"
+            "  knowledge: fake-knowledge\n"
+            "supported_extensions:\n"
+            "  - skill\n"
+        ),
+        encoding="utf-8",
+    )
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (config_dir / "app.yaml").write_text(
+        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\n"
+        "active_instance: nonexistent\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ConfigLoadError) as exc_info:
+        load_app_config(config_dir=config_dir, cwd=tmp_path)
+
+    message = str(exc_info.value)
+    assert "active_instance" in message
+

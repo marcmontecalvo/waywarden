@@ -51,6 +51,8 @@ class AppConfig(BaseSettings):
     context_knowledge_char_cap: int = 2000
     policy_preset: PolicyPresetLiteral = "ask"
     policy_overrides_path: Path | None = None
+    active_instance: str | None = None
+    instances_path: Path = Path("config/instances")
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -141,6 +143,29 @@ class AppConfig(BaseSettings):
             if self.llm_wiki_api_key is None:
                 raise ValueError(
                     "llm_wiki_api_key must be set when knowledge_provider is 'llm_wiki'"
+                )
+        active = self.active_instance
+        instances = self.instances_path
+        if active is not None:
+            instance_yml = (instances / "instances.yaml").resolve()
+            if not instance_yml.exists():
+                raise ValueError(
+                    f"instances_path {instances.as_posix()!r} does not contain "
+                    f"instances.yaml required for active_instance={active!r}"
+                )
+            import yaml
+
+            content = yaml.safe_load(instance_yml.read_text(encoding="utf-8"))
+            if not isinstance(content, dict):
+                raise ValueError(
+                    f"{instance_yml.as_posix()}: expected a mapping of instance settings"
+                )
+            ids = {item["id"] for item in content.get("instances", []) if isinstance(item, dict) and isinstance(item.get("id"), str)}
+            active_str: str = active
+            if active_str not in ids:
+                raise ValueError(
+                    f"active_instance {active_str!r} does not match any loaded instance "
+                    f"(available: {sorted(ids)})"
                 )
         return self
 
