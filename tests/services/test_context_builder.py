@@ -4,15 +4,11 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
+from tests.services.fake_knowledge import FakeKnowledgeProvider
 from waywarden.domain.ids import SessionId
 from waywarden.domain.providers.types.knowledge import KnowledgeHit
 from waywarden.domain.providers.types.memory import MemoryEntry
-from waywarden.domain.providers.types.model import PromptEnvelope
 from waywarden.services.context_builder import ContextBuilder
-
-from tests.services.fake_knowledge import FakeKnowledgeProvider
 
 
 def _make_memory_mock() -> AsyncMock:
@@ -166,7 +162,7 @@ class TestContextBuilderBasic:
 
         kb = FakeKnowledgeProvider(
             hits=[
-                KnowledgeHit(ref=f"d{i}", title=f"D{i}", snippet=f"d0 d1 s0 s1", score=1.0)
+                KnowledgeHit(ref=f"d{i}", title=f"D{i}", snippet="d0 d1 s0 s1", score=1.0)
                 for i in range(2)
             ]
         )

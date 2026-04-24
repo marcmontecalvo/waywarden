@@ -119,9 +119,6 @@ class ApprovalEngine:
         # Persist the approval record
         saved = await self.approvals.save(approval)
 
-        # Compute seq (repository re-assigns, but we need >= 1 for construction)
-        base_seq = await self.events.latest_seq(run_id)
-
         # Append the approval_waiting event to the run event log
         payload: dict[str, object] = {
             "approval_id": saved.id,
@@ -138,7 +135,7 @@ class ApprovalEngine:
         event = RunEvent(
             id=RunEventId(f"evt-{saved.id}-waiting"),
             run_id=RunId(run_id),
-            seq=base_seq + 1,
+            seq=(await self.events.latest_seq(run_id)) + 1,
             type=_next_event_type("run.approval_waiting"),
             payload=payload,
             timestamp=now,
@@ -192,7 +189,9 @@ class ApprovalEngine:
             "denied_alternate_path": "denied",
             "timeout": "timeout",
         }
-        new_state = new_state_map[decision_tag]
+        new_state = new_state_map.get(decision_tag)
+        if new_state is None:
+            raise RuntimeError(f"Unexpected decision type: {decision_tag!r}")
 
         # Update approval state
         updated = Approval(

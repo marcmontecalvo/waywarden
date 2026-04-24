@@ -15,6 +15,7 @@
 # Once you have a working preset, copy this file to a new name
 # with the desired preset value and register it with the loader.
 
+name: custom
 preset: custom
 default_decision: approval-required  # override this to 'auto-allow' or 'forbidden' as needed
 rules:

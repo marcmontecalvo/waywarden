@@ -57,7 +57,7 @@ def test_no_merged_block_type() -> None:
 def test_envelope_has_separate_fields() -> None:
     """PromptEnvelope must have distinct memory_block and knowledge_block fields."""
     import importlib
-    from waywarden.domain.providers.types.model import PromptEnvelope
+
 
     module = importlib.import_module("waywarden.domain.providers.types.model")
     source = module.__file__

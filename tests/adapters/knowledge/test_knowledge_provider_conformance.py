@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -70,7 +69,7 @@ class _MockLlmWikiClient:
         self,
         url: str,
         headers: dict[str, str] | None = None,
-    ) -> "LlmWikiResponse":
+    ) -> LlmWikiResponse:
         # Return 404 for everything — provider should handle this gracefully
         return LlmWikiResponse(status_code=404)
 
