@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TARGET="${1:-}"
+AGENT="${AGENT:-codex}"
+
+if [[ -z "$TARGET" ]]; then
+  echo "Usage:"
+  echo "  we 4"
+  echo "  we P4"
+  echo "  we https://github.com/marcmontecalvo/waywarden/issues/63"
+  echo
+  echo "Optional:"
+  echo "  AGENT=codex we 4"
+  echo "  AGENT=claude we 4"
+  echo "  AGENT=pi we 4"
+  exit 1
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+PROMPT=$(cat <<PROMPT_EOF
+Open and follow the repo-local skill directly:
+
+.agents/skills/work-entire-epic/SKILL.md
+
+Do not use a global skill registry.
+
+Target EPIC input:
+
+$TARGET
+
+Operational rules:
+- This is a whole-EPIC loop.
+- First resolve the EPIC.
+- Review all open child issues in the EPIC.
+- Select the first open actionable child issue.
+- For each child issue, follow:
+  .agents/skills/work-next-issue-in-given-epic/SKILL.md
+- Use red → green → adversarial review → fixes → re-review → merge → closeout.
+- Do not move to the next child issue until the current child issue reaches PASS.
+- Continue until the EPIC is complete or truly blocked.
+- Use gh CLI for GitHub.
+- Use repo-local commands.
+- Do not use bare python; use uv.
+- Do not work directly on main.
+- Do not stop until the EPIC is complete or blocked.
+PROMPT_EOF
+)
+
+case "$AGENT" in
+  codex)
+    exec codex exec "$PROMPT"
+    ;;
+  claude)
+    exec claude -p "$PROMPT"
+    ;;
+  pi)
+    exec pi "$PROMPT"
+    ;;
+  *)
+    echo "Unknown AGENT: $AGENT"
+    echo "Use AGENT=codex, AGENT=claude, or AGENT=pi"
+    exit 1
+    ;;
+esac
