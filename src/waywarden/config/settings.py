@@ -55,6 +55,7 @@ class AppConfig(BaseSettings):
     policy_overrides_path: Path | None = None
     active_instance: str | None = None
     instances_path: Path = Path("config/instances")
+    web_channel_webhook_url: str | None = None
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
