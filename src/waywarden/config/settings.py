@@ -49,12 +49,8 @@ class AppConfig(BaseSettings):
     llm_wiki_api_key: SecretStr | None = None
     context_memory_char_cap: int = 2000
     context_knowledge_char_cap: int = 2000
-<<<<<<< HEAD
     policy_preset: PolicyPresetLiteral = "ask"
     policy_overrides_path: Path | None = None
-=======
-    policy_preset: Literal["yolo", "ask", "allowlist", "custom"] = "ask"
->>>>>>> 7c5089dabbd83f11c39650e78b76e58c185e571e
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
