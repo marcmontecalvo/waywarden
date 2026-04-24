@@ -121,7 +121,7 @@ class TestUnknownChannelRejected:
             # Clean up the registry so other tests aren't affected
             import waywarden.domain.channel_binding as cb
 
-            cb._CHANNEL_REGISTRY.discard("chat") or "channel" in message.lower()
+            cb._CHANNEL_REGISTRY.discard("chat")
 
 
 class TestDuplicateTransportPathRejected:

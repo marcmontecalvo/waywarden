@@ -123,11 +123,14 @@ def _load_descriptor(
 
     _ = _load_instance_config(config_path=config_path, errors=errors)
 
-    # Extract and validate channels from the instance config overlay.
+    # Parse the instance overlay once and share the content between channel
+    # validation and the existing config loader to avoid redundant I/O.
+    parsed_content = _read_yaml_mapping(config_path, errors, mapping_label="instance config")
     channels = _load_channels(
         config_path=config_path,
         config_dir=config_dir,
         errors=errors,
+        content=parsed_content,
     )
 
     try:
@@ -170,16 +173,21 @@ def _load_channels(
     config_path: Path,
     config_dir: Path,
     errors: list[str],
+    content: Mapping[str, object] | None = None,
 ) -> list[ChannelBinding]:
     """Parse and validate channels from the instance config overlay.
 
     Channels live under ``overrides.channels`` in the instance YAML file.  They
     must be a list of channel definitions (mapping keys to ``ChannelBinding``
     sub-mappings).  Scalar or dict values are rejected.
+
+    The ``content`` parameter accepts a pre-parsed YAML mapping so that the
+    file need not be read a second time by callers that already parsed it.
     """
-    content = _read_yaml_mapping(config_path, errors, mapping_label="instance config")
     if content is None:
-        return []
+        content = _read_yaml_mapping(config_path, errors, mapping_label="instance config")
+        if content is None:
+            return []
 
     raw_channels = content.get("overrides", {})
     if not isinstance(raw_channels, dict):
@@ -220,6 +228,9 @@ def _load_channels(
         # Validate channel name against registered ChannelProviders.
         # When the registry is empty (no adapters implemented yet), channel
         # names are accepted structurally; reject only when adapters exist.
+        # This is a skip, not a reject — an unregistered binding that also
+        # duplicates another binding will fail the transport-path check
+        # (or will be silently accepted if the duplicate is also unregistered).
         if registry and binding.channel_name not in registry:
             errors.append(
                 f"{item_prefix}: unknown channel {binding.channel_name!r} "

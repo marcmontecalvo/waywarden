@@ -10,6 +10,8 @@ Precedence is highest to lowest:
 from pathlib import Path
 from typing import Literal, Self, cast
 
+import yaml
+
 PolicyPresetLiteral = Literal["yolo", "ask", "allowlist", "custom"]
 
 from fastapi import Request
@@ -99,6 +101,19 @@ class AppConfig(BaseSettings):
             raise ValueError("active_profile must be set to a non-empty string")
         return normalized
 
+    @field_validator("active_instance", mode="before")
+    @classmethod
+    def normalize_active_instance(cls, value: object | None) -> str | None:
+        """Normalize ``active_instance`` and reject blank strings."""
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise TypeError("active_instance must be a string or null")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("active_instance must be set to a non-empty string")
+        return normalized
+
     @field_validator("tracer_endpoint")
     @classmethod
     def validate_tracer_endpoint(cls, value: str | None, info: ValidationInfo) -> str | None:
@@ -153,9 +168,12 @@ class AppConfig(BaseSettings):
                     f"instances_path {instances.as_posix()!r} does not contain "
                     f"instances.yaml required for active_instance={active!r}"
                 )
-            import yaml
-
-            content = yaml.safe_load(instance_yml.read_text(encoding="utf-8"))
+            try:
+                content = yaml.safe_load(instance_yml.read_text(encoding="utf-8"))
+            except OSError as exc:
+                raise ValueError(
+                    f"{instance_yml.as_posix()}: unable to read instance YAML: {exc}"
+                ) from exc
             if not isinstance(content, dict):
                 raise ValueError(
                     f"{instance_yml.as_posix()}: expected a mapping of instance settings"
