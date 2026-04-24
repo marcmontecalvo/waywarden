@@ -1,0 +1,21 @@
+{
+  "write_result": {
+    "id": "entry-honcho-001",
+    "entry_id": "entry-honcho-001",
+    "session_id": "session-swap-001",
+    "content": "Test memory entry for provider swap.",
+    "metadata": {
+      "kind": "task-result"
+    }
+  },
+  "read_results": [
+    {
+      "session_id": "session-swap-001",
+      "content": "Test memory entry for provider swap.",
+      "metadata": {
+        "kind": "task-result"
+      },
+      "created_at": "2026-04-23T12:00:00+00:00"
+    }
+  ]
+}
