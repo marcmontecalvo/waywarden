@@ -49,8 +49,12 @@ class AppConfig(BaseSettings):
     llm_wiki_api_key: SecretStr | None = None
     context_memory_char_cap: int = 2000
     context_knowledge_char_cap: int = 2000
+<<<<<<< HEAD
     policy_preset: PolicyPresetLiteral = "ask"
     policy_overrides_path: Path | None = None
+=======
+    policy_preset: Literal["yolo", "ask", "allowlist", "custom"] = "ask"
+>>>>>>> 7c5089dabbd83f11c39650e78b76e58c185e571e
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
@@ -119,25 +123,28 @@ class AppConfig(BaseSettings):
     def validate_model_router(self) -> Self:
         if self.model_router == "anthropic" and self.anthropic_api_key is None:
             raise ValueError("anthropic_api_key must be set when model_router is 'anthropic'")
+        policy_preset = self.policy_preset
+        valid_presets = {"yolo", "ask", "allowlist", "custom"}
+        if policy_preset not in valid_presets:
+            raise ValueError(
+                f"policy_preset must be one of {sorted(valid_presets)}, got '{policy_preset}'"
+            )
         memory = self.memory_provider
         has_endpoint = self.honcho_endpoint is not None
         has_key = self.honcho_api_key is not None
         if memory == "honcho" and (not has_endpoint or not has_key):
             raise ValueError(
-                "honcho_endpoint and honcho_api_key must be set when "
-                "memory_provider is 'honcho'"
+                "honcho_endpoint and honcho_api_key must be set when memory_provider is 'honcho'"
             )
         knowledge = self.knowledge_provider
         if knowledge == "llm_wiki":
             if not self.llm_wiki_endpoint:
                 raise ValueError(
-                    "llm_wiki_endpoint must be set when "
-                    "knowledge_provider is 'llm_wiki'"
+                    "llm_wiki_endpoint must be set when knowledge_provider is 'llm_wiki'"
                 )
             if self.llm_wiki_api_key is None:
                 raise ValueError(
-                    "llm_wiki_api_key must be set when "
-                    "knowledge_provider is 'llm_wiki'"
+                    "llm_wiki_api_key must be set when knowledge_provider is 'llm_wiki'"
                 )
         return self
 

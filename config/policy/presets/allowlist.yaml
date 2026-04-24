@@ -1,0 +1,32 @@
+preset: allowlist
+default_decision: forbidden
+rules:
+  - tool: shell
+    action: read
+    decision: auto-allow
+    reason: Read-only shell is explicitly allowed
+  - tool: shell
+    action: exec
+    decision: auto-allow
+    reason: Only allowlisted tool actions run without approval
+  - tool: http
+    action: get
+    decision: auto-allow
+    reason: Outbound GET to any host is explicitly allowed
+  - tool: memory
+    action: read
+    decision: auto-allow
+    reason: Memory reads are explicitly allowed
+  - tool: memory
+    action: write
+    decision: auto-allow
+    reason: Memory writes are explicitly allowed for this use
+  - tool: knowledge
+    action: read
+    decision: auto-allow
+    reason: Knowledge reads are explicitly allowed
+  # Everything else is forbidden by default — explicitly enumerate.
+  - tool: secrets
+    action: export
+    decision: forbidden
+    reason: Secret export is explicitly forbidden even in allowlist

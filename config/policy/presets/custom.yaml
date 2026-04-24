@@ -1,0 +1,24 @@
+# custom.yaml — template for operator-defined policy presets.
+#
+# Start from this file, remove the guidance comments, and adjust
+# rules to match your actual operational posture.
+#
+# Preset names must be one of: yolo, ask, allowlist, custom
+# and each rule must specify tool, decision and a reason.
+#
+# Valid decisions: auto-allow, approval-required, forbidden
+# Valid actions: any string or omitted for tool-level rules
+#
+# See docs/specs/runtime/workspace-manifest.md §tool_policy
+# and docs/architecture/0005-approval-model.md for reference.
+#
+# Once you have a working preset, copy this file to a new name
+# with the desired preset value and register it with the loader.
+
+preset: custom
+default_decision: approval-required  # override this to 'auto-allow' or 'forbidden' as needed
+rules:
+  - tool: shell
+    action: read
+    decision: auto-allow  # example: allow read-only shell
+    reason: Operators typically need to inspect files without approval

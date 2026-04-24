@@ -1,0 +1,20 @@
+preset: yolo
+default_decision: auto-allow
+rules:
+  - tool: shell
+    action: exec
+    decision: auto-allow
+    reason: YOLO preset allows all tool execution by default
+  - tool: shell
+    action: write
+    decision: auto-allow
+    reason: YOLO preset allows all filesystem writes by default
+  # Capabilities that are too dangerous even for YOLO
+  - tool: filesystem
+    action: wipe
+    decision: forbidden
+    reason: Destructive filesystem wipe is never permitted
+  - tool: secrets
+    action: export
+    decision: forbidden
+    reason: Silent secret export is never permitted
