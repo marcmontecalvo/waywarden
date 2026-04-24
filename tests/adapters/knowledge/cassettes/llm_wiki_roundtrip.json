@@ -1,0 +1,15 @@
+{
+  "search_results": [
+    {
+      "ref": "wiki/test-knowledge",
+      "title": "Test Knowledge Article",
+      "snippet": "This is a test knowledge hit for the LLM-W wiki integration test.",
+      "score": 1.0
+    }
+  ],
+  "fetch_result": {
+    "ref": "wiki/test-knowledge",
+    "title": "Test Knowledge Article",
+    "content": "Full content of the test knowledge article for provider swap integration test."
+  }
+}
