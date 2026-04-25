@@ -18,12 +18,35 @@ from fastapi.responses import StreamingResponse
 
 
 def _json_sse_frame(event: Any) -> bytes:  # noqa: ANN401
-    """Format a single SSE data frame containing an event as JSON."""
-    mode: str = "json"
-    default: Any = str
-    return (
-        f"id: {event.seq}\ndata: {json.dumps(event.model_dump(mode=mode, default=default))}\n\n\n"
-    ).encode()
+    """Format a single SSE data frame containing an event as JSON.
+
+    Handles Pydantic models, frozen dataclasses, and objects whose
+    attributes include ``collections.abc.MappingProxyType`` payloads.
+    """
+    from collections.abc import Mapping
+    from collections import OrderedDict
+
+    if hasattr(event, "model_dump"):
+        data = event.model_dump()
+    elif hasattr(event, "__dict__"):
+        data = event.__dict__
+    elif isinstance(event, dict):
+        data = event
+    else:
+        data = {k: getattr(event, k) for k in ("seq", "type", "payload", "id", "run_id")}
+
+    def _convert(obj: object) -> object:
+        if isinstance(obj, Mapping):
+            return OrderedDict((k, _convert(v)) for k, v in obj.items())
+        if isinstance(obj, dict):
+            return {k: _convert(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_convert(i) for i in obj]
+        if isinstance(obj, (str, int, float, bool, type(None))):
+            return obj
+        return str(obj)
+
+    return f"id: {getattr(event, 'seq', 0)}\ndata: {json.dumps(_convert(data))}\n\n\n".encode()
 
 
 async def _stream_pages() -> AsyncGenerator[bytes]:
