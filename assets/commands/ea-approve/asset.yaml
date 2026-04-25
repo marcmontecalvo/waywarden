@@ -1,0 +1,11 @@
+id: ea-approve
+kind: command
+version: 1.0.0
+description: Approve/delegate an action from the EA profile.
+tags:
+  - ea
+  - approve
+required_providers: []
+profile_filter:
+  - op: include
+    tag: ea

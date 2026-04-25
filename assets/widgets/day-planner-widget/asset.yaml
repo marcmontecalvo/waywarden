@@ -1,0 +1,11 @@
+id: day-planner-widget
+kind: widget
+version: 1.0.0
+description: Daily planning widget for home profiles.
+tags:
+  - home
+  - scheduler
+required_providers: []
+profile_filter:
+  - op: exclude
+    tag: ea
