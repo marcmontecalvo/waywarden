@@ -7,6 +7,19 @@ tags:
   - briefing
 required_providers:
   - model
+milestones:
+  - phase: intake
+    names:
+      - received
+      - accepted
+  - phase: plan
+    names:
+      - drafted
+      - approval_requested
+      - ready
+emits_events:
+  - run.progress
+  - run.artifact_created
 profile_filter:
   - op: include
     tag: ea
