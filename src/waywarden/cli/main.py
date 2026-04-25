@@ -8,6 +8,7 @@ from typing import cast
 import uvicorn
 
 from waywarden.app import create_app
+from waywarden.cli.chat import build_chat_parser
 from waywarden.config import ConfigLoadError, InstanceLoadError, load_app_config, load_instances
 from waywarden.profiles import ProfileLoadError, load_profiles
 
@@ -38,6 +39,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="List checked-in instance fixtures.",
     )
     list_instances_parser.set_defaults(handler=_handle_list_instances)
+
+    build_chat_parser(subparsers)
 
     return parser
 
