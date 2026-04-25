@@ -1,0 +1,7 @@
+id: strict-policy
+kind: policy
+version: 1.0.0
+description: Strict access policy.
+tags:
+  - access-control
+required_providers: []
