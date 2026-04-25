@@ -1,0 +1,11 @@
+id: quick-note
+kind: command
+version: 1.0.0
+description: Quick note-taking command shared by all profiles.
+tags:
+  - universal
+  - notes
+required_providers: []
+profile_filter:
+  - op: include
+    tag: universal

@@ -1,0 +1,11 @@
+id: system-info-widget
+kind: widget
+version: 1.0.0
+description: System info widget shared across profiles.
+tags:
+  - system
+  - info
+required_providers: []
+profile_filter:
+  - op: include
+    tag: system
