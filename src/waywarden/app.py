@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, Response
 
 from waywarden import __version__
 from waywarden.api.routers import health, run_events
+from waywarden.api.routes import run_view
 from waywarden.config import AppConfig, get_app_config
 from waywarden.logging import (
     build_request_log_context,
@@ -24,6 +25,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 def register_routers(app: FastAPI) -> None:
     app.include_router(health.router)
     app.include_router(run_events.router)
+    app.include_router(run_view.router)
 
 
 def register_middleware(app: FastAPI) -> None:
