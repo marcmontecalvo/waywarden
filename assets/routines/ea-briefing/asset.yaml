@@ -1,0 +1,12 @@
+id: ea-briefing
+kind: routine
+version: 1.0.0
+description: Produces a dated briefing artifact for the EA profile.
+tags:
+  - ea
+  - briefing
+required_providers:
+  - model
+profile_filter:
+  - op: include
+    tag: ea
