@@ -31,6 +31,7 @@ runs = Table(
     Column("created_at", TIMESTAMP(timezone=True), nullable=False),
     Column("updated_at", TIMESTAMP(timezone=True), nullable=False),
     Column("terminal_seq", INTEGER),
+    Column("manifest_hash", String),
     CheckConstraint(
         "policy_preset IN ('yolo', 'ask', 'allowlist', 'custom')",
         name="ck_runs_policy_preset",

@@ -83,6 +83,7 @@ class Run:
     created_at: datetime
     updated_at: datetime
     terminal_seq: int | None
+    manifest_hash: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(

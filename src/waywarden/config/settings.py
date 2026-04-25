@@ -56,6 +56,7 @@ class AppConfig(BaseSettings):
     active_instance: str | None = None
     instances_path: Path = Path("config/instances")
     web_channel_webhook_url: str | None = None
+    resume_on_startup: bool = False
 
     model_config = SettingsConfigDict(
         env_prefix="WAYWARDEN_",
