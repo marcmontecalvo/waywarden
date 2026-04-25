@@ -65,7 +65,7 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/waywarden", "alembic"]
+source = ["src/waywarden", "alembic", "tests/integration/ea"]
 omit = [
   "src/waywarden/__init__.py",
   "src/waywarden/infra/tracing/otel.py",
