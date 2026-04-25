@@ -1,0 +1,31 @@
+id: ea-inbox-triage
+kind: routine
+version: 1.0.0
+description: Classifies inbound items, drafts responses, and hits approval before anything leaves the harness.
+tags:
+  - ea
+  - inbox
+  - triage
+required_providers:
+  - model
+milestones:
+  - phase: intake
+    names:
+      - received
+      - accepted
+  - phase: plan
+    names:
+      - drafted
+      - approval_requested
+      - ready
+  - phase: review
+    names:
+      - outcomes
+emits_events:
+  - run.progress
+  - run.approval_waiting
+  - run.plan_ready
+  - run.failed
+profile_filter:
+  - op: include
+    tag: ea
