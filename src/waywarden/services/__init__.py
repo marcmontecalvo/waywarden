@@ -17,14 +17,24 @@ from waywarden.services.approval_types import (
     Timeout,
 )
 from waywarden.services.context_builder import ContextBuilder
+from waywarden.services.resume import ResumeService
+from waywarden.services.resume_errors import (
+    CrossRunCheckpointError,
+    ManifestChangedWithoutRevisionError,
+    ResumeServiceError,
+)
 
 __all__ = [
     "ApprovalAlreadyResolvedError",
     "ApprovalDecision",
     "ApprovalEngine",
     "ContextBuilder",
+    "CrossRunCheckpointError",
     "DeniedAbandon",
     "DeniedAlternatePath",
     "Granted",
+    "ManifestChangedWithoutRevisionError",
+    "ResumeService",
+    "ResumeServiceError",
     "Timeout",
 ]
