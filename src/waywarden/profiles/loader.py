@@ -172,6 +172,8 @@ def _load_profile_descriptor(
 
     try:
         normalized_content["required_providers"] = RequiredProviders(**raw_required_providers)
+        # Remove profile-pack-extended fields not on ProfileDescriptor (e.g. asset_filters).
+        normalized_content.pop("asset_filters", None)
         return ProfileDescriptor(**normalized_content)
     except (TypeError, ValueError) as exc:
         errors.append(f"{profile_path.as_posix()}: {exc}")
