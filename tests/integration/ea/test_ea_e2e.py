@@ -1,10 +1,10 @@
-"""Integration test: EA profile end-to-end run (P5-10 #90).
+"""Integration test: EA profile end-to-end run (P5-10 #90 → P5-FIX-3 #174).
 
 Exit gate for P5. Drives the full EA profile lifecycle:
 briefing → inbox triage → scheduled task with approval checkpoint.
 
-Uses the sync-compatible FakeEATaskService while the real
-service is fully async (resolved in P5-FIX-2 #173).
+Uses the async-compatible FakeEATaskService to prove the handlers
+execute through the EATaskService surface (not direct sync calls).
 
 Asserts:
 - Approval engine integration
@@ -58,7 +58,8 @@ def triage_handler(task_service) -> EAIboxTriageHandler:
 # =======================================================================
 
 
-def test_ea_e2e_full_lifecycle(
+@pytest.mark.asyncio
+async def test_ea_e2e_full_lifecycle(
     task_service: FakeEATaskService,
     briefing_handler: EABriefingHandler,
     scheduler_handler: EASchedulerHandler,
@@ -80,7 +81,7 @@ def test_ea_e2e_full_lifecycle(
     assert briefing.state.inbox_accepted == 1
 
     # 2. Inbox triage: classify, draft, approve inbox items
-    triage = triage_handler.run(
+    triage = await triage_handler.run(
         items=[
             InboxItem(
                 subject="Meeting rescheduled",
@@ -97,7 +98,7 @@ def test_ea_e2e_full_lifecycle(
     assert triage.items[0].approved is True
 
     # 3. Scheduling: pick up tasks, schedule with approval gate
-    scheduler = scheduler_handler.run(
+    scheduler = await scheduler_handler.run(
         tasks=[
             ScheduledTask(
                 title="Prepare Q4 budget",
@@ -112,13 +113,14 @@ def test_ea_e2e_full_lifecycle(
     assert scheduler.tasks_approved == 1
 
 
-def test_ea_e2e_approval_deny_path(
+@pytest.mark.asyncio
+async def test_ea_e2e_approval_deny_path(
     task_service: FakeEATaskService,
     scheduler_handler: EASchedulerHandler,
 ) -> None:
     """EA lifecycle where approval is denied-abandon."""
     # Scheduler with deny-abandon
-    result = scheduler_handler.run(
+    result = await scheduler_handler.run(
         tasks=[
             ScheduledTask(
                 title="Skip this task",
@@ -133,12 +135,13 @@ def test_ea_e2e_approval_deny_path(
     assert result.tasks_denied == 1
 
 
-def test_ea_e2e_multi_task_schedule(
+@pytest.mark.asyncio
+async def test_ea_e2e_multi_task_schedule(
     task_service: FakeEATaskService,
 ) -> None:
     """Multiple tasks go through scheduling pipeline."""
     handler = EASchedulerHandler(task_service=task_service)
-    result = handler.run(
+    result = await handler.run(
         [
             ScheduledTask(title="Task A", objective="Obj A"),
             ScheduledTask(title="Task B", objective="Obj B"),
