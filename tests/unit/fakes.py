@@ -1,15 +1,10 @@
-"""Synchronous fake implementations for the EA task service.
+"""Async fake for the EA task service that matches the P5-FIX-2 repo-backed
+EATaskService interface.
 
-These mocks satisfy the synchronous interfaces used by the
-orchestration handler tests (triage, scheduler) while the
-real EATaskService is fully async.
+This fake is used by the sync-compatible handler tests (triage, scheduler)
+while the production EATaskService is fully async.
 
-Do not use these in production code; they exist only to keep
-existing handler tests green while the new repository-backed
-service is wired in behind the real interfaces.
-
-This file lives in tests/ and is not part of the production
-runtime.
+This file lives in tests/ and is not part of the production runtime.
 """
 
 from __future__ import annotations
@@ -19,7 +14,10 @@ from datetime import UTC, datetime
 from typing import Any
 
 from waywarden.domain.ids import TaskId
-from waywarden.services.approval_types import Granted
+from waywarden.services.approval_types import (
+    ApprovalAlreadyResolvedError,
+    Granted,
+)
 from waywarden.services.ea_task_service import (
     ApprovalDecisionRequest,
     CreateTaskRequest,
@@ -30,14 +28,20 @@ from waywarden.services.ea_task_service import (
 
 @dataclass(slots=True)
 class FakeEATaskService:
-    """Synchronous in-memory fake for synchronous handler tests."""
+    """Async-compatible fake for EATaskService.
+
+    Provides a synchronous-in-memory store that mirrors the protocol
+    of the real repository-backed ``EATaskService`` (P5-FIX-2).
+    """
 
     _tasks: dict[str, dict[str, Any]] = field(default_factory=dict)
     _approvals: dict[str, dict[str, Any]] = field(default_factory=dict)
     _events: list[dict[str, Any]] = field(default_factory=list)
     _counter: int = 0
 
-    def create_task(self, req: CreateTaskRequest) -> dict[str, Any]:
+    # ---- task CRUD ----
+
+    async def create_task(self, req: CreateTaskRequest) -> dict[str, Any]:
         self._counter += 1
         task_id = str(TaskId(f"fake-task-{self._counter}"))
         task = {
@@ -58,7 +62,7 @@ class FakeEATaskService:
         )
         return task
 
-    def transition_task(self, req: TransitionTaskRequest) -> dict[str, Any]:
+    async def transition_task(self, req: TransitionTaskRequest) -> dict[str, Any]:
         task = self._tasks.get(req.task_id)
         if task is None:
             raise KeyError(f"task {req.task_id!r} not found")
@@ -83,7 +87,7 @@ class FakeEATaskService:
         )
         return task
 
-    def request_approval(self, req: RequestApprovalRequest) -> dict[str, Any]:
+    async def request_approval(self, req: RequestApprovalRequest) -> dict[str, Any]:
         task = self._tasks.get(req.task_id)
         if task is None:
             raise KeyError(f"task {req.task_id!r} not found")
@@ -99,19 +103,20 @@ class FakeEATaskService:
         )
         return {"task_id": req.task_id, "approval_id": approval_id}
 
-    def resolve_approval(self, req: ApprovalDecisionRequest) -> dict[str, Any]:
+    async def resolve_approval(self, req: ApprovalDecisionRequest) -> dict[str, Any]:
         approval = self._approvals.get(req.task_id)
         if approval is None:
             raise KeyError(f"approval for task {req.task_id!r} not found")
         if approval["state"] == "resolved":
-            from waywarden.services.approval_types import ApprovalAlreadyResolvedError
-
             raise ApprovalAlreadyResolvedError(approval_id=approval["id"])
         approval["state"] = "resolved"
         decision = req.decision
         if isinstance(decision, Granted):
             return {"task_id": req.task_id, "state": "granted"}
-        return {"task_id": req.task_id, "state": str(type(decision).__name__)}
+        return {
+            "task_id": req.task_id,
+            "state": str(type(decision).__name__),
+        }
 
     def get_events(self) -> list[dict[str, Any]]:
         return list(self._events)

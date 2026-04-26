@@ -1,18 +1,25 @@
 """EA inbox triage routine handler.
 
 Classifies inbound items, drafts responses, and hits approval before
-outbound actions can proceed.
+outbound actions can proceed.  Uses the repository-backed ``EATaskService``
+(P5-FIX-2 → #173) with durable event persistence.
+
+Schema covenant:  every item follows create → transition → approval →
+resolve through ``EATaskService``, which emits durable ``run.progress``
+and approval-related RT-002 events.
 
 Canonical references:
     - ADR 0005 (approval model)
     - ADR 0007 (good/bad patterns)
-    - P5-3 #83, P5-4 #84
+    - P5-FIX-2 #173 (repository-backed EA task service)
+    - RT-002 (run event protocol)
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from waywarden.domain.run_event import RunEvent
 from waywarden.services.approval_types import (
     ApprovalDecision,
     DeniedAbandon,
@@ -25,6 +32,10 @@ from waywarden.services.ea_task_service import (
     RequestApprovalRequest,
     TransitionTaskRequest,
 )
+
+# ---------------------------------------------------------------------------
+# Data model
+# ---------------------------------------------------------------------------
 
 
 @dataclass(slots=True)
@@ -49,18 +60,32 @@ class TriageResult:
     items_denied: int = 0
     items_malformed: int = 0
     items: list[InboxItem] = field(default_factory=list)
+    events_emitted: list[RunEvent] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Triage handler
+# ---------------------------------------------------------------------------
 
 
 class EAIboxTriageHandler:
     """Triage routine for inbound inbox items.
 
+    This handler is **async** because the production
+    ``EATaskService`` is fully async (repository-backed, P5-FIX-2).
+
     Flow per item:
     1. Classify (heuristic: valid subject → categorized)
     2. Draft a response
-    3. Request approval checkpoint
-    4. Apply decision: approve → draft response, deny → abandon
+    3. Create task and transition through pipeline via EATaskService
+    4. Request approval checkpoint
+    5. Apply decision: approve → draft response, deny → abandon
 
     Items with blank subjects are marked malformed and skipped.
+
+    **No auto-grant:** If no decision is provided for a triaged item,
+    it remains in ``waiting_approval`` and is counted as a gap, not
+    silently granted.
     """
 
     # Heuristic classification keywords (purely for testing)
@@ -72,10 +97,13 @@ class EAIboxTriageHandler:
         "vendor": "external",
     }
 
-    def __init__(self, task_service: EATaskService | None = None) -> None:
-        self.task_service = task_service or EATaskService()
+    def __init__(
+        self,
+        task_service: EATaskService | None = None,
+    ) -> None:
+        self.task_service = task_service
 
-    def run(
+    async def run(
         self,
         items: list[InboxItem] | None = None,
         decisions: dict[str, ApprovalDecision] | None = None,
@@ -87,14 +115,20 @@ class EAIboxTriageHandler:
             decisions: Map from subject to the approval decision.
 
         Returns:
-            A >>TriageResult``` summarising triage outcomes.
+            A ``TriageResult`` summarising triage outcomes.
+
+        Raises:
+            ValueError: When ``task_service`` is not provided.
         """
+        if self.task_service is None:
+            raise ValueError("EAIboxTriageHandler requires a task_service")
+
         result = TriageResult()
         items = items or []
         decisions = decisions or {}
 
         for item in items:
-            # Step 1: Validate - blank subject means malformed
+            # Step 1: Validate — blank subject means malformed
             if not item.subject.strip():
                 item.classification = "malformed"
                 result.items_malformed += 1
@@ -108,7 +142,7 @@ class EAIboxTriageHandler:
             item.drafted_response = self._draft_response(item)
 
             # Step 4: Task assembly via EA task service
-            task = self.task_service.create_task(
+            task = await self.task_service.create_task(
                 CreateTaskRequest(
                     session_id="triage-sess",
                     title=f"Triage: {item.subject}",
@@ -116,27 +150,29 @@ class EAIboxTriageHandler:
                     acceptance_criteria=(f"classify.{item.classification}",),
                 )
             )
-            task_id = task["id"]
+            task_id = str(task["id"])
 
             # Step 5: Transition through pipeline
-            self.task_service.transition_task(
+            await self.task_service.transition_task(
                 TransitionTaskRequest(task_id=task_id, state="planning")
             )
-            self.task_service.transition_task(
+            await self.task_service.transition_task(
                 TransitionTaskRequest(task_id=task_id, state="executing")
             )
 
             # Step 6: Approval checkpoint
-            self.task_service.request_approval(RequestApprovalRequest(task_id=task_id))
+            await self.task_service.request_approval(RequestApprovalRequest(task_id=task_id))
 
             # Step 7: Apply decision
-            decision = decisions.get(item.subject, Granted())
-            self.task_service.resolve_approval(
-                ApprovalDecisionRequest(
-                    task_id=task_id,
-                    decision=decision,
+            decision = decisions.get(item.subject)
+
+            if decision is not None:
+                await self.task_service.resolve_approval(
+                    ApprovalDecisionRequest(
+                        task_id=task_id,
+                        decision=decision,
+                    )
                 )
-            )
 
             item.approved = isinstance(decision, Granted)
             result.items_triaged += 1
@@ -148,6 +184,8 @@ class EAIboxTriageHandler:
             result.items.append(item)
 
         return result
+
+    # -- internal helpers ---------------------------------------------------
 
     def _classify(self, subject: str) -> str:
         """Heuristic classification by subject keywords."""
