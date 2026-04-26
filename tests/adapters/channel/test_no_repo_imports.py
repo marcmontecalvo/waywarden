@@ -9,10 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 _CHANNELS_ROOT = (
-    Path(__file__).resolve().parent.parent.parent
-    / "waywarden"
-    / "adapters"
-    / "channel"
+    Path(__file__).resolve().parent.parent.parent / "waywarden" / "adapters" / "channel"
 )
 
 _REPO_IMPORT_PATHS = (

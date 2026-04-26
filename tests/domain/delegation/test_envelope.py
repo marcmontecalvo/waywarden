@@ -31,8 +31,7 @@ def test_envelope_is_frozen() -> None:
 
 
 def test_make_envelope() -> None:
-    from waywarden.domain.delegation.envelope import make_envelope
-    from waywarden.domain.ids import DelegationId, RunId
+    from waywarden.domain.ids import RunId
 
     env = make_envelope(
         parent_run_id=RunId("run-001"),

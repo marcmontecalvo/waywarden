@@ -83,9 +83,7 @@ def _resolve_db_url() -> str:
                 _env_url = _line.split("=", 1)[1].strip()
                 break
     if not _env_url:
-        _env_url = os.environ.get("DATABASE_URL") or (
-            os.environ.get("WAYWARDEN_DATABASE_URL")
-        )
+        _env_url = os.environ.get("DATABASE_URL") or (os.environ.get("WAYWARDEN_DATABASE_URL"))
 
     if not _env_url:
         return "postgresql+psycopg://waywarden:waywarden@127.0.0.1:5432/waywarden_dev"
@@ -257,7 +255,9 @@ class _CassetteLLMWikiClient:
         self._calls: list[tuple[str, dict[str, str | None]]] = []
 
     async def get(
-        self, url: str, headers: dict[str, str] | None = None,
+        self,
+        url: str,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         path = url.split("?")[0].split("/")[-1]
         self._calls.append((path, headers or {}))
@@ -282,7 +282,8 @@ class _CassetteLLMWikiClient:
 
 
 def _build_memory_provider_for_config(
-    cfg: AppConfig, cassette_client: Any | None = None,
+    cfg: AppConfig,
+    cassette_client: Any | None = None,
 ) -> Any:
     """Build a MemoryProvider from AppConfig values via factory dispatch."""
     cfg_dict: dict[str, Any] = {
@@ -302,7 +303,8 @@ def _build_memory_provider_for_config(
 
 
 def _build_knowledge_provider_for_config(
-    cfg: AppConfig, cassette_client: Any | None = None,
+    cfg: AppConfig,
+    cassette_client: Any | None = None,
 ) -> Any:
     """Build a KnowledgeProvider from AppConfig values via factory dispatch."""
     cfg_dict: dict[str, Any] = {
@@ -323,11 +325,7 @@ def _build_knowledge_provider_for_config(
 
 def _cassettes_available() -> bool:
     """Check that all three cassette files exist."""
-    return (
-        MODEL_CASSETTE.is_file()
-        and MEMORY_CASSETTE.is_file()
-        and KNOWLEDGE_CASSETTE.is_file()
-    )
+    return MODEL_CASSETTE.is_file() and MEMORY_CASSETTE.is_file() and KNOWLEDGE_CASSETTE.is_file()
 
 
 # ---------------------------------------------------------------------------
@@ -397,9 +395,7 @@ async def test_swap_all_fake(
     assert len(usages) == 1, f"Expected 1 TokenUsage, got {len(usages)}"
     assert usages[0].prompt_tokens > 0
     assert usages[0].completion_tokens > 0
-    assert usages[0].total_tokens == (
-        usages[0].prompt_tokens + usages[0].completion_tokens
-    )
+    assert usages[0].total_tokens == (usages[0].prompt_tokens + usages[0].completion_tokens)
 
     # PromptEnvelope has memory block
     assert len(envelope.memory_block) == 1
@@ -501,6 +497,5 @@ async def test_swap_mixed_real(
     assert usages[0].provider == "anthropic"
     assert usages[0].model == load_model_cassette["model"]
     assert usages[0].total_tokens == (
-        load_model_cassette["usage"]["input_tokens"]
-        + load_model_cassette["usage"]["output_tokens"]
+        load_model_cassette["usage"]["input_tokens"] + load_model_cassette["usage"]["output_tokens"]
     )

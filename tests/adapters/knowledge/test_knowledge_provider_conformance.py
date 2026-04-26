@@ -6,14 +6,13 @@ from pathlib import Path
 
 import pytest
 
+from waywarden.adapters.knowledge.filesystem import FilesystemKnowledgeProvider
 from waywarden.domain.providers.knowledge import KnowledgeProvider
 from waywarden.domain.providers.types.knowledge import KnowledgeDocument, KnowledgeHit
 
 
 def test_filesystem_provider_implements_knowledge_provider() -> None:
     """FilesystemKnowledgeProvider must pass isinstance(knowledge_provider)."""
-    from waywarden.adapters.knowledge.filesystem import FilesystemKnowledgeProvider
-
     # Use a real directory — assets/knowledge/ exists on disk
     root = Path(__file__).parent.parent.parent.parent.parent / "assets" / "knowledge"
     if not root.is_dir():

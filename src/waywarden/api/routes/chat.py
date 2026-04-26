@@ -50,7 +50,6 @@ async def chat(
 ) -> ChatResponse:
     """Accept a chat message and kick off orchestration."""
     if not x_waywarden_operator:
-
         raise HTTPException(status_code=401, detail="missing X-Waywarden-Operator header")
 
     now = datetime.now(UTC)
@@ -104,9 +103,7 @@ async def chat(
             "entrypoint": run.entrypoint,
         },
         timestamp=now,
-        causation=Causation(
-            event_id=None, action="chat_submit", request_id=None
-        ),
+        causation=Causation(event_id=None, action="chat_submit", request_id=None),
         actor=Actor(kind="system", id=None, display=None),
     )
     if event_repo is not None:

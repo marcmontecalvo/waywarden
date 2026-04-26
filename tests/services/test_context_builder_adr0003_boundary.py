@@ -10,6 +10,8 @@ from __future__ import annotations
 import pathlib
 import re
 
+import pytest
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent  # repo root
 SRC = ROOT / "src"
 
@@ -57,7 +59,6 @@ def test_no_merged_block_type() -> None:
 def test_envelope_has_separate_fields() -> None:
     """PromptEnvelope must have distinct memory_block and knowledge_block fields."""
     import importlib
-
 
     module = importlib.import_module("waywarden.domain.providers.types.model")
     source = module.__file__

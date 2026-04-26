@@ -82,9 +82,7 @@ async def test_transport_error_surfaces() -> None:
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client = AsyncMock()
-        mock_client.post = AsyncMock(
-            side_effect=httpx.ConnectError("connection refused")
-        )
+        mock_client.post = AsyncMock(side_effect=httpx.ConnectError("connection refused"))
         mock_client.is_closed = True
         mock_client_cls.return_value = mock_client
 

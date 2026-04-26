@@ -28,8 +28,7 @@ async def test_fake_model_produces_different_output_for_different_inputs() -> No
     result_b = await provider.complete(prompt_b)
 
     assert result_a.text != result_b.text, (
-        "FakeModelProvider returned the same text for different prompts -- "
-        "possible hardcoded stub."
+        "FakeModelProvider returned the same text for different prompts -- possible hardcoded stub."
     )
 
 

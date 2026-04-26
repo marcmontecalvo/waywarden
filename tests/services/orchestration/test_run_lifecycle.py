@@ -192,8 +192,7 @@ class TestFullHappyPathEmitsCanonicalSequence:
                 phase = event.payload["phase"]
                 milestone = event.payload["milestone"]
                 valid = any(
-                    md.phase == phase and md.milestone == milestone
-                    for md in MILESTONE_CATALOG
+                    md.phase == phase and md.milestone == milestone for md in MILESTONE_CATALOG
                 )
                 assert valid, (
                     f"progress event phase={phase!r}, milestone={milestone!r} "
@@ -220,10 +219,11 @@ class TestFullHappyPathEmitsCanonicalSequence:
         usage_artifact_seq: int | None = None
         completed_seq: int | None = None
         for event in all_events:
-            if event.type == "run.artifact_created" and event.payload.get(
-                "artifact_kind"
-            ) == "usage-summary":
-                    usage_artifact_seq = event.seq
+            if (
+                event.type == "run.artifact_created"
+                and event.payload.get("artifact_kind") == "usage-summary"
+            ):
+                usage_artifact_seq = event.seq
             if event.type == "run.completed":
                 completed_seq = event.seq
 

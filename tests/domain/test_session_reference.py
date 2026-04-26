@@ -30,23 +30,17 @@ def test_session_reference_requires_non_empty_fields() -> None:
 
 
 def test_session_reference_has_composite_key() -> None:
-    ref = SessionReference(
-        run_id="run-1", artifact_id="art-1", session_ref="msg-1"
-    )
+    ref = SessionReference(run_id="run-1", artifact_id="art-1", session_ref="msg-1")
     assert ref.composite_key == "run-1:art-1"
 
 
 def test_session_reference_created_at_defaults_to_utc() -> None:
-    ref = SessionReference(
-        run_id="r", artifact_id="a", session_ref="s"
-    )
+    ref = SessionReference(run_id="r", artifact_id="a", session_ref="s")
     assert ref.created_at.tzinfo is not None
 
 
 def test_session_reference_is_frozen() -> None:
-    ref = SessionReference(
-        run_id="r", artifact_id="a", session_ref="s"
-    )
+    ref = SessionReference(run_id="r", artifact_id="a", session_ref="s")
     with pytest.raises((AttributeError, TypeError)):
         ref.run_id = "new"  # type: ignore[misc]
 
@@ -68,18 +62,12 @@ class _InMemorySessionRefRepo:
         return ref
 
     async def get_by_run(self, run_id: str) -> list[SessionReference]:
-        return [
-            r for (r_id, _a_id), r in self._store.items() if r_id == run_id
-        ]
+        return [r for (r_id, _a_id), r in self._store.items() if r_id == run_id]
 
     async def get_by_artifact(self, artifact_id: str) -> list[SessionReference]:
-        return [
-            r for (_r_id, a_id), r in self._store.items() if a_id == artifact_id
-        ]
+        return [r for (_r_id, a_id), r in self._store.items() if a_id == artifact_id]
 
-    async def get_by_key(
-        self, run_id: str, artifact_id: str
-    ) -> SessionReference | None:
+    async def get_by_key(self, run_id: str, artifact_id: str) -> SessionReference | None:
         return self._store.get((run_id, artifact_id))
 
     async def remove(self, run_id: str) -> int:

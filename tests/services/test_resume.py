@@ -9,12 +9,12 @@ Covers:
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
 import hashlib
 import json
 import os
 import tempfile
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 
 import pytest
 
@@ -103,9 +103,7 @@ class _EventRepo:
         since_seq: int = 0,
         limit: int | None = None,
     ) -> list[RunEvent]:
-        result = [
-            e for e in self._events.get(run_id, []) if e.seq > since_seq
-        ]
+        result = [e for e in self._events.get(run_id, []) if e.seq > since_seq]
         if limit is not None:
             result = result[:limit]
         return result
@@ -170,7 +168,12 @@ def _compute_stub_hash(repo: _ManifestRepo, run_id: str) -> str:
     return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
 
 
-def _write_pending_yaml(tmpdir: str, run_id: str, expected_hash: str, checkpoint_run_id: str | None = None) -> None:
+def _write_pending_yaml(
+    tmpdir: str,
+    run_id: str,
+    expected_hash: str,
+    checkpoint_run_id: str | None = None,
+) -> None:
     """Write the pending-runs.yaml for a test."""
     path = os.path.join(tmpdir, "data", "partner-auxiliary", "pending-runs.yaml")
     os.makedirs(os.path.dirname(path), exist_ok=True)

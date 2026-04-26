@@ -93,20 +93,14 @@ class EASchedulerHandler:
 
             # 2. Transition to executing
             self.task_service.transition_task(
-                TransitionTaskRequest(
-                    task_id=task_id, state="planning"
-                )
+                TransitionTaskRequest(task_id=task_id, state="planning")
             )
             self.task_service.transition_task(
-                TransitionTaskRequest(
-                    task_id=task_id, state="executing"
-                )
+                TransitionTaskRequest(task_id=task_id, state="executing")
             )
 
             # 3. Request approval checkpoint
-            self.task_service.request_approval(
-                RequestApprovalRequest(task_id=task_id)
-            )
+            self.task_service.request_approval(RequestApprovalRequest(task_id=task_id))
 
             # 4. Apply decision — look up by title first, then index
             decision = decisions.get(stask.title)
@@ -127,32 +121,26 @@ class EASchedulerHandler:
             if isinstance(decision, Granted):
                 result.tasks_approved += 1
                 self.task_service.transition_task(
-                    TransitionTaskRequest(
-                        task_id=task_id, state="planning"
-                    )
+                    TransitionTaskRequest(task_id=task_id, state="planning")
                 )
                 self.task_service.transition_task(
-                    TransitionTaskRequest(
-                        task_id=task_id, state="executing"
-                    )
+                    TransitionTaskRequest(task_id=task_id, state="executing")
                 )
                 self.task_service.transition_task(
-                    TransitionTaskRequest(
-                        task_id=task_id, state="completed"
-                    )
+                    TransitionTaskRequest(task_id=task_id, state="completed")
                 )
             elif isinstance(decision, DeniedAbandon):
                 result.tasks_denied += 1
             elif isinstance(decision, DeniedAlternatePath):
                 result.tasks_rescheduled += 1
                 self.task_service.transition_task(
-                    TransitionTaskRequest(
-                        task_id=task_id, state="planning"
-                    )
+                    TransitionTaskRequest(task_id=task_id, state="planning")
                 )
-            result.decisions.append({
-                "task_id": task_id,
-                "decision": type(decision).__name__,
-            })
+            result.decisions.append(
+                {
+                    "task_id": task_id,
+                    "decision": type(decision).__name__,
+                }
+            )
 
         return result

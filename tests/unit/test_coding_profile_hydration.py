@@ -31,9 +31,7 @@ def _coding_asset_registry() -> AssetRegistry:
     reg = AssetRegistry()
     import asyncio
 
-    asyncio.get_event_loop().run_until_complete(
-        reg.load_from_dir(FIXTURES_DIR)
-    )
+    asyncio.get_event_loop().run_until_complete(reg.load_from_dir(FIXTURES_DIR))
     return reg
 
 
@@ -144,7 +142,10 @@ def test_hydrate_fails_when_coding_missing_from_registry() -> None:
         version="1.0.0",
         supported_extensions=("widget",),
         required_providers=RequiredProviders(
-            model="m", memory="m", knowledge="m", tracer="noop",
+            model="m",
+            memory="m",
+            knowledge="m",
+            tracer="noop",
         ),
     )
     reg = ProfileRegistry({"ea": desc})
@@ -187,7 +188,10 @@ def test_coding_profile_view_proxies_id() -> None:
 
 def test_coding_profile_view_required_providers_proxy() -> None:
     providers = RequiredProviders(
-        model="m", memory="m", knowledge="m", tracer="noop",
+        model="m",
+        memory="m",
+        knowledge="m",
+        tracer="noop",
     )
     desc = ProfileDescriptor(
         id="coding",

@@ -30,9 +30,7 @@ logger = getLogger(__name__)
 
 
 # Terminal events that suppress further run.progress emissions.
-_TERMINAL_EVENTS: frozenset[str] = frozenset(
-    ["run.completed", "run.failed", "run.cancelled"]
-)
+_TERMINAL_EVENTS: frozenset[str] = frozenset(["run.completed", "run.failed", "run.cancelled"])
 
 # 7 canonical RT-002 run states — no invented states.
 _VALID_RUN_STATES: frozenset[RunState] = frozenset(
@@ -85,8 +83,7 @@ class OrchestrationService:
         """
         if run.state != "created":
             raise ValueError(
-                f"run must be in 'created' state to start orchestration, "
-                f"got {run.state!r}"
+                f"run must be in 'created' state to start orchestration, got {run.state!r}"
             )
 
         # Validate state space — only the 7 RT-002 states are allowed.
@@ -223,13 +220,9 @@ class OrchestrationService:
         )
 
         await self.events.append(event)
-        logger.debug(
-            "emitted run.progress(%s.%s) seq=%d", phase, milestone, event.seq
-        )
+        logger.debug("emitted run.progress(%s.%s) seq=%d", phase, milestone, event.seq)
 
-    async def _emit_completed(
-        self, run: Run, timestamp: datetime
-    ) -> None:
+    async def _emit_completed(self, run: Run, timestamp: datetime) -> None:
         """Emit the terminal ``run.completed`` event."""
         last_seq = await self.events.latest_seq(str(run.id))
         event = RunEvent(

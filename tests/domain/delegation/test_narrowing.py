@@ -2,26 +2,20 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 import pytest
 
-from waywarden.domain.delegation.envelope import DelegationEnvelope, make_envelope
 from waywarden.domain.delegation.narrowing import (
     DelegationWideningError,
     narrow_manifest,
 )
 from waywarden.domain.ids import RunId
 from waywarden.domain.manifest.manifest import WorkspaceManifest
-from waywarden.domain.manifest.network_policy import NetworkAllowRule, NetworkMode, NetworkPolicy
+from waywarden.domain.manifest.network_policy import NetworkAllowRule, NetworkPolicy
 from waywarden.domain.manifest.output_contract import OutputContract
-from waywarden.domain.manifest.secret_scope import SecretMode, SecretScope
+from waywarden.domain.manifest.secret_scope import SecretScope
 from waywarden.domain.manifest.snapshot_policy import SnapshotPolicy
 from waywarden.domain.manifest.tool_policy import (
-    ToolDecision,
-    ToolDecisionRule,
     ToolPolicy,
-    ToolPreset,
 )
 from waywarden.domain.manifest.writable_path import WritablePath
 
@@ -50,9 +44,13 @@ def _base_manifest(
         tool_policy=tp,
         secret_scope=ss,
         snapshot_policy=SnapshotPolicy(
-            on_start=False, on_completion=False, on_failure=False,
-            before_destructive_actions=True, max_snapshots=10,
-            include_paths=[], exclude_paths=[],
+            on_start=False,
+            on_completion=False,
+            on_failure=False,
+            before_destructive_actions=True,
+            max_snapshots=10,
+            include_paths=[],
+            exclude_paths=[],
         ),
     )
 

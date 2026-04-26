@@ -8,7 +8,6 @@ import pytest
 
 from waywarden.config import InstanceLoadError, load_instances
 from waywarden.domain.channel_binding import register_channel_provider
-from waywarden.domain.ids import InstanceId
 
 
 def _make_profiles(tmp_path: Path) -> Path:
@@ -192,9 +191,7 @@ class TestTypedListRequired:
         config_yaml = config_dir / "instances" / "test-insta.yaml"
         # channels as a bare string should be rejected
         config_yaml.write_text(
-            "env: {}\n"
-            "overrides:\n"
-            "  channels: \"not-a-list\"\n",
+            'env: {}\noverrides:\n  channels: "not-a-list"\n',
             encoding="utf-8",
         )
 
@@ -220,11 +217,7 @@ class TestTypedListRequired:
         )
         config_yaml = config_dir / "instances" / "test-insta.yaml"
         config_yaml.write_text(
-            "env: {}\n"
-            "overrides:\n"
-            "  channels:\n"
-            "    chat:\n"
-            "      transport: http\n",
+            "env: {}\noverrides:\n  channels:\n    chat:\n      transport: http\n",
             encoding="utf-8",
         )
 

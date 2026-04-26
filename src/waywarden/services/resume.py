@@ -23,7 +23,6 @@ from waywarden.domain.run import Run, RunState
 from waywarden.services.resume_errors import (
     CrossRunCheckpointError,
     ManifestChangedWithoutRevisionError,
-    ResumeServiceError,
 )
 
 logger = getLogger(__name__)
@@ -33,19 +32,13 @@ _RESUMABLE_STATES: frozenset[RunState] = frozenset(
     ["created", "planning", "executing", "waiting_approval"]
 )
 
-_TERMINAL_STATES: frozenset[RunState] = frozenset(
-    ["completed", "failed", "cancelled"]
-)
+_TERMINAL_STATES: frozenset[RunState] = frozenset(["completed", "failed", "cancelled"])
 
 if TYPE_CHECKING:
-    from waywarden.domain.manifest.manifest import WorkspaceManifest
     from waywarden.domain.repositories import (
         RunEventRepository,
         RunRepository,
         WorkspaceManifestRepository,
-    )
-    from waywarden.services.orchestration.service import (
-        OrchestrationService,
     )
 
 
@@ -159,7 +152,7 @@ class ResumeService:
         if not pending_path.exists():
             return []
 
-        with open(pending_path, "r", encoding="utf-8") as fh:
+        with open(pending_path, encoding="utf-8") as fh:
             data = yaml.safe_load(fh)
 
         results: list[_PendingRunConfig] = []
@@ -190,7 +183,6 @@ class ResumeService:
     async def _serialize_manifest_body(self, manifest: object) -> str:
         """Serialize a ``WorkspaceManifest`` to its canonical JSON body."""
         import json
-
         from dataclasses import asdict
 
         if hasattr(manifest, "__dataclass_fields__"):

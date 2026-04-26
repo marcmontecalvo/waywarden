@@ -63,9 +63,7 @@ class ContextFragment:
 _SECRET_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"(?:api[_-]?key|token|secret|password)\s*[=:]\s*\S+", re.I),
     re.compile(r"-----BEGIN\s+(?:RSA|EC|DSA)\s+PRIVATE\s+KEY-----", re.I),
-    re.compile(
-        r"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36,}", re.I
-    ),
+    re.compile(r"(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{36,}", re.I),
 )
 
 
@@ -86,6 +84,7 @@ def scrub_secrets(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Path-safety
 # ---------------------------------------------------------------------------
+
 
 def _is_safe_path(repo_root: Path, path: Path) -> bool:
     """Check that *path* resolves inside *repo_root* (no symlinks escaping)."""
@@ -188,11 +187,15 @@ class RepoContextProvider:
         lines: list[str] = []
 
         try:
-            tracked_files = subprocess.check_output(
-                ["git", "-C", str(self._repo_root), "ls-files"],
-                text=True,
-                stderr=subprocess.DEVNULL,
-            ).strip().splitlines()
+            tracked_files = (
+                subprocess.check_output(
+                    ["git", "-C", str(self._repo_root), "ls-files"],
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                )
+                .strip()
+                .splitlines()
+            )
 
             # Only show first 20 tracked files to avoid dump.
             for rel_path in tracked_files[:20]:

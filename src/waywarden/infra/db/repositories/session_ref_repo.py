@@ -30,25 +30,17 @@ class SessionRefRepositoryImpl:
 
     async def get_by_run(self, run_id: str) -> Sequence[SessionReference]:
         """Return all session references for a run."""
-        stmt = session_references.select().where(
-            session_references.c.run_id == run_id
-        )
+        stmt = session_references.select().where(session_references.c.run_id == run_id)
         result = await self._session.execute(stmt)
         return [self._row_to_ref(row) for row in result.fetchall()]
 
-    async def get_by_artifact(
-        self, artifact_id: str
-    ) -> Sequence[SessionReference]:
+    async def get_by_artifact(self, artifact_id: str) -> Sequence[SessionReference]:
         """Return all session references for an artifact."""
-        stmt = session_references.select().where(
-            session_references.c.artifact_id == artifact_id
-        )
+        stmt = session_references.select().where(session_references.c.artifact_id == artifact_id)
         result = await self._session.execute(stmt)
         return [self._row_to_ref(row) for row in result.fetchall()]
 
-    async def get_by_key(
-        self, run_id: str, artifact_id: str
-    ) -> SessionReference | None:
+    async def get_by_key(self, run_id: str, artifact_id: str) -> SessionReference | None:
         """Return a specific reference by composite key."""
         stmt = session_references.select().where(
             session_references.c.run_id == run_id,
@@ -62,9 +54,7 @@ class SessionRefRepositoryImpl:
 
     async def remove(self, run_id: str) -> int:
         """Remove all session references for a run."""
-        stmt = session_references.delete().where(
-            session_references.c.run_id == run_id
-        )
+        stmt = session_references.delete().where(session_references.c.run_id == run_id)
         result = await self._session.execute(stmt)
         return result.rowcount  # type: ignore[attr-defined,no-any-return]
 

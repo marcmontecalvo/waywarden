@@ -22,6 +22,7 @@ _TERMINAL_EXIT_CODES: dict[str, int] = {
     "run.cancelled": 2,
 }
 
+
 def build_chat_parser(subparsers: Any) -> None:  # type: ignore[type-arg]
     """Add the ``chat`` subcommand to *subparsers*."""
     parser = subparsers.add_parser(  # type: ignore[attr-defined]
@@ -104,7 +105,7 @@ def _handle_chat(args: argparse.Namespace) -> int:
                     continue
 
                 try:
-                    event = json.loads(decoded[len("data: "):])
+                    event = json.loads(decoded[len("data: ") :])
                 except json.JSONDecodeError:
                     continue
 
@@ -143,8 +144,8 @@ def _format_event(event: Any) -> str:
     elif event_type == "run.completed":
         return event.get("payload", {}).get("outcome", "ok")
     elif event_type == "run.failed":
-        fc = event.get('payload', {}).get('failure_code', 'error')
-        msg = event.get('payload', {}).get('message', '')
+        fc = event.get("payload", {}).get("failure_code", "error")
+        msg = event.get("payload", {}).get("message", "")
         return f"{fc}: {msg}"
     elif event_type == "run.cancelled":
         return event.get("payload", {}).get("reason", "unknown")

@@ -83,9 +83,7 @@ class InMemEventRepo:
         since_seq: int = 0,
         limit: int | None = None,
     ) -> list[RunEvent]:
-        result = [
-            e for e in self._events.get(run_id, []) if e.seq > since_seq
-        ]
+        result = [e for e in self._events.get(run_id, []) if e.seq > since_seq]
         if limit is not None:
             result = result[:limit]
         return result
@@ -140,9 +138,7 @@ class TestResumeRejectsTerminal:
     async def test_resume_rejected_after_terminal(self) -> None:
         runs_repo = InMemRunRepo()
         events_repo = InMemEventRepo()
-        svc = RunLifecycleService(
-            runs=runs_repo, events=events_repo, manifests=InMemManifestRepo()
-        )
+        svc = RunLifecycleService(runs=runs_repo, events=events_repo, manifests=InMemManifestRepo())
         task = _make_task()
         run = await svc.start(task)
         # Manually set to terminal state
@@ -157,9 +153,7 @@ class TestResumeAssignsLatestSeq:
     async def test_resume_assigns_latest_seq(self) -> None:
         runs_repo = InMemRunRepo()
         events_repo = InMemEventRepo()
-        svc = RunLifecycleService(
-            runs=runs_repo, events=events_repo, manifests=InMemManifestRepo()
-        )
+        svc = RunLifecycleService(runs=runs_repo, events=events_repo, manifests=InMemManifestRepo())
         task = _make_task()
         run = await svc.start(task)
 
@@ -173,9 +167,7 @@ class TestResumeAssignsLatestSeq:
             type="run.progress",
             payload={"phase": "intake", "milestone": "received"},
             timestamp=datetime.now(UTC),
-            causation=Causation(
-                event_id=None, action="intake", request_id=None
-            ),
+            causation=Causation(event_id=None, action="intake", request_id=None),
             actor=Actor(kind="system", id=None, display=None),
         )
         await events_repo.append(progress_event)
@@ -192,9 +184,7 @@ class TestCancelRejectsTerminal:
     async def test_cancel_rejected_after_terminal(self) -> None:
         runs_repo = InMemRunRepo()
         events_repo = InMemEventRepo()
-        svc = RunLifecycleService(
-            runs=runs_repo, events=events_repo, manifests=InMemManifestRepo()
-        )
+        svc = RunLifecycleService(runs=runs_repo, events=events_repo, manifests=InMemManifestRepo())
         task = _make_task()
         run = await svc.start(task)
 
@@ -209,9 +199,7 @@ class TestApprovalGrantResumeKindRejected:
     async def test_approval_granted_resume_kind_rejected(self) -> None:
         runs_repo = InMemRunRepo()
         events_repo = InMemEventRepo()
-        svc = RunLifecycleService(
-            runs=runs_repo, events=events_repo, manifests=InMemManifestRepo()
-        )
+        svc = RunLifecycleService(runs=runs_repo, events=events_repo, manifests=InMemManifestRepo())
         task = _make_task()
         run = await svc.start(task)
 

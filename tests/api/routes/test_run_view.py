@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
-
-from starlette.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from fastapi import FastAPI
+from starlette.testclient import TestClient
 
 from waywarden.api.routes.run_view import router
-
 
 # ---------------------------------------------------------------------------
 # Test helpers
@@ -81,9 +79,7 @@ class _MockRepo:
         since_seq: int = 0,
         limit: int | None = None,
     ) -> list[_MockRunEvent]:
-        return [
-            e for e in self.events if e.run_id == run_id and e.seq > since_seq
-        ]
+        return [e for e in self.events if e.run_id == run_id and e.seq > since_seq]
 
     async def latest_seq(self, run_id: str) -> int:
         matching = [e for e in self.events if e.run_id == run_id]
@@ -107,6 +103,7 @@ def _inject_app(
 def _clean_state() -> None:
     """Drain repo state between tests."""
     import waywarden.api.routes.run_view as run_view_mod
+
     run_view_mod._event_repo = None
     run_view_mod._run_repo = None
     run_view_mod._manifest_repo = None
@@ -123,10 +120,12 @@ class TestViewReturnsSnapshot:
     @pytest.mark.anyio
     async def test_view_returns_snapshot(self) -> None:
         """APPLY milestone events to the repo and validate the snapshot."""
-        repo = _MockRepo([
-            _MockRunEvent(1, "run.progress", {"phase": "intake", "milestone": "received"}),
-            _MockRunEvent(2, "run.progress", {"phase": "plan", "milestone": "drafted"}),
-        ])
+        repo = _MockRepo(
+            [
+                _MockRunEvent(1, "run.progress", {"phase": "intake", "milestone": "received"}),
+                _MockRunEvent(2, "run.progress", {"phase": "plan", "milestone": "drafted"}),
+            ]
+        )
 
         mock_runs = MagicMock()
         mock_run = MagicMock()
@@ -136,8 +135,6 @@ class TestViewReturnsSnapshot:
         app = FastAPI()
         app.include_router(router)
         _inject_app(app, repo, runs_repo=mock_runs)
-
-        from starlette.testclient import TestClient
 
         client = TestClient(app)
         response = client.get("/runs/run-mock/view")
@@ -168,8 +165,6 @@ class TestView404ForUnknownRun:
         app.include_router(router)
         _inject_app(app, repo, runs_repo=mock_runs)
 
-        from starlette.testclient import TestClient
-
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/runs/unknown-run/view")
 
@@ -184,13 +179,15 @@ class TestViewReturnsArtifactEvents:
     @pytest.mark.anyio
     async def test_artifacts_reflected(self) -> None:
         """Artifact events are included in the snapshot."""
-        repo = _MockRepo([
-            _MockRunEvent(
-                1,
-                "run.artifact_created",
-                {"artifact_kind": "usage-summary", "artifact_ref": "ref-1", "label": "tokens"},
-            ),
-        ])
+        repo = _MockRepo(
+            [
+                _MockRunEvent(
+                    1,
+                    "run.artifact_created",
+                    {"artifact_kind": "usage-summary", "artifact_ref": "ref-1", "label": "tokens"},
+                ),
+            ]
+        )
 
         mock_runs = MagicMock()
         mock_run = MagicMock()
@@ -200,8 +197,6 @@ class TestViewReturnsArtifactEvents:
         app = FastAPI()
         app.include_router(router)
         _inject_app(app, repo, runs_repo=mock_runs)
-
-        from starlette.testclient import TestClient
 
         client = TestClient(app)
         response = client.get("/runs/run-mock/view")

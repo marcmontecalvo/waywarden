@@ -180,7 +180,11 @@ class AppConfig(BaseSettings):
                 raise ValueError(
                     f"{instance_yml.as_posix()}: expected a mapping of instance settings"
                 )
-            ids = {item["id"] for item in content.get("instances", []) if isinstance(item, dict) and isinstance(item.get("id"), str)}
+            ids = {
+                item["id"]
+                for item in content.get("instances", [])
+                if isinstance(item, dict) and isinstance(item.get("id"), str)
+            }
             active_str: str = active
             if active_str not in ids:
                 raise ValueError(

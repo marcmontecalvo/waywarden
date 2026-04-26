@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from waywarden.domain.manifest.manifest import WorkspaceManifest
 
-
 # ---------------------------------------------------------------------------
 # Error types
 # ---------------------------------------------------------------------------
@@ -32,8 +31,7 @@ class DelegationWideningError(RuntimeError):
 
     def __init__(self, field: str) -> None:
         super().__init__(
-            f"child manifest widens authority on {field!r} — "
-            "narrowing validation required"
+            f"child manifest widens authority on {field!r} — narrowing validation required"
         )
         self.field = field
 

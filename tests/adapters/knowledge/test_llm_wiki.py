@@ -45,9 +45,7 @@ class CassetteWikiClient:
         if "/wiki/fetch" in url:
             if self._fetch_payload is None:
                 return CassetteWikiResponse({}, status=self._fetch_status)
-            return CassetteWikiResponse(
-                self._fetch_payload, self._fetch_status
-            )
+            return CassetteWikiResponse(self._fetch_payload, self._fetch_status)
         return CassetteWikiResponse({}, status=404)
 
 
@@ -71,8 +69,7 @@ async def test_roundtrip_cassette() -> None:
         "ref": "docs/concepts.md",
         "title": "Core Concepts",
         "content": (
-            "Knowledge providers power the LLM-Wiki service. "
-            "They remain distinct from memory."
+            "Knowledge providers power the LLM-Wiki service. They remain distinct from memory."
         ),
     }
 
@@ -111,9 +108,7 @@ async def test_fetch_not_found_raises() -> None:
     from waywarden.adapters.knowledge.filesystem import KnowledgeNotFound
     from waywarden.adapters.knowledge.llm_wiki import LLMWikiKnowledgeProvider
 
-    client = CassetteWikiClient(
-        [{"ref": "a.md", "snippet": ""}], None, fetch_status=404
-    )
+    client = CassetteWikiClient([{"ref": "a.md", "snippet": ""}], None, fetch_status=404)
     provider = LLMWikiKnowledgeProvider(
         endpoint="http://localhost:9999",
         api_key="my-key",
@@ -129,9 +124,7 @@ async def test_empty_result_from_search() -> None:
     from waywarden.adapters.knowledge.llm_wiki import LLMWikiKnowledgeProvider
 
     client = CassetteWikiClient([], None)
-    provider = LLMWikiKnowledgeProvider(
-        endpoint="http://localhost:9999", client=client
-    )
+    provider = LLMWikiKnowledgeProvider(endpoint="http://localhost:9999", client=client)
 
     results = await provider.search("nonexistent-term")
     assert results == []

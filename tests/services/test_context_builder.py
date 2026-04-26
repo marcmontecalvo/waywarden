@@ -17,9 +17,7 @@ def _make_memory_mock() -> AsyncMock:
     return mem_mock
 
 
-def _make_config_mock(
-    memory_cap: int = 2000, knowledge_cap: int = 2000
-) -> MagicMock:
+def _make_config_mock(memory_cap: int = 2000, knowledge_cap: int = 2000) -> MagicMock:
     config = MagicMock()
     config.context_memory_char_cap = memory_cap
     config.context_knowledge_char_cap = knowledge_cap
@@ -118,17 +116,13 @@ class TestContextBuilderBasic:
         # The fields are distinct — no single list contains both types.
         # Compare types separately since MemoryEntry has a dict metadata.
         mem_types = {type(e).__name__ for e in envelope.memory_block}
-        kb_types = {type(k).__name__ for k in envelope.knowledge_block}
         assert "MemoryEntry" in mem_types
 
     async def test_bounded_by_max_params(self) -> None:
         """P3-6 AC3 max_memory and max_knowledge limit the blocks."""
         sid = SessionId("test-session")
         mem_mock = AsyncMock()
-        mem_entries = [
-            MemoryEntry(session_id=sid, content=f"entry {i}")
-            for i in range(20)
-        ]
+        mem_entries = [MemoryEntry(session_id=sid, content=f"entry {i}") for i in range(20)]
         mem_mock.read.return_value = mem_entries
 
         kb = FakeKnowledgeProvider(
@@ -142,9 +136,7 @@ class TestContextBuilderBasic:
         builder = ContextBuilder.from_config(mem_mock, kb, config)
 
         # Explicit bounds
-        envelope = await builder.build(
-            sid, "doc doci content", max_memory=3, max_knowledge=2
-        )
+        envelope = await builder.build(sid, "doc doci content", max_memory=3, max_knowledge=2)
         assert len(envelope.memory_block) == 3
         assert len(envelope.knowledge_block) == 2
 
@@ -230,9 +222,7 @@ class TestContextBuilderBasic:
         """Zero cap means no content is included."""
         sid = SessionId("test-session")
         mem_mock = AsyncMock()
-        mem_mock.read.return_value = [
-            MemoryEntry(session_id=sid, content="content")
-        ]
+        mem_mock.read.return_value = [MemoryEntry(session_id=sid, content="content")]
 
         kb = FakeKnowledgeProvider(
             hits=[

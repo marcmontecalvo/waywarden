@@ -1,6 +1,5 @@
 """Tests for EA scheduler routine (P5-6 #86)."""
 
-
 from waywarden.services.approval_types import (
     DeniedAbandon,
     DeniedAlternatePath,

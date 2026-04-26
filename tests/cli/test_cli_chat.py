@@ -9,8 +9,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 
-from waywarden.cli.chat import _handle_chat, _format_event, build_chat_parser
-
+from waywarden.cli.chat import _format_event, _handle_chat
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -21,10 +20,7 @@ def _iter_sse_lines(events: list[dict[str, Any]]) -> Any:
     """Make an iterator that yields individual SSE lines (split, not frames)."""
     lines: list[bytes] = []
     for ev in events:
-        frame = (
-            f"id: {ev.get('seq', 0)}\n"
-            f"data: {json.dumps(ev)}\n\n\n"
-        )
+        frame = f"id: {ev.get('seq', 0)}\ndata: {json.dumps(ev)}\n\n\n"
         for raw_line in frame.strip("\n\n\n").split("\n"):
             lines.append(raw_line.encode())
         lines.append(b"")  # blank line separator
@@ -264,10 +260,7 @@ def test_build_parser_adds_chat_subcommand() -> None:
 @pytest.mark.anyio
 async def test_format_event_rendered_correctly() -> None:  # noqa: ANN201
     """_format_event returns sensible summaries for known event types."""
-    assert (
-        _format_event({"type": "run.created", "payload": {"profile": "ea"}})
-        == "profile=ea"
-    )
+    assert _format_event({"type": "run.created", "payload": {"profile": "ea"}}) == "profile=ea"
     assert (
         _format_event(
             {
@@ -278,17 +271,16 @@ async def test_format_event_rendered_correctly() -> None:  # noqa: ANN201
         == "plan/ready"
     )
     assert _format_event({"type": "run.completed", "payload": {"outcome": "ok"}}) == "ok"
-    assert _format_event(
-        {
-            "type": "run.failed",
-            "payload": {"failure_code": "E1", "message": "fail"},
-        }
-    ) == "E1: fail"
     assert (
-        _format_event({"type": "run.cancelled", "payload": {"reason": "abort"}})
-        == "abort"
+        _format_event(
+            {
+                "type": "run.failed",
+                "payload": {"failure_code": "E1", "message": "fail"},
+            }
+        )
+        == "E1: fail"
     )
+    assert _format_event({"type": "run.cancelled", "payload": {"reason": "abort"}}) == "abort"
     assert (
-        _format_event({"type": "run.artifact_created", "payload": {"artifact_kind": "ps"}})
-        == "ps"
+        _format_event({"type": "run.artifact_created", "payload": {"artifact_kind": "ps"}}) == "ps"
     )

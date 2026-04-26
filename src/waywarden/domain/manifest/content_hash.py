@@ -7,7 +7,6 @@ and crash-resume scenarios.
 from __future__ import annotations
 
 import hashlib
-import json
 
 
 def content_hash(body: str) -> str:

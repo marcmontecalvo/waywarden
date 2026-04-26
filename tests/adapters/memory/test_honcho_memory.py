@@ -19,8 +19,18 @@ class _FakeHonchoClient:
     def __init__(self) -> None:
         self._entries: list[dict[str, Any]] = []
 
-    async def write(self, session_id: str, content: str, metadata: dict[str, str]) -> dict[str, Any]:
-        rec = {"id": f"honcho-{len(self._entries)}", "session_id": session_id, "content": content, "metadata": metadata}
+    async def write(
+        self,
+        session_id: str,
+        content: str,
+        metadata: dict[str, str],
+    ) -> dict[str, Any]:
+        rec = {
+            "id": f"honcho-{len(self._entries)}",
+            "session_id": session_id,
+            "content": content,
+            "metadata": metadata,
+        }
         self._entries.append(rec)
         return rec
 
@@ -66,4 +76,6 @@ async def test_roundtrip_missing_cassette() -> None:
         importlib.import_module("honcho")
         pytest.skip("honcho SDK is installed — this test requires it absent or excluded")
     except ImportError:
-        pytest.skip("honcho SDK not installed — integration test deferred to environments with cassette+key")
+        pytest.skip(
+            "honcho SDK not installed — integration test deferred to environments with cassette+key"
+        )

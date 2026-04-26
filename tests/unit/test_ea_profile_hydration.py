@@ -85,7 +85,10 @@ def test_hydrate_fails_when_ea_missing_from_registry() -> None:
         version="1.0.0",
         supported_extensions=("command",),
         required_providers=RequiredProviders(
-            model="m", memory="m", knowledge="m", tracer="noop",
+            model="m",
+            memory="m",
+            knowledge="m",
+            tracer="noop",
         ),
     )
     reg = ProfileRegistry({"coding": desc})
@@ -127,7 +130,10 @@ def test_ea_profile_view_proxies_id() -> None:
         version="1.0.0",
         supported_extensions=("a",),
         required_providers=RequiredProviders(
-            model="x", memory="x", knowledge="x", tracer="noop",
+            model="x",
+            memory="x",
+            knowledge="x",
+            tracer="noop",
         ),
     )
     view = EAProfileView(descriptor=desc)
@@ -137,11 +143,17 @@ def test_ea_profile_view_proxies_id() -> None:
 
 def test_ea_profile_view_required_providers_proxy() -> None:
     providers = RequiredProviders(
-        model="m", memory="m", knowledge="m", tracer="noop",
+        model="m",
+        memory="m",
+        knowledge="m",
+        tracer="noop",
     )
     desc = ProfileDescriptor(
-        id="ea", display_name="EA", version="1.0.0",
-        supported_extensions=("a",), required_providers=providers,
+        id="ea",
+        display_name="EA",
+        version="1.0.0",
+        supported_extensions=("a",),
+        required_providers=providers,
     )
     view = EAProfileView(descriptor=desc)
     assert view.required_providers == providers
@@ -157,7 +169,5 @@ def _default_asset_registry() -> AssetRegistry:
     reg = AssetRegistry()
     import asyncio
 
-    asyncio.get_event_loop().run_until_complete(
-        reg.load_from_dir(FIXTURES_DIR)
-    )
+    asyncio.get_event_loop().run_until_complete(reg.load_from_dir(FIXTURES_DIR))
     return reg

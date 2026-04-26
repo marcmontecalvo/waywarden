@@ -20,16 +20,14 @@ from waywarden.domain.task import Task
 
 logger = getLogger(__name__)
 
-# Approved resume kinds for this service (approval-related kinds are 
+# Approved resume kinds for this service (approval-related kinds are
 # owned by ApprovalEngine).
 _VALID_RESUME_KINDS: frozenset[str] = frozenset(
     ["operator_resume", "scheduler_wakeup", "worker_recovery", "transport_rebind"]
 )
 
 # Terminal states that refuse new lifecycle verbs.
-_TERMINAL_STATES: frozenset[RunState] = frozenset(
-    ["completed", "failed", "cancelled"]
-)
+_TERMINAL_STATES: frozenset[RunState] = frozenset(["completed", "failed", "cancelled"])
 
 
 class RunLifecycleError(RuntimeError):

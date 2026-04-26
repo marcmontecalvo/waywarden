@@ -7,7 +7,6 @@ to assemble a ``RunSnapshot``.  It must never append events.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from dataclasses import dataclass
 
 from pydantic import BaseModel
@@ -18,7 +17,6 @@ from waywarden.domain.repositories import (
     WorkspaceManifestRepository,
 )
 from waywarden.services.orchestration.milestones import MILESTONE_CATALOG
-
 
 # ---------------------------------------------------------------------------
 # Domain types for the visibility surface

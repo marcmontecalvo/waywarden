@@ -60,12 +60,8 @@ class CodingProfileView:
     """
 
     descriptor: ProfileDescriptor
-    asset_filters: list[dict[str, Any]] = field(
-        default_factory=list
-    )
-    resolved_assets: list[AssetMetadata] = field(
-        default_factory=list
-    )
+    asset_filters: list[dict[str, Any]] = field(default_factory=list)
+    resolved_assets: list[AssetMetadata] = field(default_factory=list)
 
     @property
     def id(self) -> ProfileId:
@@ -115,9 +111,7 @@ def hydrate_coding_profile(
         profile_registry = _build_profile_registry(raw_profile, errors)
 
     # 2. Get the coding profile descriptor.
-    coding_descriptor = _get_coding_descriptor(
-        profile_registry, errors
-    )
+    coding_descriptor = _get_coding_descriptor(profile_registry, errors)
 
     # 3. Extract ``asset_filters`` from the raw YAML.
     asset_filters = raw_profile.get("asset_filters", [])
@@ -178,29 +172,21 @@ def _sync_load_assets(reg: AssetRegistry, assets_dir: str) -> None:
         loop.run_until_complete(_do())
 
 
-def _load_raw_profile(
-    profile_path: Path | None, errors: list[str]
-) -> dict[str, Any]:
+def _load_raw_profile(profile_path: Path | None, errors: list[str]) -> dict[str, Any]:
     if profile_path is None:
         profile_path = Path("profiles/coding/profile.yaml")
     try:
-        content = yaml.safe_load(
-            profile_path.read_text(encoding="utf-8")
-        )
+        content = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
     except OSError as exc:
         errors.append(f"{profile_path}: read error: {exc}")
         return {}
     if content is None or not isinstance(content, dict):
-        errors.append(
-            f"{profile_path}: expected a mapping of profile settings"
-        )
+        errors.append(f"{profile_path}: expected a mapping of profile settings")
         return {}
     return content if isinstance(content, dict) else {}
 
 
-def _build_profile_registry(
-    raw: dict[str, Any], errors: list[str]
-) -> ProfileRegistry:
+def _build_profile_registry(raw: dict[str, Any], errors: list[str]) -> ProfileRegistry:
     """Build a minimal ProfileRegistry from a raw YAML dict.
 
     If required_providers cannot be parsed, the descriptor is built with a
@@ -229,9 +215,7 @@ def _build_profile_registry(
         errors.append(f"required_providers: {exc}")
         return ProfileRegistry({descriptor.id: descriptor})
 
-    supported_extensions = tuple(
-        raw.get("supported_extensions", [])
-    )
+    supported_extensions = tuple(raw.get("supported_extensions", []))
 
     descriptor = ProfileDescriptor(
         id=raw.get("id", "coding-noop"),
@@ -243,9 +227,7 @@ def _build_profile_registry(
     return ProfileRegistry({descriptor.id: descriptor})
 
 
-def _get_coding_descriptor(
-    registry: ProfileRegistry, errors: list[str]
-) -> ProfileDescriptor:
+def _get_coding_descriptor(registry: ProfileRegistry, errors: list[str]) -> ProfileDescriptor:
     """Return the coding profile descriptor or record an error."""
     try:
         return registry["coding"]

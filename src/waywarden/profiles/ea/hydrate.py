@@ -60,12 +60,8 @@ class EAProfileView:
     """
 
     descriptor: ProfileDescriptor
-    asset_filters: list[dict[str, Any]] = field(
-        default_factory=list
-    )
-    resolved_assets: list[AssetMetadata] = field(
-        default_factory=list
-    )
+    asset_filters: list[dict[str, Any]] = field(default_factory=list)
+    resolved_assets: list[AssetMetadata] = field(default_factory=list)
 
     @property
     def id(self) -> ProfileId:
@@ -114,9 +110,7 @@ def hydrate_ea_profile(
         profile_registry = _build_profile_registry(raw_profile, errors)
 
     # 2. Get the EA profile descriptor.
-    ea_descriptor = _get_ea_descriptor(
-        profile_registry, errors
-    )
+    ea_descriptor = _get_ea_descriptor(profile_registry, errors)
 
     # 3. Extract ``asset_filters`` from the raw YAML.
     asset_filters = raw_profile.get("asset_filters", [])
@@ -125,9 +119,7 @@ def hydrate_ea_profile(
     asset_reg = asset_registry
     if asset_reg is None:
         asset_reg = AssetRegistry()
-        asyncio_run_once(
-            asset_reg.load_from_dir(registry_assets_dir)
-        )
+        asyncio_run_once(asset_reg.load_from_dir(registry_assets_dir))
 
     resolved_assets: list[AssetMetadata] = []
     if asset_filters and asset_reg.is_valid:
@@ -160,47 +152,33 @@ def asyncio_run_once(coro: Any) -> None:
     if key not in _ASYNC_RUN_CACHE:
         import asyncio
 
-        _ASYNC_RUN_CACHE[key] = asyncio.get_event_loop().run_until_complete(
-            coro
-        )
+        _ASYNC_RUN_CACHE[key] = asyncio.get_event_loop().run_until_complete(coro)
 
 
-def _load_raw_profile(
-    profile_path: Path | None, errors: list[str]
-) -> dict[str, Any]:
+def _load_raw_profile(profile_path: Path | None, errors: list[str]) -> dict[str, Any]:
     if profile_path is None:
         profile_path = Path("profiles/ea/profile.yaml")
     try:
-        content = yaml.safe_load(
-            profile_path.read_text(encoding="utf-8")
-        )
+        content = yaml.safe_load(profile_path.read_text(encoding="utf-8"))
     except OSError as exc:
         errors.append(f"{profile_path}: read error: {exc}")
         return {}
     if content is None or not isinstance(content, dict):
-        errors.append(
-            f"{profile_path}: expected a mapping of profile settings"
-        )
+        errors.append(f"{profile_path}: expected a mapping of profile settings")
         return {}
     return content if isinstance(content, dict) else {}
 
 
-def _build_profile_registry(
-    raw: dict[str, Any], errors: list[str]
-) -> ProfileRegistry:
+def _build_profile_registry(raw: dict[str, Any], errors: list[str]) -> ProfileRegistry:
     """Build a minimal ProfileRegistry from a raw YAML dict."""
     try:
         raw_providers = raw.get("required_providers", {})
         required_providers = RequiredProviders(**raw_providers)
     except (TypeError, ValueError) as exc:
         errors.append(f"required_providers: {exc}")
-        required_providers = RequiredProviders(
-            model="", memory="", knowledge="", tracer=""
-        )
+        required_providers = RequiredProviders(model="", memory="", knowledge="", tracer="")
 
-    supported_extensions = tuple(
-        raw.get("supported_extensions", [])
-    )
+    supported_extensions = tuple(raw.get("supported_extensions", []))
 
     descriptor = ProfileDescriptor(
         id=raw.get("id", "ea-noop"),
@@ -212,9 +190,7 @@ def _build_profile_registry(
     return ProfileRegistry({descriptor.id: descriptor})
 
 
-def _get_ea_descriptor(
-    registry: ProfileRegistry, errors: list[str]
-) -> ProfileDescriptor:
+def _get_ea_descriptor(registry: ProfileRegistry, errors: list[str]) -> ProfileDescriptor:
     """Return the EA profile descriptor or record an error."""
     try:
         return registry["ea"]

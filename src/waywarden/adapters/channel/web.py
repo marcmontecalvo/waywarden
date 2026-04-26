@@ -70,9 +70,7 @@ class WebChannel(ChannelAdapterBase):
             )
 
         if 400 <= response.status_code < 500:
-            raise ChannelRejectedError(
-                f"webhook rejected message: {response.status_code}"
-            )
+            raise ChannelRejectedError(f"webhook rejected message: {response.status_code}")
 
         return ChannelSendResult(
             channel_name=self._name,

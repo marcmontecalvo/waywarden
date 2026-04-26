@@ -21,18 +21,21 @@ import pytest_asyncio
 from fastapi import FastAPI
 from httpx import ASGITransport
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 import waywarden.api.routes.chat as chat_mod
 from waywarden.api.routers import run_events as run_events_mod
-from waywarden.api.routes.chat import router as chat_router
 from waywarden.api.routers.run_events import _build_stream
+from waywarden.api.routes.chat import router as chat_router
 from waywarden.domain.ids import RunEventId
 from waywarden.domain.run_event import RunEvent
-from waywarden.infra.db.metadata import metadata
 from waywarden.infra.db.repositories.run_event_repo import RunEventRepositoryImpl
 from waywarden.infra.db.repositories.run_repo import RunRepositoryImpl
-
 
 # ---------------------------------------------------------------------------
 # Engine fixture — only create run + run_events tables (avoid JSONB issue)
@@ -43,7 +46,8 @@ from waywarden.infra.db.repositories.run_repo import RunRepositoryImpl
 async def _engine() -> AsyncEngine:
     eng = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     async with eng.begin() as conn:
-        await conn.execute(text("""
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS runs (
                 id VARCHAR PRIMARY KEY, instance_id VARCHAR NOT NULL,
                 task_id VARCHAR, profile VARCHAR NOT NULL, policy_preset VARCHAR NOT NULL,
@@ -51,15 +55,18 @@ async def _engine() -> AsyncEngine:
                 created_at TIMESTAMP NOT NULL, updated_at TIMESTAMP NOT NULL,
                 terminal_seq INTEGER, manifest_hash VARCHAR
             )
-        """))
-        await conn.execute(text("""
+        """)
+        )
+        await conn.execute(
+            text("""
             CREATE TABLE IF NOT EXISTS run_events (
                 id VARCHAR PRIMARY KEY, run_id VARCHAR NOT NULL, seq INTEGER NOT NULL,
                 type VARCHAR NOT NULL, payload VARCHAR NOT NULL, timestamp TIMESTAMP NOT NULL,
                 causation VARCHAR, actor VARCHAR,
                 FOREIGN KEY(run_id) REFERENCES runs(id)
             )
-        """))
+        """)
+        )
     yield eng
     await eng.dispose()
 
@@ -72,9 +79,7 @@ async def _engine() -> AsyncEngine:
 def _build_test_app(_engine: AsyncEngine) -> dict[str, Any]:
     """Build a test app with injected repo references."""
     app = FastAPI(title="test")
-    async_session_factory = async_sessionmaker(
-        _engine, class_=AsyncSession, expire_on_commit=False
-    )
+    async_session_factory = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
     s = async_session_factory()
     evt_repo = RunEventRepositoryImpl(s)
@@ -225,18 +230,20 @@ async def test_sse_emits_events_in_order(_engine: AsyncEngine) -> None:
 @pytest.mark.anyio
 async def test_no_out_of_catalog_event_types(_engine: AsyncEngine) -> None:  # noqa: C901
     """SSE replay contains no event types outside the RT-002 catalog."""
-    RT002_CATALOG: frozenset[str] = frozenset([
-        "run.created",
-        "run.plan_ready",
-        "run.execution_started",
-        "run.progress",
-        "run.approval_waiting",
-        "run.resumed",
-        "run.artifact_created",
-        "run.completed",
-        "run.failed",
-        "run.cancelled",
-    ])
+    RT002_CATALOG: frozenset[str] = frozenset(
+        [
+            "run.created",
+            "run.plan_ready",
+            "run.execution_started",
+            "run.progress",
+            "run.approval_waiting",
+            "run.resumed",
+            "run.artifact_created",
+            "run.completed",
+            "run.failed",
+            "run.cancelled",
+        ]
+    )
 
     state = _build_test_app(_engine)
     evt_repo = state["evt_repo"]
@@ -303,7 +310,7 @@ async def test_no_out_of_catalog_event_types(_engine: AsyncEngine) -> None:  # n
         text = frame.decode("utf-8")
         for line in text.split("\n"):
             if line.startswith("data: "):
-                evt = json.loads(line[len("data: "):])
+                evt = json.loads(line[len("data: ") :])
                 event_types.append(evt["type"])
 
     for et in event_types:

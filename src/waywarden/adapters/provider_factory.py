@@ -64,8 +64,7 @@ def build_memory_provider(
     builder = _FACTORY.get(provider_type)
     if builder is None:
         raise ValueError(
-            f"unknown memory provider type {provider_type!r}; "
-            f"expected one of {sorted(_FACTORY)}"
+            f"unknown memory provider type {provider_type!r}; expected one of {sorted(_FACTORY)}"
         )
     return builder(conf)  # type: ignore[no-any-return]
 
@@ -102,7 +101,6 @@ def build_knowledge_provider(
     builder = _FACTORY.get(provider_type)
     if builder is None:
         raise ValueError(
-            f"unknown knowledge provider type {provider_type!r}; "
-            f"expected one of {sorted(_FACTORY)}"
+            f"unknown knowledge provider type {provider_type!r}; expected one of {sorted(_FACTORY)}"
         )
     return builder(conf)  # type: ignore[no-any-return]

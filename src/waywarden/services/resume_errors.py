@@ -22,8 +22,7 @@ class ManifestChangedWithoutRevisionError(ResumeServiceError):
 
     def __init__(self, run_id: str) -> None:
         super().__init__(
-            f"resume blocked: manifest for run {run_id!r} changed "
-            "without a new run revision"
+            f"resume blocked: manifest for run {run_id!r} changed without a new run revision"
         )
         self.run_id = run_id
 

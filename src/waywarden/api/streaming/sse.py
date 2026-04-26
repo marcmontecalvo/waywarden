@@ -23,8 +23,8 @@ def _json_sse_frame(event: Any) -> bytes:  # noqa: ANN401
     Handles Pydantic models, frozen dataclasses, and objects whose
     attributes include ``collections.abc.MappingProxyType`` payloads.
     """
-    from collections.abc import Mapping
     from collections import OrderedDict
+    from collections.abc import Mapping
 
     if hasattr(event, "model_dump"):
         data = event.model_dump()
