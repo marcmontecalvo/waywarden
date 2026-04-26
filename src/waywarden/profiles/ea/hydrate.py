@@ -128,6 +128,20 @@ def hydrate_ea_profile(
     # 5. Collect all errors.
     errors.extend(asset_reg.errors)
 
+    # 6. Fail fast when an EA profile resolves zero assets —
+    #    this is the most common symptom of a broken profile
+    #    (missing asset_filters or a drift in the asset cache).
+    if not asset_filters and not errors:
+        errors.append(
+            "EA profile has no asset_filters; "
+            "profile requires at least one resolved asset for startup"
+        )
+    elif asset_filters and not resolved_assets and not errors:
+        errors.append(
+            "EA profile has asset_filters but resolved zero assets; "
+            "check filter expressions and required_providers"
+        )
+
     if errors:
         raise ProfileHydrationError(errors) from None
 
