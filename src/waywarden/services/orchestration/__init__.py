@@ -9,11 +9,14 @@ from waywarden.services.orchestration.milestones import (
     ValidMilestone,
     ValidPhase,
 )
+from waywarden.services.orchestration.routine import EACoroutine, RoutineSlice
 
 __all__ = [
+    "EACoroutine",
     "MILESTONE_CATALOG",
     "MILESTONES",
     "MilestoneDefinition",
-    "ValidPhase",
+    "RoutineSlice",
     "ValidMilestone",
+    "ValidPhase",
 ]
