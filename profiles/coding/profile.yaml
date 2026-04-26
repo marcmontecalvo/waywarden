@@ -1,6 +1,7 @@
 id: coding
 display_name: Coding
 version: 1.0.0
+asset_filters: []
 required_providers:
   model: fake-model
   memory: fake-memory
