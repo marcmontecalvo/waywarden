@@ -1,0 +1,33 @@
+id: coding-tool-policy
+kind: policy
+version: 1.0.0
+description: Coding tool policy — all code operations require approval before invocation.
+tags:
+  - coding
+  - policy
+  - approval-required
+preset: ask
+default_decision: approval-required
+rules:
+  - tool: file_write
+    action: write
+    decision: approval-required
+    reason: File writes may modify the workspace outside the diff area.
+  - tool: shell_exec
+    action: run
+    decision: approval-required
+    reason: Shell execution is a high-risk operation near the system boundary.
+  - tool: network_egress
+    action: request
+    decision: approval-required
+    reason: Network requests leave the sand-boxed environment.
+  - tool: file_read
+    action: read
+    decision: auto-allow
+  - tool: diff_compute
+    action: compute
+    decision: auto-allow
+  - tool: code_apply
+    action: apply
+    decision: approval-required
+    reason: Applying code changes modifies tracked files.
