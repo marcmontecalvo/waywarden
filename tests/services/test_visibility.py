@@ -125,9 +125,7 @@ class TestMilestonesMatchCatalog:
         from waywarden.services.visibility import _MILESTONE_DESCRIPTION_MAP
 
         # Build expected keys from the canonical milestone catalog
-        expected_keys: set[tuple[str, str]] = {
-            (md.phase, md.milestone) for md in MILESTONE_CATALOG
-        }
+        expected_keys: set[tuple[str, str]] = {(md.phase, md.milestone) for md in MILESTONE_CATALOG}
 
         actual_keys = set(_MILESTONE_DESCRIPTION_MAP.keys())
         assert actual_keys == expected_keys

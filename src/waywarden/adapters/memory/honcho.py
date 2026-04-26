@@ -122,10 +122,7 @@ class HonchoMemoryProvider:
 
     @staticmethod
     def _rec_created(rec: object, key: str) -> datetime | None:
-        if isinstance(rec, dict):
-            val = rec.get(key)
-        else:
-            val = getattr(rec, key, None)
+        val = rec.get(key) if isinstance(rec, dict) else getattr(rec, key, None)
         if isinstance(val, datetime):
             return val
         if isinstance(val, str):

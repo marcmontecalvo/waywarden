@@ -56,8 +56,7 @@ class AnthropicModelProvider:
         text = self._extract_text(response)
         if not text:
             raise RuntimeError(
-                "Anthropic model returned no text completion "
-                f"(run_id={prompt.session_id})"
+                f"Anthropic model returned no text completion (run_id={prompt.session_id})"
             )
         prompt_tokens = self._usage_int(response, "input_tokens")
         completion_tokens = self._usage_int(response, "output_tokens")
