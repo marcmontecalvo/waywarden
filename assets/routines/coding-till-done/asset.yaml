@@ -1,0 +1,30 @@
+id: coding-till-done
+kind: routine
+version: 1.0.0
+description: Till-done loop routine for coding profile — iterates plan->act->check until done or escalation.
+tags:
+  - coding
+  - routine
+  - iteration
+required_providers:
+  - model
+  - tool
+milestones:
+  - phase: code
+    names:
+      - iteration_started
+      - plan_drafted
+      - plan_approved
+      - changes_applied
+      - check_passed
+      - check_failed
+      - plan_revised
+      - iteration_complete
+      - loop_escalated
+      - terminal
+emits_events:
+  - run.progress
+  - run.artifact_created
+profile_filter:
+  - op: include
+    tag: coding

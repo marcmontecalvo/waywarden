@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 # Phase types — these are the five sub-phases of the orchestration run.
-ValidPhase = Literal["intake", "plan", "execute", "review", "handoff"]
+ValidPhase = Literal["intake", "plan", "execute", "review", "handoff", "code"]
 
 # Milestone tokens — indexed by phase for type safety.
 ValidMilestone = str  # literal values enforced at runtime against MILESTONE_CATALOG
@@ -39,7 +39,7 @@ class MilestoneDefinition:
     description: str
 
 
-ALL_PHASES: tuple[ValidPhase, ...] = ("intake", "plan", "execute", "review", "handoff")
+ALL_PHASES: tuple[ValidPhase, ...] = ("intake", "plan", "execute", "review", "handoff", "code")
 
 MILESTONE_CATALOG: tuple[MilestoneDefinition, ...] = (
     # intake
@@ -68,6 +68,57 @@ MILESTONE_CATALOG: tuple[MilestoneDefinition, ...] = (
         "handoff",
         "envelope_emitted",
         "Delegation envelope registered for child run",
+    ),
+    # code — till-done loop iterations (P6-4 #95)
+    MilestoneDefinition(
+        "code",
+        "iteration_started",
+        "Till-done loop iteration begins",
+    ),
+    MilestoneDefinition(
+        "code",
+        "plan_drafted",
+        "Plan artifact drafted for iteration",
+    ),
+    MilestoneDefinition(
+        "code",
+        "plan_approved",
+        "Plan approved for implementation",
+    ),
+    MilestoneDefinition(
+        "code",
+        "changes_applied",
+        "Implementation changes applied",
+    ),
+    MilestoneDefinition(
+        "code",
+        "check_passed",
+        "Verification checks passed",
+    ),
+    MilestoneDefinition(
+        "code",
+        "check_failed",
+        "Verification checks failed, iteration retries",
+    ),
+    MilestoneDefinition(
+        "code",
+        "plan_revised",
+        "Plan revised for next iteration",
+    ),
+    MilestoneDefinition(
+        "code",
+        "iteration_complete",
+        "Iteration completed, advance to next phase",
+    ),
+    MilestoneDefinition(
+        "code",
+        "loop_escalated",
+        "Loop escalated due to max iterations",
+    ),
+    MilestoneDefinition(
+        "code",
+        "terminal",
+        "Coding run reached terminal state",
     ),
 )
 

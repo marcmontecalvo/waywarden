@@ -73,6 +73,9 @@ omit = [
   "alembic/versions/*.py",
 ]
 
+[tool.ruff.lint.extend-per-file-ignores]
+"src/waywarden/services/orchestration/tilldone.py" = ["F841"]
+
 [tool.coverage.report]
 show_missing = true
 exclude_also = [
