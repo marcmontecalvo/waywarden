@@ -1,11 +1,21 @@
-"""Tests for EA scheduler routine (P5-6 #86)."""
+"""Tests for EA scheduler routine (P5-6 #86).
+
+Uses the sync-compatible fake service while the real
+EATaskService is fully async (updated in P5-FIX-2 #173).
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from fakes import FakeEATaskService
 
 from waywarden.services.approval_types import (
     DeniedAbandon,
     DeniedAlternatePath,
     Granted,
 )
-from waywarden.services.ea_task_service import EATaskService
 from waywarden.services.orchestration.scheduler import (
     EASchedulerHandler,
     ScheduledTask,
@@ -23,7 +33,7 @@ def test_schedule_auto_grant() -> None:
         ScheduledTask(title="Task 1", objective="Obj 1"),
         ScheduledTask(title="Task 2", objective="Obj 2"),
     ]
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     result = handler.run(tasks)
     assert result.tasks_processed == 2
@@ -35,7 +45,7 @@ def test_schedule_auto_grant() -> None:
 def test_schedule_respects_response_map() -> None:
     """Explicit deny-abandon should count as denied."""
     tasks = [ScheduledTask(title="my-task", objective="O")]
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     decision = handler.run(
         tasks,
@@ -49,7 +59,7 @@ def test_schedule_respects_response_map() -> None:
 def test_schedule_respects_deny_alternate() -> None:
     """Explicit deny-alternate should count as rescheduled."""
     tasks = [ScheduledTask(title="a", objective="O")]
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     decision = handler.run(
         tasks,
@@ -60,7 +70,8 @@ def test_schedule_respects_deny_alternate() -> None:
 
 def test_schedule_empty_list() -> None:
     """Scheduler with no tasks should return zero."""
-    handler = EASchedulerHandler()
+    svc = FakeEATaskService()
+    handler = EASchedulerHandler(task_service=svc)
     result = handler.run([])
     assert result.tasks_processed == 0
     assert result.tasks_approved == 0
@@ -73,7 +84,7 @@ def test_schedule_multiple_mixed_outcomes() -> None:
         ScheduledTask(title="deny", objective="O"),
         ScheduledTask(title="resched", objective="O"),
     ]
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     result = handler.run(
         tasks,
@@ -91,7 +102,7 @@ def test_schedule_multiple_mixed_outcomes() -> None:
 
 def test_schedule_decisions_recorded() -> None:
     """Every task should have a decision record."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     result = handler.run(
         [ScheduledTask(title="x", objective="O")],
@@ -103,7 +114,7 @@ def test_schedule_decisions_recorded() -> None:
 
 def test_schedule_returns_schedule_result_type() -> None:
     """Return value should be a ScheduleResult."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EASchedulerHandler(task_service=svc)
     result = handler.run([])
     assert isinstance(result, ScheduleResult)

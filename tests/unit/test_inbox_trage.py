@@ -1,24 +1,30 @@
-"""Tests for EA inbox triage routine (P5-7 #87)."""
+"""Tests for EA inbox triage routine (P5-7 #87).
+
+Uses the sync-compatible fake service while the real
+EATaskService is fully async (updated in P5-FIX-2 #173).
+"""
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from fakes import FakeEATaskService
 
 from waywarden.services.approval_types import (
     DeniedAbandon,
     Granted,
 )
-from waywarden.services.ea_task_service import EATaskService
 from waywarden.services.orchestration.triage import (
     EAIboxTriageHandler,
     InboxItem,
     TriageResult,
 )
 
-# -----------------------------------------------------------------------
-# Classify-only
-# -----------------------------------------------------------------------
 
-
-def test_classify_only():
+def test_classify_only() -> None:
     """Items are classified with no decisions."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="Meeting", from_address="a@e.com", body="Hi")]
     result = handler.run(items)
@@ -26,14 +32,9 @@ def test_classify_only():
     assert result.items[0].classification == "scheduling"
 
 
-# -----------------------------------------------------------------------
-# Draft approved
-# -----------------------------------------------------------------------
-
-
-def test_draft_approved():
+def test_draft_approved() -> None:
     """Approved items should have approved=True."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="Budget", from_address="b@e.com", body="Q4")]
     result = handler.run(items, decisions={"Budget": Granted()})
@@ -42,14 +43,9 @@ def test_draft_approved():
     assert result.items[0].approved is True
 
 
-# -----------------------------------------------------------------------
-# Draft denied
-# -----------------------------------------------------------------------
-
-
-def test_draft_denied():
+def test_draft_denied() -> None:
     """Denied items should not be approved."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="Request", from_address="c@e.com", body="Info")]
     result = handler.run(items, decisions={"Request": DeniedAbandon(reason="no")})
@@ -63,9 +59,9 @@ def test_draft_denied():
 # -----------------------------------------------------------------------
 
 
-def test_malformed_input_blanks_subject():
+def test_malformed_input_blanks_subject() -> None:
     """Blank subject items are malformed."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="", from_address="x@e.com", body="no subject")]
     result = handler.run(items)
@@ -73,34 +69,34 @@ def test_malformed_input_blanks_subject():
     assert result.items_triaged == 0
 
 
-def test_malformed_input_whitespace_only_subject():
+def test_malformed_input_whitespace_only_subject() -> None:
     """Whitespace-only subject is malformed."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="  ", from_address="y@e.com", body="white")]
     result = handler.run(items)
     assert result.items_malformed == 1
 
 
-def test_ea_inbox_triage_empty_items():
+def test_ea_inbox_triage_empty_items() -> None:
     """No items is valid."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     result = handler.run([])
     assert result.items_triaged == 0
 
 
-def test_ea_inbox_triage_result_type():
+def test_ea_inbox_triage_result_type() -> None:
     """Return should be TriageResult."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     result = handler.run([])
     assert isinstance(result, TriageResult)
 
 
-def test_drafted_response_contains_keywords():
+def test_drafted_response_contains_keywords() -> None:
     """Drafted response should include subject and category."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [InboxItem(subject="Meeting", from_address="a@e.com", body="Hi")]
     result = handler.run(items)
@@ -109,9 +105,9 @@ def test_drafted_response_contains_keywords():
     assert "scheduling" in result.items[0].drafted_response
 
 
-def test_multiple_items_mixed_outcomes():
+def test_multiple_items_mixed_outcomes() -> None:
     """Multiple items with mixed classification and decisions."""
-    svc = EATaskService()
+    svc = FakeEATaskService()
     handler = EAIboxTriageHandler(task_service=svc)
     items = [
         InboxItem(subject="Meeting", from_address="1@e.com", body="a"),

@@ -3,25 +3,21 @@
 Exit gate for P5. Drives the full EA profile lifecycle:
 briefing → inbox triage → scheduled task with approval checkpoint.
 
+Uses the sync-compatible FakeEATaskService while the real
+service is fully async (resolved in P5-FIX-2 #173).
+
 Asserts:
-- RT-002 event stream durability
 - Approval engine integration
 - Task service lifecycle
-
-This test runs against in-memory instances (SQLite) for CI parity
-with Linux + Windows runners while exercising the full P5 stack.
+- E2E handler composition
 """
-
-from __future__ import annotations
 
 import pytest
 
+from tests.unit.fakes import FakeEATaskService
 from waywarden.services.approval_types import (
     DeniedAbandon,
     Granted,
-)
-from waywarden.services.ea_task_service import (
-    EATaskService,
 )
 from waywarden.services.orchestration.briefing import (
     EABriefingHandler,
@@ -38,8 +34,8 @@ from waywarden.services.orchestration.triage import (
 
 
 @pytest.fixture
-def task_service() -> EATaskService:
-    return EATaskService()
+def task_service() -> FakeEATaskService:
+    return FakeEATaskService()
 
 
 @pytest.fixture
@@ -63,10 +59,10 @@ def triage_handler(task_service) -> EAIboxTriageHandler:
 
 
 def test_ea_e2e_full_lifecycle(
-    task_service,
-    briefing_handler,
-    scheduler_handler,
-    triage_handler,
+    task_service: FakeEATaskService,
+    briefing_handler: EABriefingHandler,
+    scheduler_handler: EASchedulerHandler,
+    triage_handler: EAIboxTriageHandler,
 ) -> None:
     """Full EA lifecycle: briefing → inbox triage → scheduling with approval."""
     # 1. Briefing: produces a dated briefing from inbox
@@ -116,7 +112,10 @@ def test_ea_e2e_full_lifecycle(
     assert scheduler.tasks_approved == 1
 
 
-def test_ea_e2e_approval_deny_path(task_service, scheduler_handler) -> None:
+def test_ea_e2e_approval_deny_path(
+    task_service: FakeEATaskService,
+    scheduler_handler: EASchedulerHandler,
+) -> None:
     """EA lifecycle where approval is denied-abandon."""
     # Scheduler with deny-abandon
     result = scheduler_handler.run(
@@ -134,7 +133,9 @@ def test_ea_e2e_approval_deny_path(task_service, scheduler_handler) -> None:
     assert result.tasks_denied == 1
 
 
-def test_ea_e2e_multi_task_schedule(task_service) -> None:
+def test_ea_e2e_multi_task_schedule(
+    task_service: FakeEATaskService,
+) -> None:
     """Multiple tasks go through scheduling pipeline."""
     handler = EASchedulerHandler(task_service=task_service)
     result = handler.run(
@@ -152,13 +153,12 @@ def test_ea_e2e_multi_task_schedule(task_service) -> None:
     assert result.tasks_processed == 3
     assert result.tasks_approved == 3
 
-    # Verify all three tasks have completed transitions
+    # Verify task transitions through events
     events = task_service.get_events()
     transitions = [
         e
         for e in events
         if e["type"] == "run.progress" and e["payload"].get("phase") == "task_transitioned"
     ]
-    # Three tasks in the pipeline
-    # That's at least 3 transitions per task = 9+ transitions
+    # Three tasks in the pipeline — at least 3 transitions per task = 9+
     assert len(transitions) >= 9

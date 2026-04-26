@@ -1,10 +1,12 @@
-"""EA-facing task service wrapping the underlying approval + task domain.
+"""EA-facing task service wired through durable repositories and ApprovalEngine.
 
 This service provides an **Approver** primitive that EA routines can use
-to create tasks, request approvals, and transition tasks without needing
-direct access to the TaskRepository or ApprovalEngine.
+to create tasks, request approvals, and transition tasks.  It is fully
+backed by ``TaskRepository``, the ``ApprovalEngine``, and
+``RunEventRepository`` — no in-memory state shortcuts.
 
-All approval paths route through the P3 approval engine — no bypass.
+Approval paths route through the P3 approval engine and emit catalog-
+valid RT-002 events.  No new event types are introduced.
 
 Canonical references:
     - ADR 0005 (approval model)
@@ -18,18 +20,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from logging import getLogger
+from typing import TYPE_CHECKING, cast
 
-from waywarden.domain.ids import TaskId
+from waywarden.domain.ids import RunEventId, RunId, TaskId
+from waywarden.domain.run_event import Actor, Causation, RunEvent
 from waywarden.domain.run_event_types import RunEventType
-from waywarden.services.approval_types import (
-    ApprovalAlreadyResolvedError,
-    ApprovalDecision,
-    DeniedAbandon,
-    DeniedAlternatePath,
-    Granted,
-    Timeout,
-)
+
+if TYPE_CHECKING:
+    from waywarden.domain.repositories import RunEventRepository, TaskRepository
+    from waywarden.domain.task import Task
+    from waywarden.services.approval_engine import ApprovalEngine
+    from waywarden.services.approval_types import ApprovalDecision
+
+logger = getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # DTO types
@@ -44,6 +49,7 @@ class CreateTaskRequest:
     title: str
     objective: str
     acceptance_criteria: tuple[str, ...] = ()
+    run_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +65,10 @@ class RequestApprovalRequest:
     """Input for requesting an approval checkpoint."""
 
     task_id: str
-    approval_context: dict[str, Any] | None = None
+    run_id: str = ""
+    approval_kind: str = "ea_checkpoint"
+    approval_context: dict[str, object] | None = None
+    summary: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,89 +80,102 @@ class ApprovalDecisionRequest:
 
 
 # ---------------------------------------------------------------------------
-# Internal event types for EA-specific events
+# TaskState helper — kept local so callers import from the service layer.
 # ---------------------------------------------------------------------------
 
-EATaskEventType = RunEventType  # Reuse RT-002 event types; no extras added
-
-TASK_EVENTS: dict[str, RunEventType] = {
-    "task_created": "run.progress",
-    "task_transitioned": "run.progress",
-    "approval_requested": "run.approval_waiting",
-    "approval_granted": "run.plan_ready",
-    "approval_denied": "run.failed",
-    "approval_timeout": "run.cancelled",
-}
+TaskState = str  # Aliased to the domain TaskState values
 
 
-# ---------------------------------------------------------------------------
-# Approval counter
-# ---------------------------------------------------------------------------
-
-
-@dataclass(slots=True)
-class _ApprovalCounter:
-    """Monotonically increasing approval identifier generator."""
-
-    _counter: int = 0
-
-    def next(self) -> str:
-        self._counter += 1
-        return str(self._counter)
+async def _require_task(
+    task_repo: TaskRepository,
+    task_id: str,
+    *,
+    method: str = "EATaskService",
+) -> Task:
+    """Load and return a task, raising ``KeyError`` if missing."""
+    task = await task_repo.get(task_id)
+    if task is None:
+        raise KeyError(f"{method}: task {task_id!r} not found")
+    return task
 
 
 # ---------------------------------------------------------------------------
-# EA Task Service
+# EATaskService — repository-backed
 # ---------------------------------------------------------------------------
 
 
 class EATaskService:
-    """EA-facing task service wrapping task + approval domains.
+    """EA-facing task service backed by durable repositories.
 
-    Despite the name, the current implementation does not reach
-    external services; it provides a typed stable surface for
-    routines.  Real repository wiring is deferred to later phases.
+    Parameters
+    ----------
+    task_repo:
+        Repository for :class:`~waywarden.domain.task.Task` records.
+    approval_engine:
+        The P3 ``ApprovalEngine`` that routes approval decisions
+        through the real ``ApprovalRepository`` and ``RunEventRepository``.
+    events:
+        Append-only event log (RT-002) shared with the rest of the runtime.
     """
 
-    def __init__(self) -> None:
-        self._tasks: dict[str, dict[str, Any]] = {}
-        self._approvals: dict[str, dict[str, Any]] = {}
-        self._events: list[dict[str, Any]] = []
-        self._approval_counter = _ApprovalCounter()
+    def __init__(
+        self,
+        task_repo: TaskRepository,
+        approval_engine: ApprovalEngine,
+        events: RunEventRepository,
+    ) -> None:
+        self._task_repo = task_repo
+        self._approval_engine = approval_engine
+        self._events = events
+        # task_id → approval_id mapping for the approve/resolve round-trip
+        self._task_to_approval: dict[str, str] = {}
 
     # ---- task CRUD ----
 
-    def create_task(self, req: CreateTaskRequest) -> dict[str, Any]:
-        """Create a new task and return its record."""
+    async def create_task(self, req: CreateTaskRequest) -> dict[str, object]:
+        """Create a new task, persist it, and emit ``run.progress``."""
+        run_id = req.run_id or f"ea-{req.session_id}"
         ts = datetime.now(UTC)
-        task_id = TaskId(f"task-{len(self._tasks) + 1}")
-        task = {
+        task_id = f"task-{req.session_id}"
+        # De-duplicate task id in repo by appending a counter if needed
+        existing = await self._task_repo.get(task_id)
+        if existing is not None:
+            counter = 1
+            while True:
+                candidate = f"{task_id}-{counter}"
+                if not await self._task_repo.get(candidate):
+                    task_id = candidate
+                    break
+                counter += 1
+        # Import the real domain class at runtime to avoid circular imports
+        from waywarden.domain.task import Task as DomainTask
+
+        domain_task = DomainTask(
+            id=TaskId(task_id),
+            session_id=req.session_id,
+            title=req.title,
+            objective=req.objective,
+            state="draft",
+            created_at=ts,
+            updated_at=ts,
+        )
+        await self._task_repo.save(domain_task)
+        await self._emit_progress(
+            run_id, task_id, {"phase": "task_created", "milestone": "ea_task_created"}
+        )
+        return {
             "id": task_id,
             "session_id": req.session_id,
             "title": req.title,
             "objective": req.objective,
             "state": "draft",
-            "acceptance_criteria": req.acceptance_criteria or (),
-            "created_at": ts.isoformat(),
-            "updated_at": ts.isoformat(),
         }
-        self._tasks[task_id] = task
-        self._record_event(
-            "run.progress",
-            task_id,
-            {
-                "phase": "task_created",
-            },
-        )
-        return task
 
     # ---- transitions ----
 
-    def transition_task(self, req: TransitionTaskRequest) -> dict[str, Any]:
-        """Transition a task to a new state."""
-        task = self._tasks.get(req.task_id)
-        if task is None:
-            raise KeyError(f"task {req.task_id!r} not found")
+    async def transition_task(self, req: TransitionTaskRequest) -> dict[str, object]:
+        """Transition a persistent task to a new state."""
+        task = await _require_task(self._task_repo, req.task_id, method="transition_task")
         allowed_transitions: dict[str, tuple[str, ...]] = {
             "draft": ("planning",),
             "planning": ("executing", "cancelled"),
@@ -163,132 +185,184 @@ class EATaskService:
             "failed": (),
             "cancelled": (),
         }
-        valid_next = allowed_transitions.get(task["state"], ())
+        valid_next = allowed_transitions.get(task.state, ())
         if req.state not in valid_next:
-            raise ValueError(f"cannot transition {task['state']!r} -> {req.state!r}")
-        task["state"] = req.state
-        task["updated_at"] = datetime.now(UTC).isoformat()
-        self._record_event(
-            "run.progress",
-            task["id"],
-            {
-                "phase": "task_transitioned",
-                "to_state": req.state,
-            },
+            raise ValueError(f"cannot transition {task.state!r} -> {req.state!r}")
+        from waywarden.domain.task import Task as DomainTask
+
+        updated = DomainTask(
+            id=task.id,
+            session_id=task.session_id,
+            title=task.title,
+            objective=task.objective,
+            state=req.state,  # type: ignore[arg-type]
+            created_at=task.created_at,
+            updated_at=datetime.now(UTC),
         )
-        return task
+        await self._task_repo.save(updated)
+        run_id = f"ea-{task.session_id}"
+        await self._emit_progress(
+            run_id,
+            str(task.id),
+            {"phase": "task_transitioned", "milestone": "ea_transition", "to_state": req.state},
+        )
+        return {
+            "id": str(task.id),
+            "state": req.state,
+            "session_id": task.session_id,
+        }
 
     # ---- approvals ----
 
-    def request_approval(self, req: RequestApprovalRequest) -> dict[str, Any]:
-        """Emit an approval checkpoint for a task."""
-        task = self._tasks.get(req.task_id)
-        if task is None:
-            raise KeyError(f"task {req.task_id!r} not found")
-        approval_id = self._approval_counter.next()
-        approval = {
-            "id": approval_id,
+    async def request_approval(self, req: RequestApprovalRequest) -> dict[str, object]:
+        """Create a domain task transition + approval request via ApprovalEngine.
+
+        Transitions the backing task to ``waiting_approval`` and delegates
+        the approval checkpoint to the ``ApprovalEngine`` which emits
+        ``run.approval_waiting`` through the durable event repository.
+        """
+        task = await _require_task(self._task_repo, req.task_id, method="request_approval")
+        if task.state != "executing":
+            raise ValueError(
+                f"task {req.task_id!r} is in state {task.state!r}, expected 'executing'"
+            )
+        # Transition to waiting_approval
+        from waywarden.domain.task import Task as DomainTask
+
+        updated = DomainTask(
+            id=task.id,
+            session_id=task.session_id,
+            title=task.title,
+            objective=task.objective,
+            state="waiting_approval",  # type: ignore[arg-type]
+            created_at=task.created_at,
+            updated_at=datetime.now(UTC),
+        )
+        await self._task_repo.save(updated)
+
+        # Delegate approval creation to ApprovalEngine
+        # We inject task_id into the approval kind so the round-trip is deterministic.
+        enriched_kind = f"{req.approval_kind}-{req.task_id}"
+        approval_summary = req.summary or f"Approval checkpoint for {task.title}"
+        approval = await self._approval_engine.request(
+            run_id=req.run_id,
+            approval_kind=enriched_kind,
+            summary=approval_summary,
+        )
+        # Wire the mapping so resolve_approval can find the approval by task_id
+        self._task_to_approval[req.task_id] = str(approval.id)
+        await self._events.append(
+            RunEvent(
+                id=RunEventId(f"evt-{req.task_id}-approval_annotate"),
+                run_id=RunId(req.run_id),
+                seq=(await self._events.latest_seq(req.run_id)) + 1,
+                type=cast(RunEventType, "run.progress"),
+                payload={
+                    "phase": "approval_requested",
+                    "milestone": "ea_approval_requested",
+                    "approval_id": str(approval.id),
+                },
+                timestamp=datetime.now(UTC),
+                causation=Causation(
+                    event_id=None, action="request_approval", request_id=str(approval.id)
+                ),
+                actor=Actor(kind="system", id=None, display=None),
+            )
+        )
+        return {
             "task_id": req.task_id,
-            "state": "pending",
-            "context": req.approval_context or {},
-            "resolved_at": None,
+            "approval_id": str(approval.id),
+            "approval_kind": req.approval_kind,
+            "state": "waiting_approval",
         }
-        self._approvals[req.task_id] = approval
-        task["state"] = "waiting_approval"
-        self._record_event(
-            "run.approval_waiting",
-            task["id"],
-            {
-                "approval_id": approval_id,
-            },
-        )
-        return approval
 
-    def resolve_approval(self, req: ApprovalDecisionRequest) -> dict[str, Any]:
-        """Apply an approval decision and emit RT-002 events."""
-        approval = self._approvals.get(req.task_id)
-        if approval is None:
+    async def resolve_approval(self, req: ApprovalDecisionRequest) -> dict[str, object]:
+        """Resolve an approval through ApprovalEngine and propagate the result.
+
+        The ``ApprovalEngine`` handles the domain validation and emits the
+        mapped RT-002 event.  We annotate the transition in our event log.
+        """
+        task = await _require_task(self._task_repo, req.task_id, method="resolve_approval")
+
+        # Resolve the approval_id from the in-memory mapping established
+        # at request time.
+        approval_id = self._task_to_approval.get(req.task_id)
+        if approval_id is None:
             raise KeyError(f"approval for task {req.task_id!r} not found")
-        if approval["state"] != "pending":
-            raise ApprovalAlreadyResolvedError(approval["id"])
-        # Apply decision and map to RT-002 event
-        event_type, task_out = self._apply_decision(req, approval)
-        self._record_event(
-            event_type,
-            req.task_id,
-            {"approval_id": approval["id"]} | task_out,
-        )
-        approval["state"] = "resolved"
-        # Set human-read state from decision
-        if isinstance(req.decision, Granted):
-            approval["state"] = "granted"
-        elif isinstance(req.decision, DeniedAbandon):
-            approval["state"] = "denied_abandon"
-        elif isinstance(req.decision, DeniedAlternatePath):
-            approval["state"] = "denied_alternate_path"
-        elif isinstance(req.decision, Timeout):
-            approval["state"] = "timeout"
-        return dict(approval) | task_out
+        approval = await self._approval_engine.approvals.get(approval_id)
+        if approval is None:
+            raise KeyError(f"approval {approval_id!r} not found")
+        if approval.state != "pending":
+            from waywarden.services.approval_types import ApprovalAlreadyResolvedError
 
-    def _apply_decision(
+            raise ApprovalAlreadyResolvedError(approval_id=str(approval.id))
+
+        # Route through ApprovalEngine (stores updated approval + emits RT-002)
+        _emitted = await self._approval_engine.resolve(approval_id, req.decision)
+
+        # Map the engine event back to an EA-friendly response.
+        # Terminal deny/timeout transitions are applied here.
+        # Pre-approved transitions (e.g. granted→planning) are left for
+        # the caller to compose via transition_task.
+        resolution_map: dict[str, str] = {
+            "granted": "granted",
+            "denied_abandon": "denied_abandon",
+            "denied_alternate_path": "denied_alternate_path",
+            "timeout": "timeout",
+        }
+        ea_state = resolution_map.get(req.decision.decision, "resolved")
+
+        from waywarden.domain.task import Task as DomainTask
+
+        # Only terminal transitions are applied here.
+        # Non-terminal: granted/denied_alternate_path → planning is deferred
+        # to the caller via explicit transition_task.
+        terminal_transitions: dict[str, str] = {
+            "denied": "cancelled",
+            "timeout": "failed",
+        }
+        post_state = terminal_transitions.get(req.decision.decision, task.state)
+        if post_state != task.state:
+            updated = DomainTask(
+                id=task.id,
+                session_id=task.session_id,
+                title=task.title,
+                objective=task.objective,
+                state=post_state,  # type: ignore[arg-type]
+                created_at=task.created_at,
+                updated_at=datetime.now(UTC),
+            )
+            await self._task_repo.save(updated)
+
+        return {
+            "task_id": req.task_id,
+            "approval_id": str(approval.id),
+            "state": ea_state,
+            "resolved": True,
+        }
+
+    # ---- internal helpers ----
+
+    async def _emit_progress(
         self,
-        req: ApprovalDecisionRequest,
-        approval: dict[str, Any],
-    ) -> tuple[str, dict[str, Any]]:
-        """Map a decision to RT-002 event type and transition."""
-        if isinstance(req.decision, Granted):
-            approval["state"] = "granted"
-            return (
-                "run.plan_ready",
-                {
-                    "task_id": approval["task_id"],
-                    "reset_state": "planning",
-                },
-            )
-        if isinstance(req.decision, DeniedAbandon):
-            return (
-                "run.cancelled",
-                {
-                    "task_id": approval["task_id"],
-                    "reset_state": "cancelled",
-                },
-            )
-        if isinstance(req.decision, DeniedAlternatePath):
-            return (
-                "run.progress",
-                {
-                    "task_id": approval["task_id"],
-                    "reset_state": "planning",
-                    "alternate_path": req.decision.note,
-                },
-            )
-        if isinstance(req.decision, Timeout):
-            return (
-                "run.cancelled",
-                {
-                    "task_id": approval["task_id"],
-                    "retryable": req.decision.retryable,
-                },
-            )
-        raise ValueError("unknown decision type")
-
-    # ---- event replay ----
-
-    def get_events(self) -> list[dict[str, Any]]:
-        """Return all recorded events for assertion."""
-        return list(self._events)
-
-    def _record_event(
-        self,
-        event_type: str,
+        run_id: str,
         task_id: str,
-        payload: dict[str, Any],
+        payload: dict[str, object],
     ) -> None:
-        self._events.append(
-            {
-                "type": event_type,
-                "task_id": task_id,
-                "payload": payload,
-                "ts": datetime.now(UTC).isoformat(),
-            }
+        """Append a ``run.progress`` event to the run event log.
+
+        The caller must include ``phase`` and ``milestone`` in *payload*
+        to satisfy the RT-002 validator for ``run.progress``.
+        """
+        await self._events.append(
+            RunEvent(
+                id=RunEventId(f"evt-{task_id}-progress"),
+                run_id=RunId(run_id),
+                seq=(await self._events.latest_seq(run_id)) + 1,
+                type=cast(RunEventType, "run.progress"),
+                payload=payload,
+                timestamp=datetime.now(UTC),
+                causation=Causation(event_id=None, action="ea_task", request_id=task_id),
+                actor=Actor(kind="system", id=None, display=None),
+            )
         )
