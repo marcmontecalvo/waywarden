@@ -14,8 +14,9 @@ class _HonchoReturningStrings:
     """Honcho client that mimics real honcho SDK string dates.
 
     Real honcho serializes dates as ISO-8601 strings, not datetime objects.
-    The adapter should handle this -- _rec_created currently only looks for
-    datetime instances and silently falls back to datetime.now(UTC).
+    The adapter should handle this by parsing ISO-8601 strings into datetime
+    objects; previously _rec_created only looked for datetime instances and
+    silently fell back to datetime.now(UTC).
     """
 
     def __init__(self) -> None:
@@ -32,7 +33,7 @@ class _HonchoReturningStrings:
             "session_id": session_id,
             "content": content,
             "metadata": metadata,
-            "created_at": "2025-06-15T12:00:00+00:00",
+            "created_at": "2020-01-01T12:00:00+00:00",
         }
         self._entries.append(rec)
         return rec
@@ -79,11 +80,12 @@ async def test_honcho_adapter_handles_iso_string_created_at() -> None:
         "string dates, not silently fall back to datetime.now()."
     )
 
-    # The created_at should match the honcho response (2025-06-15), not today.
+    # The created_at should be the honcho-returned date (2020-01-01),
+    # not close to now. A six-year-old date is safely outside any threshold.
     now = datetime.now(UTC)
     assert abs((entry.created_at - now).total_seconds()) > 365 * 86400, (
         f"HonchoMemoryProvider returned created_at={entry.created_at} which is "
         f"within seconds of now={now}; this means the ISO string "
-        "'2025-06-15T12:00:00+00:00' was silently discarded in favor of "
+        "'2020-01-01T12:00:00+00:00' was silently discarded in favor of "
         "datetime.now() -- a data integrity bug."
     )

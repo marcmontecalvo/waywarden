@@ -121,26 +121,13 @@ class TestMilestonesMatchCatalog:
     @pytest.mark.anyio
     async def test_milestones_match_catalog(self) -> None:
         """Only catalog-declared phase/milestone pairs appear in the snapshot."""
-        from waywarden.services.visibility import (
-            _MILESTONE_DESCRIPTION_MAP,
-        )
+        from waywarden.services.orchestration.milestones import MILESTONE_CATALOG
+        from waywarden.services.visibility import _MILESTONE_DESCRIPTION_MAP
 
-        # Verify that the internal map only contains valid catalog entries
-        expected_keys = set()
-        for md in (
-            "intake/received",
-            "intake/accepted",
-            "plan/drafted",
-            "plan/approval_requested",
-            "plan/ready",
-            "execute/tool_invoked",
-            "execute/artifact_emitted",
-            "execute/waiting_approval",
-            "review/findings_recorded",
-            "handoff/envelope_emitted",
-        ):
-            phase, milestone = md.split("/")
-            expected_keys.add((phase, milestone))
+        # Build expected keys from the canonical milestone catalog
+        expected_keys: set[tuple[str, str]] = {
+            (md.phase, md.milestone) for md in MILESTONE_CATALOG
+        }
 
         actual_keys = set(_MILESTONE_DESCRIPTION_MAP.keys())
         assert actual_keys == expected_keys

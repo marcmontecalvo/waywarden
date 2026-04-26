@@ -4,13 +4,14 @@ from waywarden.infra.db.metadata import metadata
 
 
 def test_all_tables_registered() -> None:
-    """All 9 tables must be registered on the shared metadata."""
+    """All 10 tables must be registered on the shared metadata."""
     expected = {
         "approvals",
         "checkpoints",
         "messages",
         "run_events",
         "runs",
+        "session_references",
         "sessions",
         "tasks",
         "token_usage",

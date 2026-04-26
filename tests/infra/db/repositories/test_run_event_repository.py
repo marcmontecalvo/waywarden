@@ -91,6 +91,7 @@ async def session() -> AsyncIterator[AsyncSession]:
                     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
                     terminal_seq TEXT,
+                    manifest_hash TEXT,
                     CHECK (policy_preset IN ('yolo', 'ask', 'allowlist', 'custom')),
                     CHECK (state IN ('created', 'planning', 'executing',
                         'waiting_approval', 'completed', 'failed', 'cancelled'))

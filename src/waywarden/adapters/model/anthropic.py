@@ -54,6 +54,11 @@ class AnthropicModelProvider:
         request = self._build_request(prompt, tools)
         response = await self._client.messages.create(**request)
         text = self._extract_text(response)
+        if not text:
+            raise RuntimeError(
+                "Anthropic model returned no text completion "
+                f"(run_id={prompt.session_id})"
+            )
         prompt_tokens = self._usage_int(response, "input_tokens")
         completion_tokens = self._usage_int(response, "output_tokens")
         model = self._model_name(response)

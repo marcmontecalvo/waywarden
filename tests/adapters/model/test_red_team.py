@@ -56,13 +56,8 @@ async def test_empty_response_is_not_silently_ignored() -> None:
         client=_SilentNullResponseClient(),
     )
     prompt = PromptEnvelope(session_id="s1", messages=["Hello"])
-    completion = await provider.complete(prompt)
-    # The adapter silently returned empty text -- assert that this is
-    # treated as an error condition.
-    assert completion.text, (
-        "AnthropicModelProvider returned empty text -- an empty response "
-        "should raise a meaningful error rather than completing silently."
-    )
+    with pytest.raises(RuntimeError, match="no text completion"):
+        await provider.complete(prompt)
 
 
 async def test_fake_router_passes_non_existent_provider() -> None:
