@@ -1,4 +1,4 @@
-"""VisibilityService — read-only snapshot of run progress from RT-002 events.
+"""VisibilityService - read-only snapshot of run progress from RT-002 events.
 
 This module is intentionally a **reader only**: it consumes from
 ``RunEventRepository``, ``RunRepository``, ``WorkspaceManifestRepository``,
@@ -50,6 +50,19 @@ class ArtifactRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class PlanRevisionRecord:
+    """A single plan revision derived from ``run.artifact_created(kind=plan-revision)`` events."""
+
+    seq: int
+    run_id: str
+    version: int
+    artifact_ref: str
+    diff_from_previous: str
+    rationale: str
+    timestamp: str
+
+
+@dataclass(frozen=True, slots=True)
 class ManifestSummary:
     """Redacted RT-001 manifest overview (no mutable body)."""
 
@@ -91,6 +104,16 @@ class ArtifactRecordModel(BaseModel):
     timestamp: str
 
 
+class PlanRevisionRecordModel(BaseModel):
+    seq: int
+    run_id: str
+    version: int
+    artifact_ref: str
+    diff_from_previous: str
+    rationale: str
+    timestamp: str
+
+
 class ManifestSummaryModel(BaseModel):
     run_id: str
     tool_policy_preset: str
@@ -108,6 +131,7 @@ class RunSnapshot(BaseModel):
     run_state: str
     milestones: list[MilestoneRecordModel] = []
     artifacts: list[ArtifactRecordModel] = []
+    plan_revisions: list[PlanRevisionRecordModel] = []
     pending_approvals: list[PendingApprovalRecordModel] = []
     latest_checkpoint_ref: str | None = None
     manifest_summary: ManifestSummaryModel | None = None
@@ -168,6 +192,7 @@ class VisibilityService:
         """
         milestones: list[MilestoneRecord] = []
         artifacts: list[ArtifactRecord] = []
+        plan_revisions: list[PlanRevisionRecord] = []
         run_state: str = "unknown"
 
         # Load run state if repository available
@@ -196,21 +221,35 @@ class VisibilityService:
                     )
                 )
             elif ev.type == "run.artifact_created":
-                artifacts.append(
-                    ArtifactRecord(
-                        seq=ev.seq,
-                        run_id=run_id,
-                        artifact_kind=str(ev.payload.get("artifact_kind", "")),
-                        artifact_ref=str(ev.payload.get("artifact_ref", "")),
-                        label=str(ev.payload.get("label")) if "label" in ev.payload else None,
-                        timestamp=ev.timestamp.isoformat(),
+                artifact_kind = str(ev.payload.get("artifact_kind", ""))
+                if artifact_kind == "plan-revision":
+                    plan_revisions.append(
+                        PlanRevisionRecord(
+                            seq=ev.seq,
+                            run_id=run_id,
+                            version=int(str(ev.payload.get("version", 0))),
+                            artifact_ref=str(ev.payload.get("artifact_ref", "")),
+                            diff_from_previous=str(ev.payload.get("diff_from_previous", "")),
+                            rationale=str(ev.payload.get("rationale", "")),
+                            timestamp=ev.timestamp.isoformat(),
+                        )
                     )
-                )
+                else:
+                    artifacts.append(
+                        ArtifactRecord(
+                            seq=ev.seq,
+                            run_id=run_id,
+                            artifact_kind=artifact_kind,
+                            artifact_ref=str(ev.payload.get("artifact_ref", "")),
+                            label=str(ev.payload.get("label")) if "label" in ev.payload else None,
+                            timestamp=ev.timestamp.isoformat(),
+                        )
+                    )
 
-        # Checkpoints — not emitted as RT-002 events, so always None for P4
+        # Checkpoints - not emitted as RT-002 events, so always None for P4
         latest_checkpoint_ref: str | None = None
 
-        # Pending approvals — surfaced only when the approval
+        # Pending approvals - surfaced only when the approval
         # repository is wired (P6-6).
         pending_approvals: list[PendingApprovalRecord] = []
         if self._approvals is not None:
@@ -238,6 +277,18 @@ class VisibilityService:
                     run_id=run_id,
                     tool_policy_preset=manifest.tool_policy.preset,
                 )
+        plan_revision_models = [
+            PlanRevisionRecordModel(
+                seq=p.seq,
+                run_id=p.run_id,
+                version=p.version,
+                artifact_ref=p.artifact_ref,
+                diff_from_previous=p.diff_from_previous,
+                rationale=p.rationale,
+                timestamp=p.timestamp,
+            )
+            for p in plan_revisions
+        ]
 
         # Convert to Pydantic models for API boundary
         return RunSnapshot(
@@ -264,6 +315,7 @@ class VisibilityService:
                 )
                 for a in artifacts
             ],
+            plan_revisions=plan_revision_models,
             pending_approvals=[
                 PendingApprovalRecordModel(
                     approval_id=p.approval_id,
