@@ -348,8 +348,96 @@ class TeamMetadata(AssetMetadata, frozen=True):
     """Asset metadata for ``team`` kind."""
 
     kind: Literal["team"] = "team"
-    members: tuple[str, ...] = ()
-    coordinator: str = ""
+    dispatcher: str
+    specialists: tuple[str, ...]
+    handoff_routes: tuple[dict[str, str], ...] = ()
+    fallback_agent: str | None = None
+
+    @field_validator("dispatcher", mode="before")
+    @classmethod
+    def _normalize_dispatcher(cls, value: object) -> str:
+        if not isinstance(value, str):
+            raise TypeError("dispatcher must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("dispatcher must not be blank")
+        return normalized
+
+    @field_validator("specialists", mode="before")
+    @classmethod
+    def _normalize_specialists(cls, value: object) -> tuple[str, ...]:
+        if isinstance(value, str):
+            raise TypeError("specialists must be a sequence of strings, not a string")
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("specialists must be a sequence of strings")
+        result: list[str] = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, str):
+                raise TypeError(f"specialists[{idx}] must be a string")
+            trimmed = item.strip()
+            if not trimmed:
+                raise ValueError(f"specialists[{idx}] must not be blank")
+            result.append(trimmed)
+        if not result:
+            raise ValueError("specialists must not be empty")
+        if len(set(result)) != len(result):
+            raise ValueError("specialists must not contain duplicates")
+        return tuple(result)
+
+    @field_validator("handoff_routes", mode="before")
+    @classmethod
+    def _normalize_handoff_routes(cls, value: object) -> tuple[dict[str, str], ...]:
+        if value is None:
+            return ()
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("handoff_routes must be a sequence of mappings")
+        required = frozenset({"from_agent", "output_name", "to_agent", "artifact_kind"})
+        routes: list[dict[str, str]] = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise TypeError(f"handoff_routes[{idx}] must be a mapping")
+            missing = required - set(item)
+            if missing:
+                raise ValueError(
+                    f"handoff_routes[{idx}] missing required fields: {sorted(missing)}"
+                )
+            route: dict[str, str] = {}
+            for key in required:
+                raw = item[key]
+                if not isinstance(raw, str):
+                    raise TypeError(f"handoff_routes[{idx}].{key} must be a string")
+                trimmed = raw.strip()
+                if not trimmed:
+                    raise ValueError(f"handoff_routes[{idx}].{key} must not be blank")
+                route[key] = trimmed
+            routes.append(route)
+        return tuple(routes)
+
+    @field_validator("fallback_agent", mode="before")
+    @classmethod
+    def _normalize_fallback_agent(cls, value: object) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise TypeError("fallback_agent must be a string or null")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("fallback_agent must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_team_references(self) -> TeamMetadata:
+        if self.dispatcher in self.specialists:
+            raise ValueError("dispatcher must not also be a specialist")
+        member_ids = {self.dispatcher, *self.specialists}
+        for idx, route in enumerate(self.handoff_routes):
+            if route["from_agent"] not in member_ids:
+                raise ValueError(f"handoff_routes[{idx}].from_agent references unknown member")
+            if route["to_agent"] not in member_ids:
+                raise ValueError(f"handoff_routes[{idx}].to_agent references unknown member")
+        if self.fallback_agent is not None and self.fallback_agent not in self.specialists:
+            raise ValueError("fallback_agent must reference a specialist")
+        return self
 
 
 class PipelineMetadata(AssetMetadata, frozen=True):
