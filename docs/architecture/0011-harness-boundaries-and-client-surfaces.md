@@ -2,9 +2,9 @@
 type: architecture
 title: "ADR 0011: Harness Boundaries and Client Surfaces"
 status: Accepted
-date: 2026-04-17
+date: 2026-04-27
 adr_number: "0011"
-relates_to: [0001, 0005]
+relates_to: [0001, 0005, 0006]
 supersedes: null
 superseded_by: null
 ---
@@ -42,6 +42,7 @@ Owns:
 - durable checkpoints
 - artifact registry
 - session history
+- system backup / restore coordination for Waywarden-owned durable state
 
 ### 2. Execution workers
 Own:
@@ -49,11 +50,13 @@ Own:
 - file operations inside the allowed workspace
 - tool execution inside scoped boundaries
 - disposable execution environments
+- workspace-local snapshot and rollback mechanics when the run policy enables them
 
 Workers do **not** own:
 - durable run state
 - long-term policy
 - top-level credentials by default
+- system backup / restore authority for the Waywarden deployment
 
 ### 3. Client surfaces
 Examples:
@@ -80,6 +83,15 @@ WayWarden should define stable internal contracts for:
 ### Durable server-side state
 Runs must survive UI disconnects and worker loss.
 
+### Durability feature boundaries
+Waywarden uses separate contracts for system recovery, execution recovery, and workspace rollback.
+
+1. **System backup / restore** protects Waywarden-owned durable state: database records, configuration, artifacts, run/event history, manifests, and required runtime files. It is an operations concern owned by the control plane and infrastructure adapters.
+2. **Run checkpoint / resume** protects execution continuity: a run can recover or continue from durable run state, RT-001 manifests, RT-002 event history, and checkpoints. It is a run lifecycle concern.
+3. **Workspace rollback** protects task-local work product: file, repo, and workspace changes can be snapshotted, inspected, and reverted according to the run policy. It is a worker/workspace concern surfaced through the control plane.
+
+These features may reference the same artifacts and events, but they must remain separate in the domain model, tests, and operator language.
+
 ### Manifest-driven execution
 Each run should declare a shaped workspace and execution policy rather than relying on implicit repo mounts.
 
@@ -99,6 +111,7 @@ Keep separate:
 - shipping desktop/computer-use support in v1
 - making the dashboard the runtime center
 - coupling the design to one provider SDK
+- treating backup / restore, checkpoint / resume, and workspace rollback as one interchangeable feature
 
 ## Follow-on work
 
@@ -107,3 +120,4 @@ Keep separate:
 - define client-to-harness API surface
 - define worker adapter boundary
 - keep `research/` notes separate from canonical architecture
+- define P8 scheduler, heartbeat, backup / restore, and workspace rollback specs
