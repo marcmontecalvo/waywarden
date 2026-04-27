@@ -41,7 +41,11 @@ class ApprovalHook:
     tool_policy: ToolPolicy
 
     def requirements(self, tool_id: str, action: str) -> tuple[bool, str | None, str | None]:
-        """Return (approval_required, reason, action_reason)."""
+        """Return (approval_required, reason, action_reason).
+
+        Static check — does not invoke the engine.  Used by tool-invocation
+        scaffolding to short-circuit auto-allowed operations.
+        """
         for rule in self.tool_policy.rules:
             if rule.tool != tool_id:
                 continue
@@ -58,6 +62,34 @@ class ApprovalHook:
         if self.tool_policy.default_decision == "forbidden":
             raise RuntimeError(f"tool {tool_id}:{action} forbidden by policy")
         return True, None, None
+
+    async def before_invoke(
+        self,
+        run_id: str,
+        tool_id: str,
+        action: str,
+        summary: str,
+    ) -> str | None:
+        """Check tool policy and, if approval is required, emit an
+        approval request via the engine and return the approval id.
+
+        Returns the approval id when an approval is pending;
+        returns None when the operation is auto-allowed.
+
+        Raises ``ApprovalGateError`` when the policy denies the operation.
+        """
+        approval_required, reason, _ = self.requirements(tool_id, action)
+        if not approval_required:
+            return None
+        if reason is None:
+            reason = f"{tool_id}:{action} requires approval"
+        approval = await self.engine.request(
+            run_id=run_id,
+            approval_kind=tool_id,
+            summary=summary,
+            requested_capability=tool_id,
+        )
+        return approval.id
 
 
 class ApprovalGateError(RuntimeError):
