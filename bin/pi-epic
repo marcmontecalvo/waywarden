@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+EPIC="${1:?Usage: pi-epic <github-epic-url-or-issue-number>}"
+REPO_DIR="${2:-$(pwd)}"
+
+cd "$REPO_DIR"
+
+# Pi commonly expects repo-local .pi assets. Prefer repo-local extension first.
+if [[ -f ".pi/extensions/tilldone.ts" ]]; then
+  TILLDONE_EXT=".pi/extensions/tilldone.ts"
+elif [[ -f ".pi/agent/extensions/tilldone.ts" ]]; then
+  TILLDONE_EXT=".pi/agent/extensions/tilldone.ts"
+elif [[ -f "$HOME/.pi/manual-extensions/tilldone.ts" ]]; then
+  TILLDONE_EXT="$HOME/.pi/manual-extensions/tilldone.ts"
+elif [[ -f "$HOME/.pi/agent/extensions/tilldone.ts" ]]; then
+  TILLDONE_EXT="$HOME/.pi/agent/extensions/tilldone.ts"
+else
+  cat >&2 <<'EOF'
+ERROR: tilldone.ts not found.
+
+Expected one of:
+  .pi/extensions/tilldone.ts
+  .pi/agent/extensions/tilldone.ts
+  ~/.pi/manual-extensions/tilldone.ts
+  ~/.pi/agent/extensions/tilldone.ts
+
+Copy the patched tilldone.ts into your repo-local .pi/extensions/ directory or pass it to pi manually.
+EOF
+  exit 1
+fi
+
+pi -e "$TILLDONE_EXT" "
+Use the repo-local epic-to-tilldone skill for this EPIC:
+
+EPIC: ${EPIC}
+
+CRITICAL ORDER:
+1. Do not read files, run shell commands, use gh, search, or inspect the repo yet.
+2. First use the tilldone tool only.
+3. Create a bootstrap TillDone list titled 'EPIC bootstrap'.
+4. Add these bootstrap tasks:
+   - Load repo skill instructions and resolve EPIC reference
+   - Fetch EPIC from GitHub with gh
+   - Convert EPIC and child issues into concrete TillDone tasks
+   - Start the first real EPIC task
+5. Toggle the first bootstrap task in progress.
+6. Only after that, read .agents/skills/epic-to-tilldone/SKILL.md and follow it.
+7. Replace the bootstrap list with the real EPIC task list after the EPIC is fetched.
+8. Work tasks until complete.
+9. Do not stop until validation passes or a real blocker is documented.
+"

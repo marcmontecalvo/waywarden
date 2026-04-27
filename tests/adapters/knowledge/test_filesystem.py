@@ -46,8 +46,7 @@ def knowledge_fixture_dir(tmp_path: Path) -> Path:
     sub = kdir / "sub"
     sub.mkdir()
     (sub / "deep-doc.md").write_text(
-        "---\ntitle: Deep Doc\n---\n\n"
-        "This document lives deep and mentions the fox as well.\n",
+        "---\ntitle: Deep Doc\n---\n\nThis document lives deep and mentions the fox as well.\n",
         encoding="utf-8",
     )
 

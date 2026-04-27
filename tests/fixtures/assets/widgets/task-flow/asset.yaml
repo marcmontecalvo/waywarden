@@ -1,0 +1,9 @@
+id: task-flow
+kind: widget
+version: 1.0.0
+description: Behavioural task-flow widget.
+tags:
+  - ua
+  - ui
+  - task
+required_providers: []

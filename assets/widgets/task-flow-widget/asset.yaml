@@ -1,0 +1,11 @@
+id: task-flow-widget
+kind: widget
+version: 1.0.0
+description: Behavioural task-flow widget for the coding profile.
+tags:
+  - coding
+  - ui
+required_providers: []
+profile_filter:
+  - op: exclude
+    tag: ea

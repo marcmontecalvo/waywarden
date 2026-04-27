@@ -127,9 +127,7 @@ class PolicyLoader:
         try:
             return PolicyPresetDoc.model_validate(raw)
         except Exception as exc:
-            raise PolicyLoaderError(
-                f"Schema validation failed for preset: {exc}"
-            ) from exc
+            raise PolicyLoaderError(f"Schema validation failed for preset: {exc}") from exc
 
     @staticmethod
     def _merge_overrides(

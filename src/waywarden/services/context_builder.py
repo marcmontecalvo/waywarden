@@ -98,14 +98,10 @@ class ContextBuilder:
             knowledge_block=knowledge_block,
         )
 
-    async def _fetch_memory(
-        self, session_id: SessionId, max_entries: int
-    ) -> list[MemoryEntry]:
+    async def _fetch_memory(self, session_id: SessionId, max_entries: int) -> list[MemoryEntry]:
         from waywarden.domain.providers.types.memory import MemoryQuery
 
-        query: MemoryQuery = MemoryQuery(
-            session_id=session_id, query_text="", limit=max_entries
-        )
+        query: MemoryQuery = MemoryQuery(session_id=session_id, query_text="", limit=max_entries)
         raw = await self._memory.read(session_id, query)
         # Enforce the limit at the builder level as a safety net
         return raw[:max_entries]
@@ -115,9 +111,7 @@ class ContextBuilder:
     ) -> list[KnowledgeHit]:
         return await self._knowledge.search(user_input, limit=max_entries)
 
-    def _truncate_memory(
-        self, entries: list[MemoryEntry]
-    ) -> tuple[MemoryEntry, ...]:
+    def _truncate_memory(self, entries: list[MemoryEntry]) -> tuple[MemoryEntry, ...]:
         if self._memory_cap <= 0:
             return ()
         result: list[MemoryEntry] = []
@@ -127,9 +121,7 @@ class ContextBuilder:
             result.append(truncated)
         return tuple(result)
 
-    def _truncate_knowledge(
-        self, hits: list[KnowledgeHit]
-    ) -> tuple[KnowledgeHit, ...]:
+    def _truncate_knowledge(self, hits: list[KnowledgeHit]) -> tuple[KnowledgeHit, ...]:
         if self._knowledge_cap <= 0:
             return ()
         result: list[KnowledgeHit] = []

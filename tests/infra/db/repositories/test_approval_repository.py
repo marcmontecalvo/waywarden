@@ -141,3 +141,31 @@ async def test_save_returns_same_instance(session: AsyncSession) -> None:
 
     result = await repo.save(appr)
     assert result is appr
+
+
+async def test_save_updates_existing_approval(session: AsyncSession) -> None:
+    """save() overwrites an approval row when the engine resolves it."""
+    repo = ApprovalRepositoryImpl(session)
+    original = _make_approval(approval_id="appr_update", state="pending")
+    decided_at = datetime.now(UTC)
+    updated = Approval(
+        id=original.id,
+        run_id=original.run_id,
+        approval_kind=original.approval_kind,
+        requested_capability=original.requested_capability,
+        summary=original.summary,
+        state="granted",
+        requested_at=original.requested_at,
+        decided_at=decided_at,
+        decided_by="operator-1",
+        expires_at=original.expires_at,
+    )
+
+    await repo.save(original)
+    await repo.save(updated)
+
+    loaded = await repo.get("appr_update")
+    assert loaded is not None
+    assert loaded.state == "granted"
+    assert loaded.decided_at == decided_at
+    assert loaded.decided_by == "operator-1"

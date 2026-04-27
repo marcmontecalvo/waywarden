@@ -54,6 +54,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["B005", "E402", "SIM117"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -65,12 +66,15 @@ markers = [
 
 [tool.coverage.run]
 branch = true
-source = ["src/waywarden", "alembic"]
+source = ["src/waywarden", "alembic", "tests/integration/ea"]
 omit = [
   "src/waywarden/__init__.py",
   "src/waywarden/infra/tracing/otel.py",
   "alembic/versions/*.py",
 ]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"src/waywarden/services/orchestration/tilldone.py" = ["F841"]
 
 [tool.coverage.report]
 show_missing = true

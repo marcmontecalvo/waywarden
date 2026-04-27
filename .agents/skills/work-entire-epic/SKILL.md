@@ -54,15 +54,17 @@ Complete every open actionable child issue in the EPIC.
 For each child issue:
 
 1. select the first open actionable child issue
-2. follow `.agents/skills/work-next-issue-in-given-epic/SKILL.md`
-3. review the implementation adversarially
-4. fix any defects found
-5. repeat review/fix until the issue is truly complete
-6. commit, push, merge, verify `main`
-7. update and close the child issue
-8. update the EPIC
-9. delete the issue branch unless intentionally retained
-10. move to the next open actionable child issue
+2. follow `.agents/skills/work-next-issue-in-given-epic/SKILL.md` exactly
+3. run baseline validation before edits
+4. implement issue-scoped tests and code
+5. run `make format`, `make lint`, `make test`, and typecheck when available before every commit
+6. review the implementation adversarially
+7. fix any defects found and rerun validation
+8. commit, push, merge, verify `main`, and run post-merge validation
+9. update and close the child issue
+10. update the EPIC
+11. delete the issue branch unless intentionally retained
+12. move to the next open actionable child issue
 
 Continue until:
 
@@ -174,27 +176,53 @@ The selected child issue must go through:
 
 1. repo intelligence preflight
 2. branch from current `main`
-3. acceptance criteria identification
-4. tests first or tests as early as practical
-5. implementation
-6. validation
-7. adversarial review
-8. corrections after review
-9. re-validation
-10. commit
-11. push
-12. merge to `main`
-13. verify `main`
-14. child issue completion note
-15. EPIC update
-16. child issue close
-17. branch cleanup
+3. mandatory baseline gate before edits:
+   - `git status --short`
+   - `make lint`
+   - `make test`
+   - typecheck when the repo exposes it
+4. acceptance criteria identification
+5. tests first or tests as early as practical
+6. implementation
+7. targeted and broadened validation as needed
+8. adversarial review
+9. corrections after review
+10. full pre-commit gate:
+    - `git status --short`
+    - `make format`
+    - `make lint`
+    - `make test`
+    - typecheck when the repo exposes it
+11. commit
+12. push and verify push success
+13. merge to `main`
+14. verify `main`
+15. post-merge gate on `main`:
+    - `make lint`
+    - `make test`
+    - typecheck when the repo exposes it
+16. child issue completion note
+17. EPIC update
+18. child issue close
+19. branch cleanup
 
-Do not proceed to the next child issue unless the current child issue reaches `PASS`.
+Do not proceed to the next child issue unless the current child issue reaches `PASS` under the next-issue skill’s result contract.
 
 If the current child issue returns `FAIL`, stop the EPIC loop and report the blocker.
 
-## Phase 4: Adversarial review loop
+## Baseline and failure attribution rule
+
+A child issue may claim a validation failure is preexisting only if the exact failure was captured in the baseline gate before edits began.
+
+Rules:
+
+- If baseline checks pass, later lint/test/typecheck failures belong to the current issue until fixed or rigorously proven otherwise.
+- If baseline checks fail, stop the EPIC loop and report `FAIL` unless the current child issue explicitly exists to repair that baseline failure or the user explicitly told you to continue.
+- If the agent skipped the baseline gate, it may not call later failures preexisting. It must fix them or revert the relevant changes.
+- Do not continue to the next child issue with red validation from the previous issue.
+- Do not batch multiple child issues into one commit just to avoid a failing intermediate state.
+
+## Phase 3: Adversarial review loop
 
 For every child issue, explicitly run this loop:
 
@@ -212,15 +240,17 @@ For every child issue, explicitly run this loop:
    - uncommitted files
    - branch/main divergence
    - issue not actually updated
+   - skipped format/lint/test/typecheck gates
+   - failures incorrectly described as preexisting
 4. If defects are found:
    - fix them
-   - re-run relevant validation
+   - rerun `make format`, `make lint`, `make test`, targeted tests, and typecheck when available as appropriate
    - repeat adversarial review
 5. Continue until no blocking defects remain.
 
 Do not accept “review found issues but they can be fixed later.”
 
-## Phase 5: EPIC completion
+## Phase 4: EPIC completion
 
 After each completed child issue:
 
@@ -231,6 +261,10 @@ After each completed child issue:
 5. If none remain:
    - update the EPIC checklist/status
    - add a final EPIC completion comment
+   - run final validation from `main`:
+     - `make lint`
+     - `make test`
+     - typecheck when available
    - close the EPIC if its definition of done is satisfied
 
 Optional/future/governance items do not keep the EPIC open unless the EPIC explicitly says they are required.
@@ -240,6 +274,9 @@ Optional/future/governance items do not keep the EPIC open unless the EPIC expli
 - Do not treat `we 4` as GitHub issue `#4`.
 - Do not work directly on `main`.
 - Do not skip tests.
+- Do not skip `make format`, `make lint`, or `make test` before a commit.
+- Do not commit after red lint/tests/typecheck.
+- Do not claim a failure is preexisting unless the baseline gate captured it before edits.
 - Do not close a child issue unless it was merged to `main`.
 - Do not move to the next child issue while the current child issue is incomplete.
 - Do not keep looping after a real blocker.
@@ -247,13 +284,15 @@ Optional/future/governance items do not keep the EPIC open unless the EPIC expli
 - Do not treat aggregate coverage as acceptance proof.
 - Do not close the EPIC if required child issues remain open.
 - Do not leave branches behind unless explicitly justified.
-- Do not claim success unless GitHub issue state, branch state, and `main` state all agree.
+- Do not claim success unless GitHub issue state, branch state, validation state, and `main` state all agree.
 
 ## Required per-child issue output
 
 For each completed child issue, include the required output from:
 
 `.agents/skills/work-next-issue-in-given-epic/assets/output-format.md`
+
+The per-child output must include baseline, targeted validation, pre-commit gate, post-merge gate, commit sha, push target, merge result, and issue/EPIC update status.
 
 ## Required final EPIC output
 
@@ -282,8 +321,12 @@ Then:
 
 ```md
 ## VALIDATION SUMMARY
+- baseline commands run before each issue: yes|no
+- pre-commit gates run before each commit: yes|no
+- post-merge gates run after each merge: yes|no
 - commands run across issues:
 - all required validation passed: yes|no
+- any failures claimed preexisting: yes|no; include baseline evidence if yes
 
 ## ADVERSARIAL REVIEW SUMMARY
 - issues found:

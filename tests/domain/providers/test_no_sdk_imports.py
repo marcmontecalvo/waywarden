@@ -9,7 +9,10 @@ from pathlib import Path
 
 def _get_provider_package_root() -> Path:
     domain_providers = importlib.import_module("waywarden.domain.providers")
-    return Path(domain_providers.__file__).parent
+    file_path = domain_providers.__file__
+    if file_path is None:
+        raise RuntimeError("waywarden.domain.providers has no filesystem path")
+    return Path(file_path).parent
 
 
 _SDK_PACKAGES = ("openai", "anthropic", "httpx", "langchain", "litellm")

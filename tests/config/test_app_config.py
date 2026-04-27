@@ -1,10 +1,12 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from pydantic import SecretStr, ValidationError
 
 from waywarden.config import ConfigLoadError, load_app_config
 from waywarden.config.settings import AppConfig
+from waywarden.domain.manifest.tool_policy import ToolPreset
 
 
 def _write_checked_in_profile(tmp_path: Path) -> None:
@@ -80,8 +82,8 @@ def test_tracer_field_literal_enforced() -> None:
             host="localhost",
             port=8080,
             active_profile="ea",
-            tracer="invalid",
-        )  # type: ignore[arg-type]
+            tracer=cast(Any, "invalid"),
+        )
 
 
 def test_tracer_otel_requires_endpoint() -> None:
@@ -208,25 +210,15 @@ def test_llm_wiki_succeeds_when_both_provided() -> None:
     assert cfg.llm_wiki_endpoint == "http://localhost:8000"
 
 
-<<<<<<< Updated upstream
-    assert cfg.knowledge_provider == "llm_wiki"
-    assert cfg.llm_wiki_endpoint == "http://localhost:8000"
-
-
-=======
->>>>>>> Stashed changes
 def test_policy_preset_default_is_ask() -> None:
     cfg = AppConfig(host="localhost", port=8080, active_profile="ea")
     assert cfg.policy_preset == "ask"
 
 
-@pytest.mark.parametrize(
-    "preset",
-    ["yolo", "ask", "allowlist", "custom"],
-)
-def test_policy_preset_literal_enforced(preset: str) -> None:
+@pytest.mark.parametrize("preset", ["yolo", "ask", "allowlist", "custom"])
+def test_policy_preset_literal_enforced(preset: ToolPreset) -> None:
     cfg = AppConfig(host="localhost", port=8080, active_profile="ea", policy_preset=preset)
-    assert cfg.policy_preset == preset  # type: ignore[comparison-overlap]
+    assert cfg.policy_preset == preset
 
 
 def test_policy_preset_invalid_literal_rejected() -> None:
@@ -235,9 +227,8 @@ def test_policy_preset_invalid_literal_rejected() -> None:
             host="localhost",
             port=8080,
             active_profile="ea",
-            policy_preset="nonexistent",  # type: ignore[arg-type]
+            policy_preset=cast(Any, "nonexistent"),
         )
-<<<<<<< Updated upstream
 
 
 def test_active_instance_required(tmp_path: Path) -> None:
@@ -261,8 +252,7 @@ def test_active_instance_required(tmp_path: Path) -> None:
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "app.yaml").write_text(
-        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\n"
-        "active_instance: nonexistent\n",
+        "host: 127.0.0.1\nport: 8080\nactive_profile: ea\nactive_instance: nonexistent\n",
         encoding="utf-8",
     )
 
@@ -271,6 +261,3 @@ def test_active_instance_required(tmp_path: Path) -> None:
 
     message = str(exc_info.value)
     assert "active_instance" in message
-
-=======
->>>>>>> Stashed changes

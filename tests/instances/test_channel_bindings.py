@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
 from waywarden.config import InstanceLoadError, load_instances
 from waywarden.domain.channel_binding import register_channel_provider
-from waywarden.domain.ids import InstanceId
 
 
 def _make_profiles(tmp_path: Path) -> Path:
@@ -173,7 +173,7 @@ class TestTypedListRequired:
 
         # ChannelBinding rejects when passed as a single dict (not as kwargs)
         with pytest.raises(TypeError):
-            ChannelBinding({"channel_name": "chat", "transport": "http"})  # type: ignore[arg-type]
+            cast(Any, ChannelBinding)({"channel_name": "chat", "transport": "http"})
 
     def test_instance_descriptor_rejects_channels_as_scalar(self, tmp_path: Path) -> None:
         """If channels is a string or bare dict, load should reject it."""
@@ -192,9 +192,7 @@ class TestTypedListRequired:
         config_yaml = config_dir / "instances" / "test-insta.yaml"
         # channels as a bare string should be rejected
         config_yaml.write_text(
-            "env: {}\n"
-            "overrides:\n"
-            "  channels: \"not-a-list\"\n",
+            'env: {}\noverrides:\n  channels: "not-a-list"\n',
             encoding="utf-8",
         )
 
@@ -220,11 +218,7 @@ class TestTypedListRequired:
         )
         config_yaml = config_dir / "instances" / "test-insta.yaml"
         config_yaml.write_text(
-            "env: {}\n"
-            "overrides:\n"
-            "  channels:\n"
-            "    chat:\n"
-            "      transport: http\n",
+            "env: {}\noverrides:\n  channels:\n    chat:\n      transport: http\n",
             encoding="utf-8",
         )
 

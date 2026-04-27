@@ -1,0 +1,31 @@
+id: ea-scheduler
+kind: routine
+version: 1.0.0
+description: Schedules and dispatches EA tasks with explicit approval checkpoints.
+tags:
+  - ea
+  - scheduler
+required_providers: []
+milestones:
+  - phase: intake
+    names:
+      - received
+      - accepted
+  - phase: plan
+    names:
+      - drafted
+      - approval_requested
+      - ready
+  - phase: execute
+    names:
+      - tool_invoked
+      - waiting_approval
+emits_events:
+  - run.progress
+  - run.approval_waiting
+  - run.plan_ready
+  - run.failed
+  - run.cancelled
+profile_filter:
+  - op: include
+    tag: ea

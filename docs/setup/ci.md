@@ -15,7 +15,9 @@
 
 Windows runners in GitHub Actions do not support Docker services the same way
 Linux runners do. The `integration-linux` job spins up a `postgres:18.3-alpine3.23`
-service and runs all `@pytest.mark.integration` tests against it.
+service and runs all `@pytest.mark.integration` tests against it. That linux-only
+gate is also where the real provider-path + Postgres-backed EA runtime proof runs,
+including `tests/integration/ea/test_ea_e2e.py`.
 
 On Windows the `test` job runs with `-m "not integration"` so unit tests stay
 green without requiring Docker.

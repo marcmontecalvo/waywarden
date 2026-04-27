@@ -36,4 +36,5 @@ async def test_shell_read_unsupported_action() -> None:
 
     assert isinstance(result, ToolResult)
     assert result.success is False
+    assert result.error is not None
     assert "unsupported action" in result.error  # noqa: SIM300

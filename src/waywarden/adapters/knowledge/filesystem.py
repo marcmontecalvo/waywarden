@@ -111,10 +111,7 @@ class FilesystemKnowledgeProvider:
         # Sort by score descending, then alphabetical by path (ref) for ties
         hits.sort(key=lambda h: (-h[2], h[0]))
 
-        return [
-            KnowledgeHit(ref=h[0], title=h[1], snippet=h[3], score=h[2])
-            for h in hits[:limit]
-        ]
+        return [KnowledgeHit(ref=h[0], title=h[1], snippet=h[3], score=h[2]) for h in hits[:limit]]
 
     async def fetch(self, ref: str) -> KnowledgeDocument:
         for doc in self._docs:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 import pytest_asyncio
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from waywarden.adapters.model.fake import FakeModelProvider
 from waywarden.adapters.model.router import ModelRouter
+from waywarden.domain.ids import SessionId
+from waywarden.domain.providers import ModelProvider
 from waywarden.domain.providers.types.model import ModelCompletion, PromptEnvelope
 from waywarden.infra.db.repositories.token_usage_repo import TokenUsageRepositoryImpl
 
@@ -76,14 +79,17 @@ async def session() -> AsyncIterator[AsyncSession]:
 async def test_routes_to_named_provider(session: AsyncSession) -> None:
     usage_repo = TokenUsageRepositoryImpl(session)
     router = ModelRouter(
-        providers={
-            "fake": StaticModelProvider(name="fake", text="default"),
-            "anthropic": StaticModelProvider(name="anthropic", text="selected"),
-        },
+        providers=cast(
+            dict[str, ModelProvider],
+            {
+                "fake": StaticModelProvider(name="fake", text="default"),
+                "anthropic": StaticModelProvider(name="anthropic", text="selected"),
+            },
+        ),
         default="fake",
         token_usage_repository=usage_repo,
     )
-    prompt = PromptEnvelope(session_id="session-1", messages=["hello"])
+    prompt = PromptEnvelope(session_id=SessionId("session-1"), messages=["hello"])
 
     completion = await router.complete(prompt, provider="anthropic", run_id="run-1")
 
@@ -99,7 +105,10 @@ async def test_records_token_usage(session: AsyncSession) -> None:
         default="fake",
         token_usage_repository=usage_repo,
     )
-    prompt = PromptEnvelope(session_id="session-1", messages=["count these tokens"])
+    prompt = PromptEnvelope(
+        session_id=SessionId("session-1"),
+        messages=["count these tokens"],
+    )
 
     completion = await router.complete(prompt, run_id="run-usage", call_ref="call-001")
 

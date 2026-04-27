@@ -1,0 +1,12 @@
+id: dashboard-widget
+kind: widget
+version: 1.0.0
+description: Standard EA dashboard widget showing overview of pending items.
+tags:
+  - ea
+  - dashboard
+  - overview
+required_providers: []
+profile_filter:
+  - op: include
+    tag: ea

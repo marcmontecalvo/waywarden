@@ -27,9 +27,9 @@ class FakeMemoryProvider:
             created_at=entry.created_at,
         )
 
-        self._store.setdefault(
-            session_id, []
-        ).append((stored.created_at or datetime.now(UTC), entry_id, stored))
+        self._store.setdefault(session_id, []).append(
+            (stored.created_at or datetime.now(UTC), entry_id, stored)
+        )
 
         return MemoryEntryRef(entry_id=entry_id, session_id=session_id)
 

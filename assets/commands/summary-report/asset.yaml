@@ -1,0 +1,11 @@
+id: summary-report
+kind: command
+version: 1.0.0
+description: Generate a summary report across all tracked tasks.
+tags:
+  - ea
+  - reporting
+required_providers: []
+profile_filter:
+  - op: include
+    tag: ea

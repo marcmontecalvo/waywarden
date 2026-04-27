@@ -35,7 +35,6 @@ from waywarden.services.approval_types import (
 )
 
 if TYPE_CHECKING:
-
     from waywarden.domain.repositories import ApprovalRepository, RunEventRepository
 
 logger = getLogger(__name__)

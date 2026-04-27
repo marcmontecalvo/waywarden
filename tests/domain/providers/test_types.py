@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from waywarden.domain.ids import SessionId
 from waywarden.domain.providers.types.channel import ChannelMessage, ChannelSendResult
 from waywarden.domain.providers.types.knowledge import KnowledgeDocument, KnowledgeHit
 from waywarden.domain.providers.types.memory import MemoryEntry, MemoryEntryRef, MemoryQuery
@@ -40,18 +41,18 @@ def test_value_types_are_frozen() -> None:
 
 def test_prompt_envelope_rejects_empty_session() -> None:
     with pytest.raises(ValueError, match="session_id"):
-        PromptEnvelope(session_id="", messages=["hello"])
+        PromptEnvelope(session_id=SessionId(""), messages=["hello"])
 
 
 def test_prompt_envelope_rejects_empty_messages() -> None:
     with pytest.raises(ValueError, match="messages"):
-        PromptEnvelope(session_id="s1", messages=[])
+        PromptEnvelope(session_id=SessionId("s1"), messages=[])
 
 
 def test_model_completion_rejects_negative_tokens() -> None:
     with pytest.raises(ValueError, match="token counts"):
         ModelCompletion(
-            session_id="s1",
+            session_id=SessionId("s1"),
             text="hi",
             model="test",
             provider="test",
@@ -63,7 +64,7 @@ def test_model_completion_rejects_negative_tokens() -> None:
 def test_model_completion_rejects_mismatched_total() -> None:
     with pytest.raises(ValueError, match="total_tokens"):
         ModelCompletion(
-            session_id="s1",
+            session_id=SessionId("s1"),
             text="hi",
             model="test",
             provider="test",
@@ -75,7 +76,7 @@ def test_model_completion_rejects_mismatched_total() -> None:
 
 
 def test_memory_entry_autosets_created_at() -> None:
-    entry = MemoryEntry(session_id="s1", content="hello")
+    entry = MemoryEntry(session_id=SessionId("s1"), content="hello")
     assert entry.created_at is not None
 
 

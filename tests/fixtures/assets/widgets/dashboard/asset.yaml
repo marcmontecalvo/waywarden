@@ -1,0 +1,9 @@
+id: dashboard
+kind: widget
+version: 1.0.0
+description: Standard EA dashboard widget.
+tags:
+  - ea
+  - ui
+  - dashboard
+required_providers: []

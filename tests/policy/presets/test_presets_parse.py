@@ -12,7 +12,7 @@ def test_all_four_presets_parse(preset_name: str) -> None:
     """Each preset file must exist under config/policy/presets/ and parse."""
     loader = PolicyLoader()
     policy = loader.load(preset_name)
-    assert policy.preset == preset_name  # type: ignore[comparison-overlap]
+    assert policy.preset == preset_name
     assert hasattr(policy, "rules")
     assert hasattr(policy, "default_decision")
 

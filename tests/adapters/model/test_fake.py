@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from waywarden.adapters.model.fake import FakeModelProvider
+from waywarden.domain.ids import SessionId
 from waywarden.domain.providers import ModelProvider
 from waywarden.domain.providers.types.model import PromptEnvelope
 from waywarden.domain.providers.types.tool import ToolDecl
@@ -10,7 +11,10 @@ from waywarden.domain.providers.types.tool import ToolDecl
 
 async def test_deterministic_output() -> None:
     provider = FakeModelProvider()
-    prompt = PromptEnvelope(session_id="session-1", messages=["Summarize the harness."])
+    prompt = PromptEnvelope(
+        session_id=SessionId("session-1"),
+        messages=["Summarize the harness."],
+    )
 
     first = await provider.complete(prompt)
     second = await provider.complete(prompt)
@@ -33,7 +37,10 @@ async def test_declarative_tool_script_changes_output() -> None:
             ("filesystem", "read"): "scripted filesystem read result",
         }
     )
-    prompt = PromptEnvelope(session_id="session-1", messages=["Use the filesystem tool."])
+    prompt = PromptEnvelope(
+        session_id=SessionId("session-1"),
+        messages=["Use the filesystem tool."],
+    )
     tools = [
         ToolDecl(
             tool_id="filesystem",
