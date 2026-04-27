@@ -7,7 +7,7 @@ event log.  No events are emitted by this route.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import APIRouter, HTTPException
 
@@ -18,6 +18,9 @@ from waywarden.domain.repositories import (
 )
 from waywarden.services.visibility import RunSnapshot, VisibilityService
 
+if TYPE_CHECKING:
+    from waywarden.domain.repositories import ApprovalRepository
+
 router = APIRouter(tags=["run-view"])
 
 # -- Dependency injection (set in test harness or app startup) ---------------
@@ -25,6 +28,7 @@ router = APIRouter(tags=["run-view"])
 _event_repo: RunEventRepository | None = None
 _run_repo: RunRepository | None = None
 _manifest_repo: WorkspaceManifestRepository | None = None
+_approval_repo: ApprovalRepository | None = None
 
 
 def _get_events() -> RunEventRepository | None:
@@ -37,6 +41,10 @@ def _get_runs() -> RunRepository | None:
 
 def _get_manifests() -> WorkspaceManifestRepository | None:
     return _manifest_repo
+
+
+def _get_approvals() -> ApprovalRepository | None:
+    return _approval_repo
 
 
 @router.get(
@@ -53,6 +61,7 @@ async def get_run_view(
     - ``run_state`` — current RT-002 state
     - ``milestones`` — every ``run.progress`` event in seq order
     - ``artifacts`` — every ``run.artifact_created`` event
+    - ``pending_approvals`` — pending approvals from the P3 approval engine
     - ``latest_checkpoint_ref`` — always ``null`` for P4
     - ``manifest_summary`` — redacted RT-001 overview
 
@@ -61,6 +70,7 @@ async def get_run_view(
     events_repo = _get_events()
     runs_repo = _get_runs()
     manifests_repo = _get_manifests()
+    approval_repo = _get_approvals()
 
     if events_repo is None:
         raise HTTPException(status_code=503, detail="event repository not configured")
@@ -69,6 +79,7 @@ async def get_run_view(
         events=events_repo,
         runs=runs_repo,
         manifests=manifests_repo,
+        approvals=approval_repo,
     )
 
     # Check if the run exists — must do so before calling snapshot to return 404

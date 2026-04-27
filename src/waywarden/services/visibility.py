@@ -1,8 +1,9 @@
 """VisibilityService — read-only snapshot of run progress from RT-002 events.
 
 This module is intentionally a **reader only**: it consumes from
-``RunEventRepository``, ``RunRepository``, and ``WorkspaceManifestRepository``
-to assemble a ``RunSnapshot``.  It must never append events.
+``RunEventRepository``, ``RunRepository``, ``WorkspaceManifestRepository``,
+and optionally ``ApprovalRepository`` to assemble a ``RunSnapshot``.
+It must never append events.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ from dataclasses import dataclass
 from pydantic import BaseModel
 
 from waywarden.domain.repositories import (
+    ApprovalRepository,
     RunEventRepository,
     RunRepository,
     WorkspaceManifestRepository,
@@ -55,6 +57,17 @@ class ManifestSummary:
     tool_policy_preset: str
 
 
+@dataclass(frozen=True, slots=True)
+class PendingApprovalRecord:
+    """A single pending approval surfaced in the visibility snapshot."""
+
+    approval_id: str
+    approval_kind: str
+    summary: str
+    requested_at: str
+    expires_at: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Pydantic response models
 # ---------------------------------------------------------------------------
@@ -83,10 +96,19 @@ class ManifestSummaryModel(BaseModel):
     tool_policy_preset: str
 
 
+class PendingApprovalRecordModel(BaseModel):
+    approval_id: str
+    approval_kind: str
+    summary: str
+    requested_at: str
+    expires_at: str | None = None
+
+
 class RunSnapshot(BaseModel):
     run_state: str
     milestones: list[MilestoneRecordModel] = []
     artifacts: list[ArtifactRecordModel] = []
+    pending_approvals: list[PendingApprovalRecordModel] = []
     latest_checkpoint_ref: str | None = None
     manifest_summary: ManifestSummaryModel | None = None
 
@@ -123,13 +145,15 @@ class VisibilityService:
         events: RunEventRepository,
         runs: RunRepository | None = None,
         manifests: WorkspaceManifestRepository | None = None,
+        approvals: ApprovalRepository | None = None,
     ) -> None:
         self._events = events
         self._runs = runs
         self._manifests = manifests
+        self._approvals = approvals
 
     async def snapshot(self, run_id: str) -> RunSnapshot:
-        """Assemble a ``RunSnapshot`` for *run_id* from the event log only.
+        """Assemble a ``RunSnapshot`` for *run_id*.
 
         Returns
         -------
@@ -138,6 +162,7 @@ class VisibilityService:
             - ``run_state`` from the run record
             - ``milestones`` derived 1:1 from ``run.progress`` events
             - ``artifacts`` derived 1:1 from ``run.artifact_created`` events
+            - ``pending_approvals`` from the approval repository
             - ``latest_checkpoint_ref`` (N/A for P4, always ``None``)
             - ``manifest_summary`` redacted manifest overview
         """
@@ -185,6 +210,25 @@ class VisibilityService:
         # Checkpoints — not emitted as RT-002 events, so always None for P4
         latest_checkpoint_ref: str | None = None
 
+        # Pending approvals — surfaced only when the approval
+        # repository is wired (P6-6).
+        pending_approvals: list[PendingApprovalRecord] = []
+        if self._approvals is not None:
+            all_approvals = await self._approvals.list_by_run(run_id)
+            for a in all_approvals:
+                if a.state == "pending":
+                    pending_approvals.append(
+                        PendingApprovalRecord(
+                            approval_id=a.id,
+                            approval_kind=a.approval_kind,
+                            summary=a.summary,
+                            requested_at=a.requested_at.isoformat(),
+                            expires_at=a.expires_at.isoformat()
+                            if a.expires_at is not None
+                            else None,
+                        )
+                    )
+
         # Manifest summary
         manifest_summary: ManifestSummaryModel | None = None
         if self._manifests is not None:
@@ -219,6 +263,16 @@ class VisibilityService:
                     timestamp=a.timestamp,
                 )
                 for a in artifacts
+            ],
+            pending_approvals=[
+                PendingApprovalRecordModel(
+                    approval_id=p.approval_id,
+                    approval_kind=p.approval_kind,
+                    summary=p.summary,
+                    requested_at=p.requested_at,
+                    expires_at=p.expires_at,
+                )
+                for p in pending_approvals
             ],
             latest_checkpoint_ref=latest_checkpoint_ref,
             manifest_summary=manifest_summary,
