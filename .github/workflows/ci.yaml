@@ -171,18 +171,10 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Test
-        # Windows runners do not guarantee docker-compose; skip integration
-        # tests there. Linux runs all tests including integration against the
-        # Postgres service below.
-        run: uv run pytest -m "not integration"
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: coverage-report-${{ matrix.os }}
-          path: coverage.xml
-          retention-days: 14
+        # The coverage gate is enforced only on the Linux full-suite job
+        # below. This matrix job exists for fast cross-platform signal, so it
+        # runs the non-integration slice without partial-coverage failures.
+        run: uv run pytest --no-cov -m "not integration"
 
   integration-linux:
     name: integration (linux)
@@ -230,8 +222,8 @@ jobs:
       - name: Apply Alembic migrations
         run: uv run alembic upgrade head
 
-      - name: Run integration tests
-        run: uv run pytest -m integration
+      - name: Run full test suite
+        run: uv run pytest
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v7

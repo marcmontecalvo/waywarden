@@ -22,6 +22,17 @@ def test_coverage_source_includes_alembic() -> None:
     assert "alembic" in source, "alembic must be in coverage source"
 
 
+def test_coverage_source_includes_waywarden_source_only() -> None:
+    """Assert that coverage measures app code, not test directories."""
+    pyproject = ROOT / "pyproject.toml"
+    config = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    source = config["tool"]["coverage"]["run"]["source"]
+    assert "src/waywarden" in source, "coverage must include the Waywarden source tree"
+    assert not any(entry.startswith("tests/") for entry in source), (
+        "coverage source must not include test directories in the denominator"
+    )
+
+
 def test_coverage_excludes_generated_migrations() -> None:
     """Assert that alembic version files are excluded from coverage."""
     pyproject = ROOT / "pyproject.toml"

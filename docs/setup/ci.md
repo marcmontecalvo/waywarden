@@ -19,28 +19,42 @@ tags: [ci, testing, github-actions, integration-tests]
 | `dependency-sanity` | ubuntu + windows | `uv sync --frozen` + import check | skipped |
 | `lint` | ubuntu + windows | ruff format + ruff check | skipped |
 | `typecheck` | ubuntu | mypy --strict | skipped |
-| `test` | ubuntu + windows | `pytest -m "not integration"` | skipped on windows |
-| `integration-linux` | ubuntu | `pytest -m integration` against Postgres service | **yes** |
+| `test` | ubuntu + windows | `pytest --no-cov -m "not integration"` | skipped |
+| `integration-linux` | ubuntu | full `pytest` run against Postgres service | **yes** |
 
 ### Why integration tests are Linux-only
 
 Windows runners in GitHub Actions do not support Docker services the same way
 Linux runners do. The `integration-linux` job spins up a `postgres:18.3-alpine3.23`
-service and runs all `@pytest.mark.integration` tests against it. That linux-only
-gate is also where the real provider-path + Postgres-backed EA runtime proof runs,
-including `tests/integration/ea/test_ea_e2e.py`.
+service and runs the full suite there, including all `@pytest.mark.integration`
+tests plus the coverage gate. That linux-only gate is where the real provider-path
+and Postgres-backed runtime proof runs, including:
 
-On Windows the `test` job runs with `-m "not integration"` so unit tests stay
-green without requiring Docker.
+- `tests/integration/ea/test_ea_e2e.py`
+- `tests/integration/coding/test_coding_till_done_e2e.py`
+
+The cross-platform `test` matrix remains useful for fast compatibility signal,
+but it intentionally disables coverage with `--no-cov` and runs only
+`-m "not integration"`. That keeps the 80% threshold honest instead of failing
+Windows and non-service Linux jobs for code that is only exercised by the
+Postgres-backed integration paths.
 
 ## Coverage
 
 - `--cov-fail-under=80` enforces an 80 % gate on combined coverage.
 - Coverage source: `src/waywarden` and `alembic`.
 - Excluded: `alembic/versions/*.py` (generated migrations).
+- Test directories are not part of the coverage denominator.
 
-Coverage reports are uploaded as artifacts (`coverage-report-<os>`) for every
-job that runs tests.
+The coverage report artifact is uploaded from `integration-linux`, the only CI
+job that runs the full suite and therefore the only job where the 80% gate is
+meaningful.
+
+## Secret scanning
+
+- CI runs Gitleaks in the `secret-scan` job.
+- Local reproduction path: `make secret-scan`
+- False positives are audited via [`.gitleaksignore`](../../.gitleaksignore).
 
 ## Reproducing integration tests locally
 
