@@ -12,6 +12,7 @@ from waywarden.assets.loader import (
     FilterExpression,
 )
 from waywarden.assets.schema import (
+    AssetKind,
     AssetMetadata,
 )
 
@@ -127,7 +128,7 @@ def test_filter_unknown_op_raises() -> None:
 def _make_asset(
     *,
     id: str = "test",
-    kind: str = "widget",
+    kind: AssetKind = "widget",
     tags: tuple[str, ...] = ("ea", "ui"),
     required_providers: tuple[str, ...] = ("model",),
 ) -> AssetMetadata:
@@ -185,11 +186,7 @@ def test_filter_by_required_provider_matches() -> None:
 
 def test_filter_evaluate_include() -> None:
     a1 = _make_asset(tags=("ea",))
-    a2 = _make_asset(
-        tags=[
-            "ua",
-        ]
-    )
+    a2 = _make_asset(tags=("ua",))
     expr = FilterExpression.from_dict({"op": "include", "tags": ["ea"]})
     result = expr.evaluate([a1, a2])
     assert len(result) == 1
@@ -198,7 +195,7 @@ def test_filter_evaluate_include() -> None:
 
 def test_filter_evaluate_exclude() -> None:
     a1 = _make_asset(tags=("ea",))
-    a2 = _make_asset(tags=["ua"])
+    a2 = _make_asset(tags=("ua",))
     expr = FilterExpression.from_dict({"op": "exclude", "tags": ["ea"]})
     result = expr.evaluate([a1, a2])
     assert len(result) == 1

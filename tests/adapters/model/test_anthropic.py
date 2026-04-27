@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from waywarden.adapters.model.anthropic import AnthropicModelProvider
+from waywarden.domain.ids import SessionId
 from waywarden.domain.providers import ModelProvider
 from waywarden.domain.providers.types.model import PromptEnvelope
 
@@ -30,9 +31,9 @@ async def test_roundtrip_with_cassette() -> None:
     cassette = Path(__file__).parent / "cassettes" / "anthropic_roundtrip.json"
     payload = json.loads(cassette.read_text(encoding="utf-8"))
     client = CassetteClient(payload)
-    provider = AnthropicModelProvider(api_key="test-key", client=client)
+    provider = AnthropicModelProvider(api_key="test-key", client=cast(Any, client))
     prompt = PromptEnvelope(
-        session_id="session-1",
+        session_id=SessionId("session-1"),
         messages=["Return the deterministic cassette response."],
         system_prompt="You are a test assistant.",
     )

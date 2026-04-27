@@ -9,18 +9,18 @@ Covers:
 - **Milestone emission through event repo** (P5-FIX-3)
 """
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
-from types import MappingProxyType
 
 import pytest
 
 from waywarden.domain.run_event import RunEvent
 from waywarden.services.orchestration.briefing import (
-    ALL_PHASES,
     EABriefingHandler,
     InboxEntry,
     _validate_milestones,
 )
+from waywarden.services.orchestration.milestones import ALL_PHASES
 
 # -----------------------------------------------------------------------
 # Empty inbox
@@ -164,7 +164,7 @@ class _InMemoryEventRepo:
         return None
 
     async def create(
-        self, run_id: str, seq: int, event_type: str, payload: MappingProxyType
+        self, run_id: str, seq: int, event_type: str, payload: Mapping[str, object]
     ) -> RunEvent:
         raise NotImplementedError
 
@@ -196,7 +196,7 @@ def test_briefing_emits_run_artifact_created(
     evt = artefact_events[0]
     assert evt.payload["artifact_kind"] == "briefing"
     assert evt.payload["label"] == "briefing"
-    assert "briefing-" in evt.payload["artifact_ref"]
+    assert "briefing-" in str(evt.payload["artifact_ref"])
 
 
 def test_briefing_emits_run_progress_milestones(
@@ -212,7 +212,7 @@ def test_briefing_emits_run_progress_milestones(
     progress_events = [e for e in event_repo._events if e.type == "run.progress"]
     phases_by_milestone: dict[str, str] = {}
     for evt in progress_events:
-        phases_by_milestone[evt.payload["milestone"]] = evt.payload["phase"]
+        phases_by_milestone[str(evt.payload["milestone"])] = str(evt.payload["phase"])
     assert phases_by_milestone["received"] == "intake"
     assert phases_by_milestone["accepted"] == "intake"
     assert phases_by_milestone["drafted"] == "plan"
@@ -224,3 +224,27 @@ def test_briefing_no_events_without_repo() -> None:
     result = handler.run(inbox_entries=[])
     assert result is not None
     # No events list raised or leaked — the handler just returns the result.
+
+
+@pytest.mark.asyncio
+async def test_briefing_async_emits_durable_events_in_running_loop(
+    event_repo: _InMemoryEventRepo,
+) -> None:
+    handler = EABriefingHandler(event_repo=event_repo)
+    await handler.run_async(
+        inbox_entries=[InboxEntry(subject="Budget review", body="Q4", from_address="a@b.com")]
+    )
+
+    assert any(e.type == "run.progress" for e in event_repo._events)
+    assert any(e.type == "run.artifact_created" for e in event_repo._events)
+    expected_seq = list(range(1, len(event_repo._events) + 1))
+    assert [event.seq for event in event_repo._events] == expected_seq
+
+
+@pytest.mark.asyncio
+async def test_briefing_sync_run_refuses_event_repo_in_running_loop(
+    event_repo: _InMemoryEventRepo,
+) -> None:
+    handler = EABriefingHandler(event_repo=event_repo)
+    with pytest.raises(RuntimeError, match="use run_async"):
+        handler.run(inbox_entries=[])

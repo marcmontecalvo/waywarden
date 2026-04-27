@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,7 +32,7 @@ class TaskRepositoryImpl:
         )
 
     async def save(self, task: Task) -> Task:
-        stmt = tasks.insert().values(
+        values = dict(
             id=task.id,
             session_id=task.session_id,
             title=task.title,
@@ -40,6 +41,11 @@ class TaskRepositoryImpl:
             created_at=task.created_at,
             updated_at=task.updated_at,
         )
+        existing = await self.get(str(task.id))
+        if existing is None:
+            stmt: Any = tasks.insert().values(**values)
+        else:
+            stmt = tasks.update().where(tasks.c.id == task.id).values(**values)
         await self._session.execute(stmt)
         await self._session.flush()
         return task

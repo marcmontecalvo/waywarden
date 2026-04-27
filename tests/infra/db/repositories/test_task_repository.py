@@ -108,3 +108,25 @@ async def test_save_returns_same_instance(session: AsyncSession) -> None:
 
     result = await repo.save(task)
     assert result is task
+
+
+async def test_save_updates_existing_task(session: AsyncSession) -> None:
+    """save() overwrites an existing task row for durable state transitions."""
+    repo = TaskRepositoryImpl(session)
+    original = _make_task(task_id="task_update", state="draft")
+    updated = Task(
+        id=original.id,
+        session_id=original.session_id,
+        title=original.title,
+        objective=original.objective,
+        state="executing",
+        created_at=original.created_at,
+        updated_at=datetime.now(UTC),
+    )
+
+    await repo.save(original)
+    await repo.save(updated)
+
+    loaded = await repo.get("task_update")
+    assert loaded is not None
+    assert loaded.state == "executing"

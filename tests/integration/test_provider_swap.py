@@ -26,7 +26,7 @@ import os
 from collections.abc import AsyncIterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import pytest_asyncio
@@ -244,7 +244,7 @@ class _CassetteHonchoClient:
         query: str,
         limit: int,
     ) -> list[Any]:
-        return self._payload["read_results"]
+        return cast(list[Any], self._payload["read_results"])
 
 
 class _CassetteLLMWikiClient:
@@ -252,7 +252,7 @@ class _CassetteLLMWikiClient:
 
     def __init__(self, payload: Mapping[str, Any]) -> None:
         self._payload = payload
-        self._calls: list[tuple[str, dict[str, str | None]]] = []
+        self._calls: list[tuple[str, dict[str, str]]] = []
 
     async def get(
         self,
@@ -438,11 +438,11 @@ async def test_swap_mixed_real(
 
     memory_provider = _build_memory_provider_for_config(
         MIXED_REAL_CONFIG,
-        cassette_client=honcho_client,  # type: ignore[arg-type]
+        cassette_client=honcho_client,
     )
     knowledge_provider = _build_knowledge_provider_for_config(
         MIXED_REAL_CONFIG,
-        cassette_client=wiki_client,  # type: ignore[arg-type]
+        cassette_client=wiki_client,
     )
 
     # -- Model router with the cassette-backed anthropic adapter ------------
@@ -452,7 +452,7 @@ async def test_swap_mixed_real(
 
     anth_model = AnthropicModelProvider(
         api_key="cassette-test",
-        client=anthropic_client,
+        client=cast(Any, anthropic_client),
     )
 
     token_repo = TokenUsageRepositoryImpl(session)
@@ -470,8 +470,8 @@ async def test_swap_mixed_real(
     from waywarden.services.context_builder import ContextBuilder
 
     builder = ContextBuilder.from_config(
-        memory_provider,  # type: ignore[arg-type]
-        knowledge_provider,  # type: ignore[arg-type]
+        memory_provider,
+        knowledge_provider,
         MIXED_REAL_CONFIG,
     )
     envelope = await builder.build(

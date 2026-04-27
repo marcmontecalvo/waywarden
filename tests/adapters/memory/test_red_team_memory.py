@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 from waywarden.adapters.memory.honcho import HonchoMemoryProvider
 from waywarden.domain.ids import SessionId
@@ -64,7 +64,7 @@ async def test_honcho_adapter_handles_iso_string_created_at() -> None:
     provider = HonchoMemoryProvider(
         endpoint="http://localhost",
         api_key="test-key",
-        client=client,
+        client=cast(Any, client),
     )
     sid = SessionId("s1")
 

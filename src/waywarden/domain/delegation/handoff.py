@@ -235,7 +235,7 @@ class EAAHandoffHelper:
 
         child_manifest = self._resolve_child_manifest(expected_outputs)
 
-        brief = f"EA handoff: {ctx.objective}"
+        brief = _format_handoff_brief(ctx)
         env = make_envelope(
             parent_run_id=RunId(self.parent_run_id),
             child_manifest=child_manifest,
@@ -373,10 +373,11 @@ class EAAHandoffHelper:
                     seq=(await self._events.latest_seq(self.parent_run_id)) + 1,
                     type="run.progress",
                     payload={
-                        "phase": "handback",
-                        "milestone": checkpoint,
+                        "phase": "handoff",
+                        "milestone": "envelope_emitted",
+                        "checkpoint": checkpoint,
                         "summary": summary,
-                        "delegation_id": envelope_ref,
+                        "delegation_id": str(envelope_ref) if envelope_ref is not None else None,
                     },
                     timestamp=timestamp,
                     causation=Causation(
@@ -409,3 +410,22 @@ class EAAHandoffHelper:
         can validate a pre-constructed child without persisting it.
         """
         narrow_manifest(parent, child)
+
+
+def _format_handoff_brief(ctx: HandoffContext) -> str:
+    """Serialize the full EA handoff contract into the envelope brief."""
+    sections: list[str] = [f"EA handoff: {ctx.objective}"]
+    if ctx.constraints:
+        sections.append("Constraints:\n" + "\n".join(f"- {item}" for item in ctx.constraints))
+    if ctx.non_goals:
+        sections.append("Non-goals:\n" + "\n".join(f"- {item}" for item in ctx.non_goals))
+    if ctx.acceptance_criteria:
+        sections.append(
+            "Acceptance criteria:\n" + "\n".join(f"- {item}" for item in ctx.acceptance_criteria)
+        )
+    if ctx.artifact_context:
+        artifact_lines = [
+            f"- {key}: {value}" for key, value in sorted(ctx.artifact_context.items())
+        ]
+        sections.append("Artifact context:\n" + "\n".join(artifact_lines))
+    return "\n\n".join(sections)

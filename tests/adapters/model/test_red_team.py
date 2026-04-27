@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import pytest
@@ -10,6 +11,7 @@ import pytest
 from waywarden.adapters.model.anthropic import AnthropicModelProvider
 from waywarden.adapters.model.fake import FakeModelProvider
 from waywarden.adapters.model.router import ModelRouter, UnknownModelProviderError
+from waywarden.domain.ids import SessionId
 from waywarden.domain.providers import ModelProvider
 from waywarden.domain.providers.types.model import ModelCompletion, PromptEnvelope
 
@@ -21,8 +23,11 @@ async def test_fake_model_produces_different_output_for_different_inputs() -> No
     (deterministic hashing). If it somehow returns a constant it is a stub.
     """
     provider = FakeModelProvider()
-    prompt_a = PromptEnvelope(session_id="s1", messages=["What is 1+1?"])
-    prompt_b = PromptEnvelope(session_id="s2", messages=["What is the capital of France?"])
+    prompt_a = PromptEnvelope(session_id=SessionId("s1"), messages=["What is 1+1?"])
+    prompt_b = PromptEnvelope(
+        session_id=SessionId("s2"),
+        messages=["What is the capital of France?"],
+    )
 
     result_a = await provider.complete(prompt_a)
     result_b = await provider.complete(prompt_b)
@@ -53,9 +58,9 @@ async def test_empty_response_is_not_silently_ignored() -> None:
     """
     provider = AnthropicModelProvider(
         api_key="test-key",
-        client=_SilentNullResponseClient(),
+        client=cast(Any, _SilentNullResponseClient()),
     )
-    prompt = PromptEnvelope(session_id="s1", messages=["Hello"])
+    prompt = PromptEnvelope(session_id=SessionId("s1"), messages=["Hello"])
     with pytest.raises(RuntimeError, match="no text completion"):
         await provider.complete(prompt)
 
@@ -68,7 +73,7 @@ async def test_fake_router_passes_non_existent_provider() -> None:
         default="real",
         token_usage_repository=AsyncMock(),
     )
-    prompt = PromptEnvelope(session_id="s1", messages=["Hello"])
+    prompt = PromptEnvelope(session_id=SessionId("s1"), messages=["Hello"])
 
     with pytest.raises(UnknownModelProviderError):
         await router.complete(prompt, provider="phantom", run_id="r1")
@@ -115,8 +120,8 @@ async def test_runtime_checkable_protocol_accepts_duck_types() -> None:
     )
 
     # Different prompts produce the same output
-    p1 = PromptEnvelope(session_id="s1", messages=["hello"])
-    p2 = PromptEnvelope(session_id="s2", messages=["goodbye"])
+    p1 = PromptEnvelope(session_id=SessionId("s1"), messages=["hello"])
+    p2 = PromptEnvelope(session_id=SessionId("s2"), messages=["goodbye"])
 
     r1 = await router.complete(p1, run_id="r1")
     r2 = await router.complete(p2, run_id="r2")

@@ -31,7 +31,7 @@ def _coding_asset_registry() -> AssetRegistry:
     reg = AssetRegistry()
     import asyncio
 
-    asyncio.get_event_loop().run_until_complete(reg.load_from_dir(FIXTURES_DIR))
+    asyncio.run(reg.load_from_dir(FIXTURES_DIR))
     return reg
 
 
@@ -137,7 +137,7 @@ def test_hydrate_coding_profile_required_providers_passed_through() -> None:
 def test_hydrate_fails_when_coding_missing_from_registry() -> None:
     """Hydration raises when profile registry lacks 'coding'."""
     desc = ProfileDescriptor(
-        id="ea",
+        id=ProfileId("ea"),
         display_name="EA",
         version="1.0.0",
         supported_extensions=("widget",),
@@ -194,7 +194,7 @@ def test_coding_profile_view_required_providers_proxy() -> None:
         tracer="noop",
     )
     desc = ProfileDescriptor(
-        id="coding",
+        id=ProfileId("coding"),
         display_name="Coding",
         version="1.0.0",
         supported_extensions=("skill",),

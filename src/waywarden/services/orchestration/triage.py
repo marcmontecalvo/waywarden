@@ -107,6 +107,7 @@ class EAIboxTriageHandler:
         self,
         items: list[InboxItem] | None = None,
         decisions: dict[str, ApprovalDecision] | None = None,
+        run_id: str = "ea-triage-run",
     ) -> TriageResult:
         """Execute the inbox triage routine.
 
@@ -148,20 +149,23 @@ class EAIboxTriageHandler:
                     title=f"Triage: {item.subject}",
                     objective=item.body,
                     acceptance_criteria=(f"classify.{item.classification}",),
+                    run_id=run_id,
                 )
             )
             task_id = str(task["id"])
 
             # Step 5: Transition through pipeline
             await self.task_service.transition_task(
-                TransitionTaskRequest(task_id=task_id, state="planning")
+                TransitionTaskRequest(task_id=task_id, state="planning", run_id=run_id)
             )
             await self.task_service.transition_task(
-                TransitionTaskRequest(task_id=task_id, state="executing")
+                TransitionTaskRequest(task_id=task_id, state="executing", run_id=run_id)
             )
 
             # Step 6: Approval checkpoint
-            await self.task_service.request_approval(RequestApprovalRequest(task_id=task_id))
+            await self.task_service.request_approval(
+                RequestApprovalRequest(task_id=task_id, run_id=run_id)
+            )
 
             # Step 7: Apply decision
             decision = decisions.get(item.subject)
@@ -171,6 +175,7 @@ class EAIboxTriageHandler:
                     ApprovalDecisionRequest(
                         task_id=task_id,
                         decision=decision,
+                        run_id=run_id,
                     )
                 )
 

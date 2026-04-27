@@ -13,7 +13,7 @@ def custom_policy() -> PolicyLoader:
 def test_custom_is_loadable_template(custom_policy: PolicyLoader) -> None:
     """custom must parse and produce a policy with at least one rule."""
     policy = custom_policy.load("custom")
-    assert policy.preset == "custom"  # type: ignore[comparison-overlap]
+    assert policy.preset == "custom"
     assert len(policy.rules) >= 1, "custom template must have at least one rule"
     # Verify the rule has required fields
     rule = policy.rules[0]

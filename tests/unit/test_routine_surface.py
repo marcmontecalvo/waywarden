@@ -6,6 +6,9 @@ Proves:
 - Event emission passes through the correct kinds
 """
 
+import pytest
+
+from waywarden.services.orchestration.briefing import BriefingResult, InboxEntry
 from waywarden.services.orchestration.routine import EACoroutine
 
 # -----------------------------------------------------------------------
@@ -80,3 +83,23 @@ def test_triage_emit_events() -> None:
     coro = EACoroutine()
     events = coro.triage_emit_events()
     assert "run.progress" in events
+
+
+@pytest.mark.asyncio
+async def test_execute_requires_resolved_routine_asset() -> None:
+    coro = EACoroutine()
+    with pytest.raises(ValueError, match="was not resolved"):
+        await coro.execute("ea-briefing", [])
+
+
+@pytest.mark.asyncio
+async def test_execute_dispatches_briefing_routine() -> None:
+    coro = EACoroutine()
+    result = await coro.execute(
+        "ea-briefing",
+        [_MockAsset(id="ea-briefing", kind="routine")],
+        inbox_entries=[InboxEntry(subject="Daily", body="Body", from_address="a@example.com")],
+    )
+
+    assert isinstance(result, BriefingResult)
+    assert result.state.inbox_received == 1

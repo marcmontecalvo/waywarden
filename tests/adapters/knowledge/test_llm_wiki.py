@@ -14,7 +14,7 @@ from waywarden.domain.providers.types.knowledge import (
 
 
 class CassetteWikiResponse:
-    def __init__(self, payload: dict[str, Any], status: int = 200) -> None:
+    def __init__(self, payload: object, status: int = 200) -> None:
         self.status_code = status
         self._payload = payload
 
@@ -25,7 +25,7 @@ class CassetteWikiResponse:
 class CassetteWikiClient:
     def __init__(
         self,
-        search_payload: dict[str, Any],
+        search_payload: list[dict[str, str]],
         fetch_payload: dict[str, Any] | None = None,
         fetch_status: int = 200,
     ) -> None:

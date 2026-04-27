@@ -7,11 +7,12 @@ the full approval → event emission path.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
-from waywarden.domain.approval import Approval
-from waywarden.domain.ids import ApprovalId
+from waywarden.domain.approval import Approval, ApprovalState
+from waywarden.domain.ids import ApprovalId, RunId
 from waywarden.domain.run_event import RunEvent
 from waywarden.services.approval_engine import ApprovalEngine
 from waywarden.services.approval_types import (
@@ -91,11 +92,11 @@ def _make_approval(
     now = datetime.now(UTC)
     return Approval(
         id=ApprovalId(approval_id),
-        run_id=run_id,
+        run_id=RunId(run_id),
         approval_kind="test",
         requested_capability="exec_script",
         summary="Run deployment script",
-        state=state,
+        state=cast(ApprovalState, state),
         requested_at=now,
         decided_at=now if state != "pending" else None,
         decided_by=None if state == "pending" else "operator-1",
@@ -167,6 +168,7 @@ class TestGrantedResolvesToResumed:
 
         # Approval state should be granted
         persisted = await approvals.get(approval.id)
+        assert persisted is not None
         assert persisted.state == "granted"
 
         # Should be a resumed event with correct resume_kind
@@ -197,6 +199,7 @@ class TestDeniedAbandonResolvesToCancelled:
         result_event = await engine.resolve(approval.id, DeniedAbandon(reason="not ready"))
 
         persisted = await approvals.get(approval.id)
+        assert persisted is not None
         assert persisted.state == "denied"
 
         assert result_event.type == "run.cancelled"
@@ -229,6 +232,7 @@ class TestDeniedAlternateResolvesToResumedAlternate:
         )
 
         persisted = await approvals.get(approval.id)
+        assert persisted is not None
         assert persisted.state == "denied"
 
         assert result_event.type == "run.resumed"
@@ -258,6 +262,7 @@ class TestTimeoutRetryableMapsToFailed:
         result_event = await engine.resolve(approval.id, Timeout(retryable=True))
 
         persisted = await approvals.get(approval.id)
+        assert persisted is not None
         assert persisted.state == "timeout"
 
         assert result_event.type == "run.failed"
@@ -287,6 +292,7 @@ class TestTimeoutNonRetryableMapsToCancelled:
         result_event = await engine.resolve(approval.id, Timeout(retryable=False))
 
         persisted = await approvals.get(approval.id)
+        assert persisted is not None
         assert persisted.state == "timeout"
 
         assert result_event.type == "run.cancelled"

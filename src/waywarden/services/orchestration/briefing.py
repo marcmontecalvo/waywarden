@@ -25,6 +25,7 @@ from datetime import UTC, datetime
 from logging import getLogger
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, cast
+from uuid import uuid4
 
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
@@ -112,6 +113,7 @@ class EABriefingHandler:
         self,
         inbox_entries: list[InboxEntry] | None = None,
         pending_tasks: int = 0,
+        run_id: str = "ea-briefing-run",
     ) -> BriefingResult:
         """Execute the briefing routine.
 
@@ -123,6 +125,43 @@ class EABriefingHandler:
             A ``BriefingResult`` with the computed milestones and
             artifact.
         """
+        result, now = self._build_result(inbox_entries=inbox_entries, pending_tasks=pending_tasks)
+
+        # Synchronous compatibility path for unit tests and non-async callers.
+        # Async runtimes must call ``run_async`` so durable event writes are awaited.
+        if self._event_repo is not None:
+            import asyncio
+
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                asyncio.run(self._emit_events(result, now, run_id=run_id))
+            else:
+                raise RuntimeError(
+                    "EABriefingHandler.run() cannot persist events in async runtime; "
+                    "use run_async()"
+                )
+
+        return result
+
+    async def run_async(
+        self,
+        inbox_entries: list[InboxEntry] | None = None,
+        pending_tasks: int = 0,
+        run_id: str = "ea-briefing-run",
+    ) -> BriefingResult:
+        """Execute briefing and await durable event persistence."""
+        result, now = self._build_result(inbox_entries=inbox_entries, pending_tasks=pending_tasks)
+        if self._event_repo is not None:
+            await self._emit_events(result, now, run_id=run_id)
+        return result
+
+    def _build_result(
+        self,
+        *,
+        inbox_entries: list[InboxEntry] | None,
+        pending_tasks: int,
+    ) -> tuple[BriefingResult, datetime]:
         inbox = inbox_entries or []
         state = BriefingState()
         state.inbox_received = len(inbox)
@@ -166,51 +205,48 @@ class EABriefingHandler:
             "errors": self._stderr,
         }
 
-        # Emit milestones through durable repo if attached
-        if self._event_repo is not None:
-            self._emit_milestones_sync(now, milestones=milestones)
-
-            # Emit the run.artifact_created for the briefing document
-            art_ref = f"briefing-{generated_at}"
-            self._emit_artifact_sync(
-                art_ref=art_ref,
-                artifact_kind="briefing",
-                label="briefing",
-            )
-
-        return BriefingResult(
+        result = BriefingResult(
             title=title,
             timestamp=generated_at,
             state=state,
             milestones=cast(tuple[dict[str, Any], ...], tuple(milestones)),
             artifact=artifact,
         )
+        return result, now
 
     # -- internal helpers ---------------------------------------------------
 
-    def _emit_run(self, event: Any) -> None:
+    async def _emit_run(self, event: Any) -> None:
         """Append an event to the durable repo or capture list."""
         if self._event_repo is not None:
-            # Repo is async, use a cached sync session in tests.
-            # In production, callers should wrap this in an async run.
-            try:
-                import asyncio
-
-                asyncio.get_event_loop().run_until_complete(self._event_repo.append(event))
-            except RuntimeError:
-                # No running event loop — skip (caller must use
-                # the async variant directly).
-                pass
+            await self._event_repo.append(event)
         # Snapshot capture for tests.
         if self._snapshot is not None:
             self._snapshot.append(event)
 
-    def _emit_milestones_sync(
+    async def _emit_events(
+        self,
+        result: BriefingResult,
+        timestamp: datetime,
+        *,
+        run_id: str,
+    ) -> None:
+        await self._emit_milestones(timestamp, milestones=list(result.milestones), run_id=run_id)
+        await self._emit_artifact(
+            run_id=run_id,
+            art_ref=f"briefing-{result.timestamp}",
+            artifact_kind="briefing",
+            label="briefing",
+        )
+
+    async def _emit_milestones(
         self,
         timestamp: datetime,
         milestones: list[dict[str, Any]],
+        *,
+        run_id: str,
     ) -> None:
-        """Emit catalog-valid ``run.progress`` milestones (sync)."""
+        """Emit catalog-valid ``run.progress`` milestones."""
         for ms in milestones:
             phase = ms.get("phase")
             milestone = ms.get("milestone")
@@ -220,9 +256,9 @@ class EABriefingHandler:
                 logger.warning("milestone %s.%s not in catalog", phase, milestone)
                 continue
             event = RunEvent(
-                id=RunEventId(f"evt-briefing-{phase}-{milestone}"),
-                run_id=RunId("ea-briefing-run"),
-                seq=1,
+                id=RunEventId(f"evt-{run_id}-briefing-{phase}-{milestone}-{uuid4().hex}"),
+                run_id=RunId(run_id),
+                seq=(await self._event_repo.latest_seq(run_id)) + 1 if self._event_repo else 1,
                 type="run.progress",
                 payload=MappingProxyType(dict(ms)),
                 timestamp=timestamp,
@@ -233,20 +269,21 @@ class EABriefingHandler:
                 ),
                 actor=Actor(kind="system", id=None, display=None),
             )
-            self._emit_run(event)
+            await self._emit_run(event)
 
-    def _emit_artifact_sync(
+    async def _emit_artifact(
         self,
         *,
+        run_id: str,
         art_ref: str,
         artifact_kind: str,
         label: str,
     ) -> None:
-        """Emit ``run.artifact_created`` for the briefing (sync)."""
+        """Emit ``run.artifact_created`` for the briefing."""
         event = RunEvent(
-            id=RunEventId("evt-briefing-artifact"),
-            run_id=RunId("ea-briefing-run"),
-            seq=1,
+            id=RunEventId(f"evt-{run_id}-briefing-artifact-{uuid4().hex}"),
+            run_id=RunId(run_id),
+            seq=(await self._event_repo.latest_seq(run_id)) + 1 if self._event_repo else 1,
             type="run.artifact_created",
             payload=MappingProxyType(
                 {
@@ -263,7 +300,7 @@ class EABriefingHandler:
             ),
             actor=Actor(kind="system", id=None, display=None),
         )
-        self._emit_run(event)
+        await self._emit_run(event)
 
 
 # ---------------------------------------------------------------------------

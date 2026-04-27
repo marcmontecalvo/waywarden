@@ -254,7 +254,8 @@ class AssetMetadata(BaseModel, frozen=True, extra="forbid"):
         """
         errors: list[str] = []
         try:
-            return cls(**data)
+            model_cls: type[AssetMetadata] = _asset_model_for_kind(data.get("kind"))
+            return model_cls(**data)
         except Exception as exc:
             if hasattr(exc, "errors"):
                 for err in exc.errors():
@@ -278,8 +279,22 @@ class RoutineMetadata(AssetMetadata, frozen=True):
     """
 
     kind: Literal["routine"] = "routine"
-    milestones: tuple[str, ...] = ()
+    milestones: tuple[dict[str, Any], ...] = ()
     emits_events: tuple[str, ...] = ()
+
+    @field_validator("milestones", mode="before")
+    @classmethod
+    def _normalize_milestones(cls, value: object) -> tuple[dict[str, Any], ...]:
+        if value is None:
+            return ()
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("milestones must be a sequence of mappings")
+        normalized: list[dict[str, Any]] = []
+        for index, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise TypeError(f"milestones[{index}] must be a mapping")
+            normalized.append(dict(item))
+        return tuple(normalized)
 
 
 class WidgetMetadata(AssetMetadata, frozen=True):
@@ -373,6 +388,29 @@ class ProfileOverlayMetadata(AssetMetadata, frozen=True):
 
     kind: Literal["profile_overlay"] = "profile_overlay"
     target_profiles: tuple[str, ...] = ()
+
+
+_ASSET_MODEL_BY_KIND: dict[str, type[AssetMetadata]] = {
+    "routine": RoutineMetadata,
+    "widget": WidgetMetadata,
+    "command": CommandMetadata,
+    "prompt": PromptMetadata,
+    "tool": ToolMetadata,
+    "skill": SkillMetadata,
+    "agent": AgentMetadata,
+    "team": TeamMetadata,
+    "pipeline": PipelineMetadata,
+    "policy": PolicyMetadata,
+    "theme": ThemeMetadata,
+    "context_provider": ContextProviderMetadata,
+    "profile_overlay": ProfileOverlayMetadata,
+}
+
+
+def _asset_model_for_kind(kind: object) -> type[AssetMetadata]:
+    if not isinstance(kind, str):
+        return AssetMetadata
+    return _ASSET_MODEL_BY_KIND.get(kind.strip().lower(), AssetMetadata)
 
 
 # ---------------------------------------------------------------------------

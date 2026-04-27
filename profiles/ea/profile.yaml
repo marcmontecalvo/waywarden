@@ -6,8 +6,8 @@ asset_filters:
     tag: ea
 
 required_providers:
-  model: fake
-  memory: fake
+  model: fake-model
+  memory: fake-memory
   knowledge: filesystem
   tool: []
   channel: []

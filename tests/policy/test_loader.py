@@ -32,7 +32,7 @@ class TestPolicyLoader:
         policy = loader.load("ask")
 
         assert isinstance(policy, ToolPolicy)
-        assert policy.preset == "ask"  # type: ignore[comparison-overlap]
+        assert policy.preset == "ask"
         assert policy.default_decision == "approval-required"
         assert len(policy.rules) == 1
         assert policy.rules[0].tool == "shell"
@@ -99,7 +99,7 @@ class TestOverrides:
         ]
         policy = loader.load("base", override={"rules": override_rules})
 
-        assert policy.preset == "ask"  # type: ignore[comparison-overlap]
+        assert policy.preset == "ask"
         assert len(policy.rules) == 1
         rule = policy.rules[0]
         assert rule.tool == "shell"

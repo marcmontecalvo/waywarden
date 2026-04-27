@@ -7,7 +7,7 @@ and TestClient for the 400 validation path.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import anyio
 import pytest
@@ -99,7 +99,7 @@ async def _attach_repo(repo: _MockRepo) -> None:
     """Inject a mock repo into the module-level reference."""
     import waywarden.api.routers.run_events as re_mod
 
-    re_mod._event_repo = repo
+    re_mod._event_repo = cast(Any, repo)
 
 
 async def _collect_frames(
@@ -127,7 +127,7 @@ def _frame_to_json(frame: bytes) -> dict[str, Any] | None:
     text = frame.decode("utf-8")
     for line in text.split("\n"):
         if line.startswith("data: "):
-            return json.loads(line[len("data: ") :])
+            return cast(dict[str, Any], json.loads(line[len("data: ") :]))
     return None
 
 
@@ -137,7 +137,7 @@ def _parse_events(payload: bytes) -> list[dict[str, Any]]:
     result: list[dict[str, Any]] = []
     for line in lines:
         if line.startswith("data: "):
-            result.append(json.loads(line[len("data: ") :]))
+            result.append(cast(dict[str, Any], json.loads(line[len("data: ") :])))
     return result
 
 
@@ -160,7 +160,7 @@ class TestReplayFromZero:
 
         from waywarden.api.routers.run_events import _build_stream
 
-        gen = _build_stream("run-mock", 0, 3, repo)
+        gen = _build_stream("run-mock", 0, 3, cast(Any, repo))
         events = await _collect_frames(gen)
 
         assert len(events) == 3
@@ -196,7 +196,7 @@ class TestReplayFromN:
 
         from waywarden.api.routers.run_events import _build_stream
 
-        gen = _build_stream("run-mock", 2, 3, repo)
+        gen = _build_stream("run-mock", 2, 3, cast(Any, repo))
         events = await _collect_frames(gen)
 
         assert len(events) == 1
@@ -253,7 +253,7 @@ class TestTerminalEventClosesStream:
 
         from waywarden.api.routers.run_events import _build_stream
 
-        gen = _build_stream("run-mock", 0, 1, repo)
+        gen = _build_stream("run-mock", 0, 1, cast(Any, repo))
         events = await _collect_frames(gen)
 
         # Terminal event closes stream — generator returns, no tail blocking
@@ -286,7 +286,7 @@ class TestReconnectAfterTerminalReturnsEmpty:
 
         from waywarden.api.routers.run_events import _build_stream
 
-        gen = _build_stream("run-mock", 5, 5, repo)
+        gen = _build_stream("run-mock", 5, 5, cast(Any, repo))
         events = await _collect_frames(gen)
 
         assert events == []
@@ -309,7 +309,7 @@ class TestHttp400RoundTrip:
 
         import waywarden.api.routers.run_events as re_mod
 
-        re_mod._event_repo = repo
+        re_mod._event_repo = cast(Any, repo)
 
         from starlette.testclient import TestClient
 

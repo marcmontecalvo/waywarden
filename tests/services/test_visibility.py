@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from waywarden.domain.ids import RunEventId
+from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import RunEvent
 from waywarden.services.visibility import VisibilityService
 
@@ -36,7 +36,7 @@ class TestSnapshotReflectsProgressEvents:
 
         progress_event_1 = RunEvent(
             id=RunEventId("evt-1"),
-            run_id="run-abc",
+            run_id=RunId("run-abc"),
             seq=1,
             type="run.progress",
             payload={"phase": "intake", "milestone": "received"},
@@ -46,7 +46,7 @@ class TestSnapshotReflectsProgressEvents:
         )
         progress_event_2 = RunEvent(
             id=RunEventId("evt-2"),
-            run_id="run-abc",
+            run_id=RunId("run-abc"),
             seq=2,
             type="run.progress",
             payload={"phase": "plan", "milestone": "drafted"},
@@ -91,7 +91,7 @@ class TestSnapshotDoesNotEmitEvents:
 
         progress_event = RunEvent(
             id=RunEventId("evt-1"),
-            run_id="run-abc",
+            run_id=RunId("run-abc"),
             seq=1,
             type="run.progress",
             payload={"phase": "intake", "milestone": "accepted"},
@@ -147,7 +147,7 @@ class TestSnapshotOnlyProgressEvents:
         events = [
             RunEvent(
                 id=RunEventId("evt-1"),
-                run_id="run-x",
+                run_id=RunId("run-x"),
                 seq=1,
                 type="run.created",
                 payload={
@@ -163,7 +163,7 @@ class TestSnapshotOnlyProgressEvents:
             ),
             RunEvent(
                 id=RunEventId("evt-2"),
-                run_id="run-x",
+                run_id=RunId("run-x"),
                 seq=2,
                 type="run.progress",
                 payload={"phase": "execute", "milestone": "tool_invoked"},
@@ -173,7 +173,7 @@ class TestSnapshotOnlyProgressEvents:
             ),
             RunEvent(
                 id=RunEventId("evt-3"),
-                run_id="run-x",
+                run_id=RunId("run-x"),
                 seq=3,
                 type="run.completed",
                 payload={"outcome": "success"},

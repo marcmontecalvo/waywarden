@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,7 +35,7 @@ class ApprovalRepositoryImpl:
         )
 
     async def save(self, approval: Approval) -> Approval:
-        stmt = approvals.insert().values(
+        values = dict(
             id=approval.id,
             run_id=approval.run_id,
             approval_kind=approval.approval_kind,
@@ -46,6 +47,11 @@ class ApprovalRepositoryImpl:
             decided_by=approval.decided_by,
             expires_at=approval.expires_at if approval.expires_at else None,
         )
+        existing = await self.get(str(approval.id))
+        if existing is None:
+            stmt: Any = approvals.insert().values(**values)
+        else:
+            stmt = approvals.update().where(approvals.c.id == approval.id).values(**values)
         await self._session.execute(stmt)
         await self._session.flush()
         return approval

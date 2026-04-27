@@ -13,14 +13,11 @@ Canonical references:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from typing import Any, cast
 
 import pytest
-from fakes import FakeEATaskService
 
+from tests.unit.fakes import FakeEATaskService
 from waywarden.services.approval_types import (
     DeniedAbandon,
     DeniedAlternatePath,
@@ -45,7 +42,7 @@ async def test_schedule_auto_grant() -> None:
         ScheduledTask(title="Task 2", objective="Obj 2"),
     ]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run(tasks, decisions={"1": Granted()})
     assert result.tasks_processed == 2
     assert result.tasks_approved == 1
@@ -56,7 +53,7 @@ async def test_schedule_respects_response_map() -> None:
     """Explicit deny-abandon should count as denied."""
     tasks = [ScheduledTask(title="my-task", objective="O")]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     decision = await handler.run(
         tasks,
         decisions={"my-task": DeniedAbandon(reason="nope")},
@@ -71,7 +68,7 @@ async def test_schedule_respects_deny_alternate() -> None:
     """Explicit deny-alternate should count as rescheduled."""
     tasks = [ScheduledTask(title="a", objective="O")]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     decision = await handler.run(
         tasks,
         decisions={"a": DeniedAlternatePath(note="alt")},
@@ -83,7 +80,7 @@ async def test_schedule_respects_deny_alternate() -> None:
 async def test_schedule_empty_list() -> None:
     """Scheduler with no tasks should return zero."""
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run([])
     assert result.tasks_processed == 0
     assert result.tasks_approved == 0
@@ -98,7 +95,7 @@ async def test_schedule_multiple_mixed_outcomes() -> None:
         ScheduledTask(title="resched", objective="O"),
     ]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run(
         tasks,
         decisions={
@@ -117,7 +114,7 @@ async def test_schedule_multiple_mixed_outcomes() -> None:
 async def test_schedule_decisions_recorded() -> None:
     """Every task should have a decision record."""
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run(
         [ScheduledTask(title="x", objective="O")],
         decisions={"1": Granted()},
@@ -131,7 +128,7 @@ async def test_schedule_decisions_recorded() -> None:
 async def test_schedule_returns_schedule_result_type() -> None:
     """Return value should be a ScheduleResult."""
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run([])
     assert isinstance(result, ScheduleResult)
 
@@ -146,7 +143,7 @@ async def test_scheduler_no_auto_grant_no_decision() -> None:
     """When no explicit decision is given, the scheduler does NOT grant."""
     tasks = [ScheduledTask(title="must-explicit", objective="O")]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run(tasks)
     # The default "Accepted" from the old code would count as approved.
     # Now there should be zero approved since no decision was provided.
@@ -164,7 +161,7 @@ async def test_scheduler_no_decision_with_granted_task() -> None:
         ScheduledTask(title="no-decision", objective="O"),
     ]
     svc = FakeEATaskService()
-    handler = EASchedulerHandler(task_service=svc)
+    handler = EASchedulerHandler(task_service=cast(Any, svc))
     result = await handler.run(
         tasks,
         decisions={"granted-task": Granted()},

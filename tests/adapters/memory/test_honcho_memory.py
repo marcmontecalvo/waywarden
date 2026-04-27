@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -54,7 +54,7 @@ async def test_roundtrip_cassette(fake_honcho_client: _FakeHonchoClient) -> None
     provider = HonchoMemoryProvider(
         endpoint="http://localhost:8000",
         api_key="test-key",
-        client=fake_honcho_client,
+        client=cast(Any, fake_honcho_client),
     )
     sid = SessionId("session-1")
 

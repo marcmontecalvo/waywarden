@@ -39,7 +39,7 @@ def _base_manifest(
         run_id=RunId("run-parent"),
         inputs=[],
         writable_paths=wp,
-        outputs=[OutputContract(name="summary", path="/tmp/summary", kind="text", required=True)],
+        outputs=[OutputContract(name="summary", path="/tmp/summary", kind="report", required=True)],
         network_policy=np,
         tool_policy=tp,
         secret_scope=ss,

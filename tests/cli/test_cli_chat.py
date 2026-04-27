@@ -65,13 +65,13 @@ async def test_happy_path_exit_zero(monkeypatch: pytest.MonkeyPatch) -> None:
     resp_stream.raise_for_status.return_value = None
     resp_stream.iter_lines.return_value = _iter_sse_lines(stream_events)
 
-    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_created  # type: ignore[return-value]
+    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_created
 
-    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
+    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
         captured = kwargs.get("url", args[0] if args else "")
         captured_url["url"] = captured
-        return resp_stream  # type: ignore[return-value]
+        return resp_stream
 
     with patch.object(httpx.Client, "post", fake_post):
         with patch.object(httpx.Client, "get", fake_get):
@@ -114,11 +114,11 @@ async def test_failed_run_exit_one(monkeypatch: pytest.MonkeyPatch) -> None:  # 
     resp_stream.raise_for_status.return_value = None
     resp_stream.iter_lines.return_value = _iter_sse_lines(stream_events)
 
-    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_created  # type: ignore[return-value]
+    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_created
 
-    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_stream  # type: ignore[return-value]
+    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_stream
 
     with patch.object(httpx.Client, "post", fake_post):
         with patch.object(httpx.Client, "get", fake_get):
@@ -155,11 +155,11 @@ async def test_cancelled_run_exit_two(monkeypatch: pytest.MonkeyPatch) -> None: 
     resp_stream.raise_for_status.return_value = None
     resp_stream.iter_lines.return_value = _iter_sse_lines(stream_events)
 
-    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_created  # type: ignore[return-value]
+    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_created
 
-    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_stream  # type: ignore[return-value]
+    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_stream
 
     with patch.object(httpx.Client, "post", fake_post):
         with patch.object(httpx.Client, "get", fake_get):
@@ -188,16 +188,16 @@ async def test_last_seen_seq_resumes(monkeypatch: pytest.MonkeyPatch) -> None:
     resp_created.raise_for_status.return_value = None
     resp_created.iter_lines.return_value = iter([])
 
-    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
+    def fake_get(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
         captured_url["url"] = kwargs.get("url", args[0] if args else "")
         resp = MagicMock(spec=httpx.Response)
         resp.status_code = 200
         resp.raise_for_status.return_value = None
         resp.iter_lines.return_value = iter([])
-        return resp  # type: ignore[return-value]
+        return resp
 
-    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:  # type: ignore[reportUnknownParameterType]
-        return resp_created  # type: ignore[return-value]
+    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> httpx.Response:
+        return resp_created
 
     with patch.object(httpx.Client, "post", fake_post):
         with patch.object(httpx.Client, "get", fake_get):
@@ -221,7 +221,7 @@ async def test_last_seen_seq_resumes(monkeypatch: pytest.MonkeyPatch) -> None:
 async def test_unreachable_server_exits_nonzero(monkeypatch: pytest.MonkeyPatch) -> None:
     """CLI prints error and exits non-zero when server is unreachable."""
 
-    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> None:  # type: ignore[reportUnknownParameterType]
+    def fake_post(self: httpx.Client, *args: Any, **kwargs: Any) -> None:
         raise httpx.ConnectError("Connection refused")
 
     with patch.object(httpx.Client, "post", fake_post):

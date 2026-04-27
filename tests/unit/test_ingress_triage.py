@@ -13,14 +13,11 @@ Canonical references:
 
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+from typing import Any, cast
 
 import pytest
-from fakes import FakeEATaskService
 
+from tests.unit.fakes import FakeEATaskService
 from waywarden.services.approval_types import (
     DeniedAbandon,
     Granted,
@@ -39,7 +36,7 @@ from waywarden.services.orchestration.triage import (
 async def test_classify_only() -> None:
     """Items are classified with no decisions."""
     svc = FakeEATaskService()
-    handler = EAIboxTriageHandler(task_service=svc)
+    handler = EAIboxTriageHandler(task_service=cast(Any, svc))
     items = [InboxItem(subject="Meeting", from_address="a@e.com", body="Hi")]
     result = await handler.run(items)
     assert result.items_triaged == 1
@@ -50,7 +47,7 @@ async def test_classify_only() -> None:
 async def test_draft_approved() -> None:
     """Approved items should have approved=True."""
     svc = FakeEATaskService()
-    handler = EAIboxTriageHandler(task_service=svc)
+    handler = EAIboxTriageHandler(task_service=cast(Any, svc))
     items = [InboxItem(subject="Budget", from_address="b@e.com", body="Q4")]
     result = await handler.run(items, decisions={"Budget": Granted()})
     assert result.items_triaged == 1
@@ -62,7 +59,7 @@ async def test_draft_approved() -> None:
 async def test_draft_denied() -> None:
     """Denied items should not be approved."""
     svc = FakeEATaskService()
-    handler = EAIboxTriageHandler(task_service=svc)
+    handler = EAIboxTriageHandler(task_service=cast(Any, svc))
     items = [InboxItem(subject="Request", from_address="c@e.com", body="Info")]
     result = await handler.run(items, decisions={"Request": DeniedAbandon(reason="no")})
     assert result.items_triaged == 1
@@ -79,7 +76,7 @@ async def test_draft_denied() -> None:
 async def test_malformed_input_blanks_subject() -> None:
     """Blank subject items are malformed."""
     svc = FakeEATaskService()
-    handler = EAIboxTriageHandler(task_service=svc)
+    handler = EAIboxTriageHandler(task_service=cast(Any, svc))
     items = [InboxItem(subject="", from_address="x@e.com", body="no subject")]
     result = await handler.run(items)
     assert result.items_malformed == 1
@@ -90,7 +87,7 @@ async def test_malformed_input_blanks_subject() -> None:
 async def test_malformed_input_whitespace_only_subject() -> None:
     """Whitespace-only subject is malformed."""
     svc = FakeEATaskService()
-    handler = EAIboxTriageHandler(task_service=svc)
+    handler = EAIboxTriageHandler(task_service=cast(Any, svc))
     items = [InboxItem(subject="  ", from_address="y@e.com", body="white")]
     result = await handler.run(items)
     assert result.items_malformed == 1

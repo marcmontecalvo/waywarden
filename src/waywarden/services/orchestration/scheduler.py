@@ -92,6 +92,7 @@ class EASchedulerHandler:
         self,
         tasks: list[ScheduledTask],
         decisions: dict[str, ApprovalDecision] | None = None,
+        run_id: str = "ea-scheduler-run",
     ) -> ScheduleResult:
         """Execute the scheduler against a list of queued tasks.
 
@@ -123,21 +124,22 @@ class EASchedulerHandler:
                     session_id="scheduler-sess",
                     title=stask.title,
                     objective=stask.objective,
+                    run_id=run_id,
                 )
             )
             task_id = str(task["id"])
 
             # 2. Transition to executing
             await self.task_service.transition_task(
-                TransitionTaskRequest(task_id=task_id, state="planning")
+                TransitionTaskRequest(task_id=task_id, state="planning", run_id=run_id)
             )
             await self.task_service.transition_task(
-                TransitionTaskRequest(task_id=task_id, state="executing")
+                TransitionTaskRequest(task_id=task_id, state="executing", run_id=run_id)
             )
 
             # 3. Request approval checkpoint
             await self.task_service.request_approval(
-                RequestApprovalRequest(task_id=task_id, run_id="scheduler-run")
+                RequestApprovalRequest(task_id=task_id, run_id=run_id)
             )
 
             # 4. Apply decision — look up by title first, then by index.
@@ -151,6 +153,7 @@ class EASchedulerHandler:
                     ApprovalDecisionRequest(
                         task_id=task_id,
                         decision=decision,
+                        run_id=run_id,
                     )
                 )
 
@@ -160,20 +163,20 @@ class EASchedulerHandler:
                 result.tasks_approved += 1
                 # Post-grant transitions
                 await self.task_service.transition_task(
-                    TransitionTaskRequest(task_id=task_id, state="planning")
+                    TransitionTaskRequest(task_id=task_id, state="planning", run_id=run_id)
                 )
                 await self.task_service.transition_task(
-                    TransitionTaskRequest(task_id=task_id, state="executing")
+                    TransitionTaskRequest(task_id=task_id, state="executing", run_id=run_id)
                 )
                 await self.task_service.transition_task(
-                    TransitionTaskRequest(task_id=task_id, state="completed")
+                    TransitionTaskRequest(task_id=task_id, state="completed", run_id=run_id)
                 )
             elif isinstance(decision, DeniedAbandon):
                 result.tasks_denied += 1
             elif isinstance(decision, DeniedAlternatePath):
                 result.tasks_rescheduled += 1
                 await self.task_service.transition_task(
-                    TransitionTaskRequest(task_id=task_id, state="planning")
+                    TransitionTaskRequest(task_id=task_id, state="planning", run_id=run_id)
                 )
 
             result.decisions.append(

@@ -53,6 +53,11 @@ class ApprovalHook:
                 raise RuntimeError(f"tool {tool_id}:{action} forbidden by policy")
             # approval-required
             return True, rule.reason, rule.reason
+        if self.tool_policy.default_decision == "auto-allow":
+            return False, None, None
+        if self.tool_policy.default_decision == "forbidden":
+            raise RuntimeError(f"tool {tool_id}:{action} forbidden by policy")
+        return True, None, None
 
 
 class ApprovalGateError(RuntimeError):

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -68,8 +68,8 @@ class _MockRepo:
     def __init__(self, events: list[_MockRunEvent] | None = None) -> None:
         self.events: list[_MockRunEvent] = events or []
 
-    async def append(self, event: Any) -> Any:
-        self.events.append(event)  # type: ignore[arg-type]
+    async def append(self, event: _MockRunEvent) -> _MockRunEvent:
+        self.events.append(event)
         return event
 
     async def list(
@@ -94,8 +94,8 @@ def _inject_app(
     """Inject mock repos into the route's module-level state."""
     import waywarden.api.routes.run_view as route_mod
 
-    route_mod._event_repo = repo
-    route_mod._run_repo = runs_repo
+    route_mod._event_repo = cast(Any, repo)
+    route_mod._run_repo = cast(Any, runs_repo)
     route_mod._manifest_repo = None
 
 

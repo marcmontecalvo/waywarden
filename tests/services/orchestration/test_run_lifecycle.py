@@ -9,12 +9,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 from waywarden.domain.ids import RunId, TaskId
-from waywarden.domain.run import Run
+from waywarden.domain.run import Run, RunState
 from waywarden.domain.run_event import RunEvent
 from waywarden.services.orchestration.milestones import MILESTONE_CATALOG
 from waywarden.services.orchestration.service import OrchestrationService
@@ -58,7 +58,7 @@ class FakeRunRepository:
             policy_preset=existing.policy_preset,
             manifest_ref=existing.manifest_ref,
             entrypoint=existing.entrypoint,
-            state=new_state,  # type: ignore[arg-type]
+            state=cast(RunState, new_state),
             created_at=existing.created_at,
             updated_at=datetime.now(UTC),
             terminal_seq=terminal_seq,
@@ -101,7 +101,7 @@ class FakeRunEventRepository:
 class FakeApprovalEngine:
     """Stub approval engine for orchestration integration tests."""
 
-    async def request(  # type: ignore[empty-body]
+    async def request(
         self,
         run_id: str,
         approval_kind: str,
@@ -110,7 +110,7 @@ class FakeApprovalEngine:
     ) -> Any:
         return None
 
-    async def resolve(self, approval_id: str, decision: Any) -> Any:  # type: ignore[empty-body]
+    async def resolve(self, approval_id: str, decision: Any) -> Any:
         return None
 
 
@@ -147,7 +147,7 @@ class TestFullHappyPathEmitsCanonicalSequence:
         service = OrchestrationService(
             runs=runs_repo,
             events=events_repo,
-            approvals=approvals,
+            approvals=cast(Any, approvals),
         )
 
         run = await runs_repo.create(_make_run())
@@ -165,7 +165,7 @@ class TestFullHappyPathEmitsCanonicalSequence:
         phases_seen: set[str] = set()
         for event in all_events:
             if event.type == "run.progress":
-                phases_seen.add(event.payload["phase"])
+                phases_seen.add(cast(str, event.payload["phase"]))
 
         assert phases_seen == {"intake", "plan", "execute", "review", "handoff"}
 
@@ -180,7 +180,7 @@ class TestFullHappyPathEmitsCanonicalSequence:
         service = OrchestrationService(
             runs=runs_repo,
             events=events_repo,
-            approvals=approvals,
+            approvals=cast(Any, approvals),
         )
 
         run = await runs_repo.create(_make_run())
@@ -209,7 +209,7 @@ class TestFullHappyPathEmitsCanonicalSequence:
         service = OrchestrationService(
             runs=runs_repo,
             events=events_repo,
-            approvals=approvals,
+            approvals=cast(Any, approvals),
         )
 
         run = await runs_repo.create(_make_run())

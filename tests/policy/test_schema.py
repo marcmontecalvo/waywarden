@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 from pydantic import ValidationError
 
 from waywarden.policy.loader import PolicyLoader
-from waywarden.policy.schema import PolicyPresetDoc, ToolDecisionRule
+from waywarden.policy.schema import PolicyPresetDoc, ToolDecision, ToolDecisionRule, ToolPreset
 
 
 class TestToolDecisionRuleSchema:
@@ -33,9 +35,9 @@ class TestToolDecisionRuleSchema:
 
     def test_unknown_decision_raises(self) -> None:
         with pytest.raises(ValidationError):
-            ToolDecisionRule(  # type: ignore[arg-type]
+            ToolDecisionRule(
                 tool="shell.write",
-                decision="instant-kill",
+                decision=cast(Any, "instant-kill"),
             )
 
     def test_unknown_tool_action_allowed(self) -> None:
@@ -49,7 +51,7 @@ class TestPolicyPresetDocSchema:
 
     def test_preset_doc_roundtrips_yaml(self) -> None:
         """YAML-style dict roundtrips through pydantic validation."""
-        raw = {
+        raw: dict[str, object] = {
             "name": "test",
             "preset": "ask",
             "default_decision": "approval-required",
@@ -57,7 +59,7 @@ class TestPolicyPresetDocSchema:
                 {"tool": "shell.read", "decision": "auto-allow", "reason": "Safe"},
             ],
         }
-        doc = PolicyPresetDoc(**raw)
+        doc = PolicyPresetDoc(**cast(Any, raw))
         assert doc.preset == "ask"
         assert len(doc.rules) == 1
         assert doc.rules[0].tool == "shell.read"
@@ -77,7 +79,11 @@ class TestPolicyPresetDocSchema:
             ("custom", "auto-allow"),
         ],
     )
-    def test_all_preset_values_acceptable(self, preset: str, default_decision: str) -> None:
+    def test_all_preset_values_acceptable(
+        self,
+        preset: ToolPreset,
+        default_decision: ToolDecision,
+    ) -> None:
         doc = PolicyPresetDoc(
             name=preset, preset=preset, rules=[], default_decision=default_decision
         )
@@ -107,7 +113,7 @@ class TestPolicyPresetDocSchema:
             loader = PolicyLoader(presets_dir=tmp_path)
             policy = loader.load("ask")
 
-        assert policy.preset == "ask"  # type: ignore[comparison-overlap]
+        assert policy.preset == "ask"
         assert policy.default_decision == "approval-required"
         assert len(policy.rules) == 2
         assert policy.rules[0].tool == "shell"
@@ -121,7 +127,12 @@ class TestPolicyPresetDocSchema:
 
     def test_preset_doc_invalid_decision_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            PolicyPresetDoc(name="test", preset="ask", rules=[], default_decision="instant")  # type: ignore[arg-type]
+            PolicyPresetDoc(
+                name="test",
+                preset="ask",
+                rules=[],
+                default_decision=cast(Any, "instant"),
+            )
 
     def test_preset_doc_empty_rules_is_valid(self) -> None:
         doc = PolicyPresetDoc(name="yolo", preset="yolo", rules=[])
@@ -129,4 +140,4 @@ class TestPolicyPresetDocSchema:
 
     def test_preset_doc_invalid_preset_rejected(self) -> None:
         with pytest.raises(ValidationError):
-            PolicyPresetDoc(name="magic", preset="instant", rules=[])
+            PolicyPresetDoc(name="magic", preset=cast(Any, "instant"), rules=[])

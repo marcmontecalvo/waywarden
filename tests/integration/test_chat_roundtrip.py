@@ -11,6 +11,7 @@ validation paths that don't require streaming (400 errors, etc.).
 from __future__ import annotations
 
 import json
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from typing import Any
 
@@ -32,7 +33,7 @@ import waywarden.api.routes.chat as chat_mod
 from waywarden.api.routers import run_events as run_events_mod
 from waywarden.api.routers.run_events import _build_stream
 from waywarden.api.routes.chat import router as chat_router
-from waywarden.domain.ids import RunEventId
+from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import RunEvent
 from waywarden.infra.db.repositories.run_event_repo import RunEventRepositoryImpl
 from waywarden.infra.db.repositories.run_repo import RunRepositoryImpl
@@ -43,7 +44,7 @@ from waywarden.infra.db.repositories.run_repo import RunRepositoryImpl
 
 
 @pytest_asyncio.fixture()
-async def _engine() -> AsyncEngine:
+async def _engine() -> AsyncIterator[AsyncEngine]:
     eng = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
     async with eng.begin() as conn:
         await conn.execute(
@@ -161,7 +162,7 @@ async def test_sse_emits_events_in_order(_engine: AsyncEngine) -> None:
     events = [
         RunEvent(
             id=RunEventId("evt-order-1"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=1,
             type="run.created",
             payload={
@@ -177,7 +178,7 @@ async def test_sse_emits_events_in_order(_engine: AsyncEngine) -> None:
         ),
         RunEvent(
             id=RunEventId("evt-order-2"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=2,
             type="run.progress",
             payload={"phase": "intake", "milestone": "received"},
@@ -187,7 +188,7 @@ async def test_sse_emits_events_in_order(_engine: AsyncEngine) -> None:
         ),
         RunEvent(
             id=RunEventId("evt-order-3"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=3,
             type="run.completed",
             payload={"outcome": "success"},
@@ -252,7 +253,7 @@ async def test_no_out_of_catalog_event_types(_engine: AsyncEngine) -> None:  # n
     events_list = [
         RunEvent(
             id=RunEventId("evt-cat-1"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=1,
             type="run.created",
             payload={
@@ -268,7 +269,7 @@ async def test_no_out_of_catalog_event_types(_engine: AsyncEngine) -> None:  # n
         ),
         RunEvent(
             id=RunEventId("evt-cat-2"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=2,
             type="run.artifact_created",
             payload={
@@ -282,7 +283,7 @@ async def test_no_out_of_catalog_event_types(_engine: AsyncEngine) -> None:  # n
         ),
         RunEvent(
             id=RunEventId("evt-cat-3"),
-            run_id=run_id,
+            run_id=RunId(run_id),
             seq=3,
             type="run.completed",
             payload={"outcome": "success"},
@@ -336,7 +337,7 @@ async def test_reconnect_after_terminal_returns_empty(_engine: AsyncEngine) -> N
     run_id = "run-reconnect-test"
     terminal_event = RunEvent(
         id=RunEventId("evt-rec-1"),
-        run_id=run_id,
+        run_id=RunId(run_id),
         seq=1,
         type="run.completed",
         payload={"outcome": "ok"},

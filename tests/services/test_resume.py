@@ -9,16 +9,26 @@ Covers:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
+from typing import cast
 
 import pytest
 
-from waywarden.domain.run import Run
+from waywarden.domain.ids import InstanceId, RunId, TaskId
+from waywarden.domain.manifest.content_hash import content_hash
+from waywarden.domain.manifest.input_mount import InputMount
+from waywarden.domain.manifest.manifest import WorkspaceManifest
+from waywarden.domain.manifest.network_policy import NetworkPolicy
+from waywarden.domain.manifest.output_contract import OutputContract
+from waywarden.domain.manifest.secret_scope import SecretScope
+from waywarden.domain.manifest.snapshot_policy import SnapshotPolicy
+from waywarden.domain.manifest.tool_policy import ToolPolicy
+from waywarden.domain.manifest.writable_path import WritablePath
+from waywarden.domain.run import Run, RunState
 from waywarden.domain.run_event import RunEvent
 from waywarden.services.resume import ResumeService
 from waywarden.services.resume_errors import (
@@ -26,19 +36,6 @@ from waywarden.services.resume_errors import (
     ManifestChangedWithoutRevisionError,
 )
 from waywarden.services.run_lifecycle import RunLifecycleService
-
-# ---------------------------------------------------------------------------
-# Stub manifest — frozen dataclass with a ``body`` attribute for hashing
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True, slots=True)
-class StubManifest:
-    """Minimal manifest stub with a ``body`` attribute for hashing."""
-
-    run_id: str
-    body: str = ""
-
 
 # ---------------------------------------------------------------------------
 # In-memory repository stubs
@@ -76,7 +73,7 @@ class _RunRepo:
             policy_preset=existing.policy_preset,
             manifest_ref=existing.manifest_ref,
             entrypoint=existing.entrypoint,
-            state=new_state,  # type: ignore[arg-type]
+            state=cast(RunState, new_state),
             created_at=existing.created_at,
             updated_at=datetime.now(UTC),
             terminal_seq=terminal_seq,
@@ -114,19 +111,15 @@ class _EventRepo:
 
 @dataclass(frozen=True, slots=True)
 class _ManifestRepo:
-    _bodies: dict[str, str] = field(default_factory=dict)
+    _manifests: dict[str, WorkspaceManifest] = field(default_factory=dict)
 
-    async def save(self, manifest: object) -> object:
-        run_id = str(getattr(manifest, "run_id", "unknown"))
-        body = getattr(manifest, "body", "{}")
-        self._bodies[run_id] = body
+    async def save(self, manifest: WorkspaceManifest) -> WorkspaceManifest:
+        run_id = str(manifest.run_id)
+        self._manifests[run_id] = manifest
         return manifest
 
-    async def get(self, run_id: str) -> object | None:
-        body = self._bodies.get(run_id)
-        if body is None:
-            return None
-        return StubManifest(run_id=run_id, body=body)
+    async def get(self, run_id: str) -> WorkspaceManifest | None:
+        return self._manifests.get(run_id)
 
 
 # ---------------------------------------------------------------------------
@@ -141,14 +134,14 @@ def _make_run(
 ) -> Run:
     now = datetime.now(UTC)
     return Run(
-        id=run_id,  # type: ignore[arg-type]
-        instance_id="inst-001",
-        task_id="task-001",
+        id=RunId(run_id),
+        instance_id=InstanceId("inst-001"),
+        task_id=TaskId("task-001"),
         profile="test",
         policy_preset="ask",
         manifest_ref=f"manifest://{run_id}/default",
         entrypoint="api",
-        state=state,  # type: ignore[arg-type]
+        state=cast(RunState, state),
         created_at=now,
         updated_at=now,
         terminal_seq=None,
@@ -156,16 +149,60 @@ def _make_run(
     )
 
 
-def _compute_stub_hash(repo: _ManifestRepo, run_id: str) -> str:
-    """Replicate ResumeService._compute_actual_manifest_hash for StubManifest."""
-    body = repo._bodies.get(run_id)
-    if body is None:
-        data = {"run_id": run_id}
-    else:
-        stub = StubManifest(run_id=run_id, body=body)
-        data = asdict(stub)
-    json_str = json.dumps(data, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(json_str.encode("utf-8")).hexdigest()
+def _make_manifest(run_id: str, *, variant: str = "base") -> WorkspaceManifest:
+    return WorkspaceManifest(
+        run_id=RunId(run_id),
+        inputs=[
+            InputMount(
+                name="repo",
+                kind="directory",
+                source_ref="artifact://workspace/repo",
+                target_path="/workspace/repo",
+                read_only=True,
+                required=True,
+                description="Test repo",
+            )
+        ],
+        writable_paths=[
+            WritablePath(
+                path="/workspace/run",
+                purpose="task-scratch",
+                retention="ephemeral",
+            )
+        ],
+        outputs=[
+            OutputContract(
+                name="report",
+                path=f"/workspace/output/{variant}.json",
+                kind="json",
+                required=True,
+                promote_to_artifact=True,
+            )
+        ],
+        network_policy=NetworkPolicy(mode="deny", allow=[], deny=[]),
+        tool_policy=ToolPolicy(preset="ask", rules=[]),
+        secret_scope=SecretScope(
+            mode="none",
+            allowed_secret_refs=[],
+            mount_env=[],
+            redaction_level="full",
+        ),
+        snapshot_policy=SnapshotPolicy(
+            on_start=False,
+            on_completion=True,
+            on_failure=True,
+            before_destructive_actions=True,
+            max_snapshots=3,
+            include_paths=[],
+            exclude_paths=[],
+        ),
+    )
+
+
+def _compute_manifest_hash(repo: _ManifestRepo, run_id: str) -> str:
+    manifest = repo._manifests[run_id]
+    json_str = json.dumps(asdict(manifest), sort_keys=True, separators=(",", ":"))
+    return content_hash(json_str)
 
 
 def _write_pending_yaml(
@@ -199,10 +236,8 @@ class TestResumesExecutingRun:
         events_repo = _EventRepo()
         manifests_repo = _ManifestRepo()
 
-        test_body = '{"test": true}'
-        await manifests_repo.save(StubManifest(run_id="run-001", body=test_body))
-
-        expected_hash = _compute_stub_hash(manifests_repo, "run-001")
+        await manifests_repo.save(_make_manifest("run-001"))
+        expected_hash = _compute_manifest_hash(manifests_repo, "run-001")
 
         run = _make_run(state="executing", manifest_hash=expected_hash)
         await runs_repo.create(run)
@@ -248,17 +283,14 @@ class TestManifestDriftBlocksResume:
         events_repo = _EventRepo()
         manifests_repo = _ManifestRepo()
 
-        original_body = '{"test": true}'
-        await manifests_repo.save(StubManifest(run_id="run-001", body=original_body))
-
-        expected_hash = _compute_stub_hash(manifests_repo, "run-001")
+        await manifests_repo.save(_make_manifest("run-001"))
+        expected_hash = _compute_manifest_hash(manifests_repo, "run-001")
 
         run = _make_run(state="executing", manifest_hash=expected_hash)
         await runs_repo.create(run)
 
         # SIMULATE drift
-        drifted_body = '{"test": false, "extra": "drifted"}'
-        manifests_repo._bodies["run-001"] = drifted_body
+        manifests_repo._manifests["run-001"] = _make_manifest("run-001", variant="drifted")
 
         lifecycle = RunLifecycleService(
             runs=runs_repo,
@@ -337,8 +369,8 @@ class TestDisabledByDefault:
         events_repo = _EventRepo()
         manifests_repo = _ManifestRepo()
 
-        await manifests_repo.save(StubManifest(run_id="run-001", body='{"ok": true}'))
-        expected_hash = _compute_stub_hash(manifests_repo, "run-001")
+        await manifests_repo.save(_make_manifest("run-001"))
+        expected_hash = _compute_manifest_hash(manifests_repo, "run-001")
 
         run = _make_run(state="executing", manifest_hash=expected_hash)
         await runs_repo.create(run)

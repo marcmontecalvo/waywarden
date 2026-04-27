@@ -1,6 +1,10 @@
 """Tests for EA profile overlay hydration (P5-3 #83)."""
 
+from __future__ import annotations
+
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -11,13 +15,15 @@ from waywarden.domain.profile import (
     ProfileRegistry,
     RequiredProviders,
 )
+from waywarden.extensions.base import Extension
+from waywarden.extensions.registry import ExtensionRegistry
 from waywarden.profiles.ea.hydrate import (
     EAProfileView,
     ProfileHydrationError,
     hydrate_ea_profile,
 )
 
-FIXTURES_DIR = Path("tests/fixtures/assets").resolve()
+ASSETS_DIR = Path("assets").resolve()
 EA_PROFILE_PATH = Path("profiles/ea/profile.yaml")
 
 
@@ -45,18 +51,22 @@ def test_hydrate_ea_profile_resolves_non_empty_assets() -> None:
     )
     assert view.asset_filters
     assert view.resolved_assets  # non-empty
+    resolved_ids = {asset.id for asset in view.resolved_assets}
+    assert {"ea-briefing", "ea-inbox-triage", "ea-scheduler"} <= resolved_ids
+    assert any(asset.kind == "widget" for asset in view.resolved_assets)
+    assert any(asset.kind == "command" for asset in view.resolved_assets)
 
 
 def test_hydrate_with_custom_registry() -> None:
     """Hydration with a custom ProfileRegistry."""
     descriptor = ProfileDescriptor(
-        id="ea",
+        id=ProfileId("ea"),
         display_name="EA",
         version="1.0.0",
         supported_extensions=("widget", "command"),
         required_providers=RequiredProviders(
-            model="fake",
-            memory="fake",
+            model="fake-model",
+            memory="fake-memory",
             knowledge="filesystem",
             tracer="noop",
         ),
@@ -78,7 +88,7 @@ def test_hydrate_with_custom_registry() -> None:
 def test_hydrate_fails_when_ea_missing_from_registry() -> None:
     """Hydration raises when profile registry lacks 'ea'."""
     desc = ProfileDescriptor(
-        id="coding",
+        id=ProfileId("coding"),
         display_name="Coding",
         version="1.0.0",
         supported_extensions=("command",),
@@ -134,8 +144,8 @@ id: ea
 display_name: Executive Assistant
 version: 1.0.0
 required_providers:
-  model: fake
-  memory: fake
+  model: fake-model
+  memory: fake-memory
   knowledge: filesystem
   tracer: noop
 supported_extensions:
@@ -167,8 +177,8 @@ asset_filters:
   - op: by_tag
     tag: nonexistent_tag
 required_providers:
-  model: fake
-  memory: fake
+  model: fake-model
+  memory: fake-memory
   knowledge: filesystem
   tracer: noop
 supported_extensions:
@@ -192,7 +202,7 @@ supported_extensions:
 
 def test_ea_profile_view_proxies_id() -> None:
     desc = ProfileDescriptor(
-        id="ea",
+        id=ProfileId("ea"),
         display_name="EA",
         version="1.0.0",
         supported_extensions=("a",),
@@ -216,7 +226,7 @@ def test_ea_profile_view_required_providers_proxy() -> None:
         tracer="noop",
     )
     desc = ProfileDescriptor(
-        id="ea",
+        id=ProfileId("ea"),
         display_name="EA",
         version="1.0.0",
         supported_extensions=("a",),
@@ -241,8 +251,8 @@ asset_filters:
   - op: by_tag
     tag: nonexistent_tag
 required_providers:
-  model: fake
-  memory: fake
+  model: fake-model
+  memory: fake-memory
   knowledge: filesystem
   tool: []
   channel: []
@@ -260,15 +270,59 @@ supported_extensions:
         )
 
 
+class _StaticExtension(Extension):
+    def validate(self, config: Mapping[str, Any]) -> None:
+        return None
+
+
+def _register_provider(registry: ExtensionRegistry, *, name: str, capability: str) -> None:
+    registry.register(
+        _StaticExtension(name=name, version="1.0.0", capabilities=frozenset({capability}))
+    )
+
+
+def test_hydrate_fails_when_required_provider_missing() -> None:
+    registry = ExtensionRegistry()
+    _register_provider(registry, name="fake-memory", capability="memory")
+    _register_provider(registry, name="filesystem", capability="knowledge")
+    _register_provider(registry, name="noop", capability="tracer")
+
+    with pytest.raises(ProfileHydrationError) as exc_info:
+        hydrate_ea_profile(
+            profile_path=EA_PROFILE_PATH,
+            asset_registry=_default_asset_registry(),
+            extension_registry=registry,
+        )
+
+    assert "required_providers.model" in str(exc_info.value)
+
+
+def test_hydrate_fails_when_provider_missing_capability() -> None:
+    registry = ExtensionRegistry()
+    _register_provider(registry, name="fake-model", capability="knowledge")
+    _register_provider(registry, name="fake-memory", capability="memory")
+    _register_provider(registry, name="filesystem", capability="knowledge")
+    _register_provider(registry, name="noop", capability="tracer")
+
+    with pytest.raises(ProfileHydrationError) as exc_info:
+        hydrate_ea_profile(
+            profile_path=EA_PROFILE_PATH,
+            asset_registry=_default_asset_registry(),
+            extension_registry=registry,
+        )
+
+    assert "missing capabilities ['model']" in str(exc_info.value)
+
+
 # -----------------------------------------------------------------------
 # Internal helpers
 # -----------------------------------------------------------------------
 
 
 def _default_asset_registry() -> AssetRegistry:
-    """Return an AssetRegistry pre-loaded with fixture data."""
+    """Return an AssetRegistry pre-loaded with checked-in shared assets."""
     reg = AssetRegistry()
     import asyncio
 
-    asyncio.get_event_loop().run_until_complete(reg.load_from_dir(FIXTURES_DIR))
+    asyncio.run(reg.load_from_dir(ASSETS_DIR))
     return reg

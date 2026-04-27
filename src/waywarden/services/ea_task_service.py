@@ -21,11 +21,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from logging import getLogger
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
+from uuid import uuid4
 
-from waywarden.domain.ids import RunEventId, RunId, TaskId
+from waywarden.domain.ids import RunEventId, RunId, SessionId, TaskId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
-from waywarden.domain.run_event_types import RunEventType
+from waywarden.services.orchestration.milestones import is_valid_milestone
 
 if TYPE_CHECKING:
     from waywarden.domain.repositories import RunEventRepository, TaskRepository
@@ -58,6 +59,7 @@ class TransitionTaskRequest:
 
     task_id: str
     state: str
+    run_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +79,8 @@ class ApprovalDecisionRequest:
 
     task_id: str
     decision: ApprovalDecision
+    run_id: str | None = None
+    approval_kind: str = "ea_checkpoint"
 
 
 # ---------------------------------------------------------------------------
@@ -127,8 +131,6 @@ class EATaskService:
         self._task_repo = task_repo
         self._approval_engine = approval_engine
         self._events = events
-        # task_id → approval_id mapping for the approve/resolve round-trip
-        self._task_to_approval: dict[str, str] = {}
 
     # ---- task CRUD ----
 
@@ -152,7 +154,7 @@ class EATaskService:
 
         domain_task = DomainTask(
             id=TaskId(task_id),
-            session_id=req.session_id,
+            session_id=SessionId(req.session_id),
             title=req.title,
             objective=req.objective,
             state="draft",
@@ -160,9 +162,7 @@ class EATaskService:
             updated_at=ts,
         )
         await self._task_repo.save(domain_task)
-        await self._emit_progress(
-            run_id, task_id, {"phase": "task_created", "milestone": "ea_task_created"}
-        )
+        await self._emit_progress(run_id, task_id, _task_created_payload(task_id))
         return {
             "id": task_id,
             "session_id": req.session_id,
@@ -200,12 +200,8 @@ class EATaskService:
             updated_at=datetime.now(UTC),
         )
         await self._task_repo.save(updated)
-        run_id = f"ea-{task.session_id}"
-        await self._emit_progress(
-            run_id,
-            str(task.id),
-            {"phase": "task_transitioned", "milestone": "ea_transition", "to_state": req.state},
-        )
+        run_id = req.run_id or _default_run_id(task.session_id)
+        await self._emit_progress(run_id, str(task.id), _task_transition_payload(req.state))
         return {
             "id": str(task.id),
             "state": req.state,
@@ -234,7 +230,7 @@ class EATaskService:
             session_id=task.session_id,
             title=task.title,
             objective=task.objective,
-            state="waiting_approval",  # type: ignore[arg-type]
+            state="waiting_approval",
             created_at=task.created_at,
             updated_at=datetime.now(UTC),
         )
@@ -244,23 +240,25 @@ class EATaskService:
         # We inject task_id into the approval kind so the round-trip is deterministic.
         enriched_kind = f"{req.approval_kind}-{req.task_id}"
         approval_summary = req.summary or f"Approval checkpoint for {task.title}"
+        run_id = req.run_id or _default_run_id(task.session_id)
         approval = await self._approval_engine.request(
-            run_id=req.run_id,
+            run_id=run_id,
             approval_kind=enriched_kind,
             summary=approval_summary,
+            checkpoint_ref=req.task_id,
         )
-        # Wire the mapping so resolve_approval can find the approval by task_id
-        self._task_to_approval[req.task_id] = str(approval.id)
         await self._events.append(
             RunEvent(
-                id=RunEventId(f"evt-{req.task_id}-approval_annotate"),
-                run_id=RunId(req.run_id),
-                seq=(await self._events.latest_seq(req.run_id)) + 1,
-                type=cast(RunEventType, "run.progress"),
+                id=RunEventId(f"evt-{req.task_id}-approval-annotate-{uuid4().hex}"),
+                run_id=RunId(run_id),
+                seq=(await self._events.latest_seq(run_id)) + 1,
+                type="run.progress",
                 payload={
-                    "phase": "approval_requested",
-                    "milestone": "ea_approval_requested",
+                    "phase": "plan",
+                    "milestone": "approval_requested",
                     "approval_id": str(approval.id),
+                    "task_id": req.task_id,
+                    "ea_event": "approval_requested",
                 },
                 timestamp=datetime.now(UTC),
                 causation=Causation(
@@ -284,11 +282,12 @@ class EATaskService:
         """
         task = await _require_task(self._task_repo, req.task_id, method="resolve_approval")
 
-        # Resolve the approval_id from the in-memory mapping established
-        # at request time.
-        approval_id = self._task_to_approval.get(req.task_id)
-        if approval_id is None:
-            raise KeyError(f"approval for task {req.task_id!r} not found")
+        run_id = req.run_id or _default_run_id(task.session_id)
+        approval_id = _approval_id(
+            run_id=run_id,
+            approval_kind=req.approval_kind,
+            task_id=req.task_id,
+        )
         approval = await self._approval_engine.approvals.get(approval_id)
         if approval is None:
             raise KeyError(f"approval {approval_id!r} not found")
@@ -351,18 +350,66 @@ class EATaskService:
     ) -> None:
         """Append a ``run.progress`` event to the run event log.
 
-        The caller must include ``phase`` and ``milestone`` in *payload*
-        to satisfy the RT-002 validator for ``run.progress``.
+        The caller must include a catalog-valid ``phase`` and
+        ``milestone`` in *payload* to satisfy RT-002.
         """
+        phase = payload.get("phase")
+        milestone = payload.get("milestone")
+        if not isinstance(phase, str) or not isinstance(milestone, str):
+            raise ValueError("run.progress payload requires string phase and milestone")
+        if not is_valid_milestone(phase, milestone):
+            raise ValueError(f"unknown run.progress milestone {phase}.{milestone}")
         await self._events.append(
             RunEvent(
-                id=RunEventId(f"evt-{task_id}-progress"),
+                id=RunEventId(f"evt-{task_id}-progress-{uuid4().hex}"),
                 run_id=RunId(run_id),
                 seq=(await self._events.latest_seq(run_id)) + 1,
-                type=cast(RunEventType, "run.progress"),
+                type="run.progress",
                 payload=payload,
                 timestamp=datetime.now(UTC),
                 causation=Causation(event_id=None, action="ea_task", request_id=task_id),
                 actor=Actor(kind="system", id=None, display=None),
             )
         )
+
+
+def _default_run_id(session_id: str) -> str:
+    return f"ea-{session_id}"
+
+
+def _approval_id(*, run_id: str, approval_kind: str, task_id: str) -> str:
+    enriched_kind = f"{approval_kind}-{task_id}"
+    return f"approval-{run_id}-{enriched_kind}"
+
+
+def _task_created_payload(task_id: str) -> dict[str, object]:
+    return {
+        "phase": "intake",
+        "milestone": "accepted",
+        "task_id": task_id,
+        "ea_event": "task_created",
+    }
+
+
+def _task_transition_payload(state: str) -> dict[str, object]:
+    phase, milestone = _catalog_pair_for_state(state)
+    return {
+        "phase": phase,
+        "milestone": milestone,
+        "to_state": state,
+        "ea_event": "task_transitioned",
+    }
+
+
+def _catalog_pair_for_state(state: str) -> tuple[str, str]:
+    if state == "planning":
+        return "plan", "drafted"
+    if state == "executing":
+        return "plan", "ready"
+    if state == "waiting_approval":
+        return "execute", "waiting_approval"
+    if state == "completed":
+        return "execute", "artifact_emitted"
+    if state in {"failed", "cancelled"}:
+        return "review", "findings_recorded"
+    return "intake", "accepted"

@@ -10,12 +10,14 @@ These tests verify that the production EA task service:
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from importlib.abc import InspectLoader
 from types import MappingProxyType
+from typing import cast
 
 import pytest
 
 from waywarden.domain.approval import Approval
-from waywarden.domain.ids import RunEventId, RunId
+from waywarden.domain.ids import RunEventId, RunId, SessionId, TaskId
 from waywarden.domain.run_event import RunEvent
 from waywarden.domain.task import Task
 from waywarden.services.approval_engine import ApprovalEngine
@@ -33,6 +35,7 @@ from waywarden.services.ea_task_service import (
     RequestApprovalRequest,
     TransitionTaskRequest,
 )
+from waywarden.services.orchestration.milestones import is_valid_milestone
 
 # ---------------------------------------------------------------------------
 # In-memory repo doubles
@@ -124,14 +127,20 @@ def _make_task(
 ) -> Task:
     now = datetime.now(UTC)
     return Task(
-        id=id,
-        session_id=session_id,
+        id=TaskId(id),
+        session_id=SessionId(session_id),
         title="Test task",
         objective="Do things",
         state=state,  # type: ignore[arg-type]
         created_at=now,
         updated_at=now,
     )
+
+
+def _payload_str(payload: dict[str, object], key: str) -> str:
+    value = payload[key]
+    assert isinstance(value, str)
+    return value
 
 
 def _make_engine(
@@ -205,7 +214,7 @@ async def test_create_task_persists_to_repo(
     assert result["state"] == "draft"
     assert result["session_id"] == "s1"
     # Verify the task exists in the repo (not just the service dict)
-    persisted = await task_repo.get(result["id"])
+    persisted = await task_repo.get(_payload_str(result, "id"))
     assert persisted is not None
     assert persisted.title == "Test"
 
@@ -226,7 +235,9 @@ async def test_create_task_emits_event(
     events = event_repo._events
     assert len(events) >= 1
     assert events[0].type == "run.progress"
-    assert events[0].payload["phase"] == "task_created"
+    assert events[0].payload["phase"] == "intake"
+    assert events[0].payload["milestone"] == "accepted"
+    assert events[0].payload["ea_event"] == "task_created"
 
 
 # -----------------------------------------------------------------------
@@ -240,12 +251,13 @@ async def test_transition_draft_to_planning(
 ) -> None:
     """Repository-backed transition persists state changes."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
+    created_task_id = _payload_str(created, "id")
     result = await svc.transition_task(
-        TransitionTaskRequest(task_id=created["id"], state="planning")
+        TransitionTaskRequest(task_id=created_task_id, state="planning")
     )
     assert result["state"] == "planning"
     # Verify in repo
-    persisted = await task_repo.get(created["id"])
+    persisted = await task_repo.get(created_task_id)
     assert persisted is not None
     assert persisted.state == "planning"
 
@@ -254,10 +266,11 @@ async def test_transition_draft_to_planning(
 async def test_transition_executing_to_waiting_approval(svc: EATaskService) -> None:
     """Full flow: draft → planning → executing → waiting_approval."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     result = await svc.transition_task(
-        TransitionTaskRequest(task_id=created["id"], state="waiting_approval")
+        TransitionTaskRequest(task_id=created_task_id, state="waiting_approval")
     )
     assert result["state"] == "waiting_approval"
 
@@ -266,8 +279,9 @@ async def test_transition_executing_to_waiting_approval(svc: EATaskService) -> N
 async def test_transition_completed_is_forbidden(svc: EATaskService) -> None:
     """Transition to terminal state from draft should raise."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
+    created_task_id = _payload_str(created, "id")
     with pytest.raises(ValueError):
-        await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="completed"))
+        await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="completed"))
 
 
 @pytest.mark.asyncio
@@ -289,11 +303,12 @@ async def test_request_approval_emits_waiting_event(
 ) -> None:
     """request_approval transitions the task and emits events."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     result = await svc.request_approval(
         RequestApprovalRequest(
-            task_id=created["id"],
+            task_id=created_task_id,
             run_id="run_001",
         )
     )
@@ -309,20 +324,22 @@ async def test_grant_approval_resolves_approvals_and_tasks(
 ) -> None:
     """Granted decision routes through ApprovalEngine and tasks to planning."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     approval_resp = await svc.request_approval(
-        RequestApprovalRequest(task_id=created["id"], run_id="run_001")
+        RequestApprovalRequest(task_id=created_task_id, run_id="run_001")
     )
     result = await svc.resolve_approval(
         ApprovalDecisionRequest(
-            task_id=created["id"],
+            task_id=created_task_id,
             decision=Granted(),
+            run_id="run_001",
         )
     )
     assert result["state"] == "granted"
     # ApprovalEngine should have stored a non-pending approval
-    persisted = await approval_repo.get(approval_resp["approval_id"])
+    persisted = await approval_repo.get(_payload_str(approval_resp, "approval_id"))
     assert persisted is not None
     assert persisted.state == "granted"
 
@@ -340,19 +357,21 @@ async def test_deny_abandon_routes_through_engine(
 ) -> None:
     """deny-abandon routes through ApprovalEngine and emits run.cancelled."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     approval_resp = await svc.request_approval(
-        RequestApprovalRequest(task_id=created["id"], run_id="run_001")
+        RequestApprovalRequest(task_id=created_task_id, run_id="run_001")
     )
     result = await svc.resolve_approval(
         ApprovalDecisionRequest(
-            task_id=created["id"],
+            task_id=created_task_id,
             decision=DeniedAbandon(reason="skip"),
+            run_id="run_001",
         )
     )
     assert result["state"] == "denied_abandon"
-    persisted = await approval_repo.get(approval_resp["approval_id"])
+    persisted = await approval_repo.get(_payload_str(approval_resp, "approval_id"))
     assert persisted is not None
     assert persisted.state == "denied"
     assert any(
@@ -374,19 +393,21 @@ async def test_deny_alternate_routes_through_engine(
 ) -> None:
     """deny-alternate routes through ApprovalEngine with alternate_path."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     approval_resp = await svc.request_approval(
-        RequestApprovalRequest(task_id=created["id"], run_id="run_001")
+        RequestApprovalRequest(task_id=created_task_id, run_id="run_001")
     )
     result = await svc.resolve_approval(
         ApprovalDecisionRequest(
-            task_id=created["id"],
+            task_id=created_task_id,
             decision=DeniedAlternatePath(note="use-alternative"),
+            run_id="run_001",
         )
     )
     assert result["state"] == "denied_alternate_path"
-    persisted = await approval_repo.get(approval_resp["approval_id"])
+    persisted = await approval_repo.get(_payload_str(approval_resp, "approval_id"))
     assert persisted is not None
     assert persisted.state == "denied"
     events = event_repo._events
@@ -409,19 +430,21 @@ async def test_timeout_retryable_routes_through_engine(
 ) -> None:
     """Timeout(retryable=True) routes through ApprovalEngine and emits run.failed."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
     approval_resp = await svc.request_approval(
-        RequestApprovalRequest(task_id=created["id"], run_id="run_001")
+        RequestApprovalRequest(task_id=created_task_id, run_id="run_001")
     )
     result = await svc.resolve_approval(
         ApprovalDecisionRequest(
-            task_id=created["id"],
+            task_id=created_task_id,
             decision=Timeout(retryable=True),
+            run_id="run_001",
         )
     )
     assert result["state"] == "timeout"
-    persisted = await approval_repo.get(approval_resp["approval_id"])
+    persisted = await approval_repo.get(_payload_str(approval_resp, "approval_id"))
     assert persisted is not None
     assert persisted.state == "timeout"
     assert any(
@@ -441,13 +464,20 @@ async def test_timeout_retryable_routes_through_engine(
 async def test_double_resolve_protection(svc: EATaskService) -> None:
     """Double-resolve protection still works."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
-    await svc.request_approval(RequestApprovalRequest(task_id=created["id"], run_id="run_001"))
-    await svc.resolve_approval(ApprovalDecisionRequest(task_id=created["id"], decision=Granted()))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
+    await svc.request_approval(RequestApprovalRequest(task_id=created_task_id, run_id="run_001"))
+    await svc.resolve_approval(
+        ApprovalDecisionRequest(task_id=created_task_id, decision=Granted(), run_id="run_001")
+    )
     with pytest.raises(ApprovalAlreadyResolvedError):
         await svc.resolve_approval(
-            ApprovalDecisionRequest(task_id=created["id"], decision=DeniedAbandon(reason="double"))
+            ApprovalDecisionRequest(
+                task_id=created_task_id,
+                decision=DeniedAbandon(reason="double"),
+                run_id="run_001",
+            )
         )
 
 
@@ -467,9 +497,10 @@ async def test_request_approval_on_missing_task_raises(svc: EATaskService) -> No
 async def test_resolve_approval_on_missing_approval_raises(svc: EATaskService) -> None:
     """Resolving an unrequested approval raises KeyError."""
     created = await svc.create_task(CreateTaskRequest(session_id="s1", title="T", objective="O"))
+    created_task_id = _payload_str(created, "id")
     with pytest.raises(KeyError):
         await svc.resolve_approval(
-            ApprovalDecisionRequest(task_id=created["id"], decision=Granted())
+            ApprovalDecisionRequest(task_id=created_task_id, decision=Granted())
         )
 
 
@@ -487,16 +518,19 @@ async def test_full_event_stream(
     created = await svc.create_task(
         CreateTaskRequest(session_id="s1", title="Build", objective="Ship")
     )
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
-    await svc.request_approval(RequestApprovalRequest(task_id=created["id"], run_id="run_001"))
-    await svc.resolve_approval(ApprovalDecisionRequest(task_id=created["id"], decision=Granted()))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="planning"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="executing"))
-    await svc.transition_task(TransitionTaskRequest(task_id=created["id"], state="completed"))
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
+    await svc.request_approval(RequestApprovalRequest(task_id=created_task_id, run_id="run_001"))
+    await svc.resolve_approval(
+        ApprovalDecisionRequest(task_id=created_task_id, decision=Granted(), run_id="run_001")
+    )
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="planning"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="executing"))
+    await svc.transition_task(TransitionTaskRequest(task_id=created_task_id, state="completed"))
     events = event_repo._events
     assert any(
-        e.type == "run.progress" and e.payload.get("phase") == "task_created" for e in events
+        e.type == "run.progress" and e.payload.get("ea_event") == "task_created" for e in events
     )
     assert any(e.type == "run.approval_waiting" for e in events)
     assert any(
@@ -504,8 +538,70 @@ async def test_full_event_stream(
         for e in events
     )
     assert any(
-        e.type == "run.progress" and e.payload.get("phase") == "task_transitioned" for e in events
+        e.type == "run.progress" and e.payload.get("ea_event") == "task_transitioned"
+        for e in events
     )
+
+
+@pytest.mark.asyncio
+async def test_progress_events_use_catalog_milestones(
+    event_repo: InMemoryEventRepo,
+    svc: EATaskService,
+) -> None:
+    created = await svc.create_task(
+        CreateTaskRequest(session_id="s1", title="Build", objective="Ship", run_id="run_001")
+    )
+    created_task_id = _payload_str(created, "id")
+    await svc.transition_task(
+        TransitionTaskRequest(task_id=created_task_id, state="planning", run_id="run_001")
+    )
+    await svc.transition_task(
+        TransitionTaskRequest(task_id=created_task_id, state="executing", run_id="run_001")
+    )
+    await svc.request_approval(RequestApprovalRequest(task_id=created_task_id, run_id="run_001"))
+
+    for event in event_repo._events:
+        if event.type != "run.progress":
+            continue
+        assert is_valid_milestone(
+            str(event.payload["phase"]),
+            str(event.payload["milestone"]),
+        )
+
+
+@pytest.mark.asyncio
+async def test_resolve_approval_survives_service_restart(
+    task_repo: InMemoryTaskRepo,
+    approval_repo: InMemoryApprovalRepo,
+    event_repo: InMemoryEventRepo,
+) -> None:
+    first = EATaskService(
+        task_repo=task_repo,
+        approval_engine=ApprovalEngine(approvals=approval_repo, events=event_repo),
+        events=event_repo,
+    )
+    created = await first.create_task(
+        CreateTaskRequest(session_id="s1", title="T", objective="O", run_id="run_001")
+    )
+    created_task_id = _payload_str(created, "id")
+    await first.transition_task(
+        TransitionTaskRequest(task_id=created_task_id, state="planning", run_id="run_001")
+    )
+    await first.transition_task(
+        TransitionTaskRequest(task_id=created_task_id, state="executing", run_id="run_001")
+    )
+    await first.request_approval(RequestApprovalRequest(task_id=created_task_id, run_id="run_001"))
+
+    restarted = EATaskService(
+        task_repo=task_repo,
+        approval_engine=ApprovalEngine(approvals=approval_repo, events=event_repo),
+        events=event_repo,
+    )
+    result = await restarted.resolve_approval(
+        ApprovalDecisionRequest(task_id=created_task_id, decision=Granted(), run_id="run_001")
+    )
+
+    assert result["state"] == "granted"
 
 
 # -----------------------------------------------------------------------
@@ -518,7 +614,8 @@ def test_no_deferred_worker_comments_in_production_code() -> None:
     'real repository wiring is deferred' or 'fixture-only' or 'stub'."""
     import waywarden.services.ea_task_service as mod
 
-    source = mod.__loader__.get_source(mod.__name__)
+    assert mod.__loader__ is not None
+    source = cast(InspectLoader, mod.__loader__).get_source(mod.__name__)
     assert source is not None
     lower = source.lower()
     assert "real repository wiring is deferred" not in lower, (

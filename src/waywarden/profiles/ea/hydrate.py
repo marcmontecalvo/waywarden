@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
@@ -28,6 +28,10 @@ from waywarden.domain.profile import (
     ProfileRegistry,
     RequiredProviders,
 )
+from waywarden.profiles.loader import ProfileStartupError, validate_profile_startup
+
+if TYPE_CHECKING:
+    from waywarden.extensions.registry import ExtensionRegistry
 
 # ---------------------------------------------------------------------------
 # Domain error
@@ -86,6 +90,7 @@ def hydrate_ea_profile(
     *,
     profile_registry: ProfileRegistry | None = None,
     asset_registry: AssetRegistry | None = None,
+    extension_registry: ExtensionRegistry | None = None,
     registry_assets_dir: str = "assets",
 ) -> EAProfileView:
     """Hydrate the EA profile from its YAML manifest.
@@ -111,6 +116,12 @@ def hydrate_ea_profile(
 
     # 2. Get the EA profile descriptor.
     ea_descriptor = _get_ea_descriptor(profile_registry, errors)
+
+    if extension_registry is not None:
+        try:
+            validate_profile_startup(ProfileRegistry({"ea": ea_descriptor}), extension_registry)
+        except ProfileStartupError as exc:
+            errors.extend(exc.errors)
 
     # 3. Extract ``asset_filters`` from the raw YAML.
     asset_filters = raw_profile.get("asset_filters", [])

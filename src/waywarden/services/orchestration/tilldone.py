@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from waywarden.domain.ids import RunEventId
+from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
 from waywarden.services.orchestration.milestones import is_valid_milestone
 
@@ -292,7 +292,7 @@ def _emit_progress(
 
     event = RunEvent(
         id=RunEventId(f"{run_id}.prog.{phase}.{milestone}"),
-        run_id=run_id,
+        run_id=RunId(run_id),
         seq=len(stream.events) + 1,
         type="run.progress",
         payload={

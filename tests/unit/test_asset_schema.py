@@ -139,7 +139,7 @@ def test_tags_coerce_single_string_to_tuple() -> None:
         kind="prompt",
         version="1.0.0",
         description="d",
-        tags=["alpha", "beta"],
+        tags=("alpha", "beta"),
     )
     assert meta.tags == ("alpha", "beta")
 
@@ -150,7 +150,7 @@ def test_tags_deduplicate() -> None:
         kind="prompt",
         version="1.0.0",
         description="d",
-        tags=["a", "a", "b"],
+        tags=("a", "a", "b"),
     )
     assert meta.tags == ("a", "b")
 
@@ -161,7 +161,7 @@ def test_tags_empty_strings_filtered() -> None:
         kind="prompt",
         version="1.0.0",
         description="d",
-        tags=["a", "  ", "b"],
+        tags=("a", "  ", "b"),
     )
     assert meta.tags == ("a", "b")
 
@@ -177,7 +177,7 @@ def test_required_providers_normalized_and_deduped() -> None:
         kind="prompt",
         version="1.0.0",
         description="d",
-        required_providers=["Fake-Model", "fake-model", "honcho"],
+        required_providers=("Fake-Model", "fake-model", "honcho"),
     )
     assert meta.required_providers == ("fake-model", "honcho")
 
@@ -263,11 +263,30 @@ def test_routine_metadata_has_extra_fields() -> None:
         kind="routine",
         version="1.0.0",
         description="a briefing",
-        milestones=("intake", "plan"),
+        milestones=(
+            {"phase": "intake", "names": ["received", "accepted"]},
+            {"phase": "plan", "names": ["drafted", "ready"]},
+        ),
         emits_events=("run.progress",),
     )
-    assert meta.milestones == ("intake", "plan")
+    assert meta.milestones[0]["phase"] == "intake"
     assert meta.emits_events == ("run.progress",)
+
+
+def test_from_dict_dispatches_to_routine_metadata() -> None:
+    meta = AssetMetadata.from_dict(
+        {
+            "id": "briefing",
+            "kind": "routine",
+            "version": "1.0.0",
+            "description": "a briefing",
+            "milestones": [{"phase": "intake", "names": ["received"]}],
+            "emits_events": ["run.progress"],
+        }
+    )
+
+    assert isinstance(meta, RoutineMetadata)
+    assert meta.milestones[0]["phase"] == "intake"
 
 
 def test_agent_metadata_enforces_max_tools_per_step_minimum() -> None:

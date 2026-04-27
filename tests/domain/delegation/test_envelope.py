@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
 from waywarden.domain.delegation.envelope import (
@@ -22,12 +24,13 @@ def test_envelope_is_frozen() -> None:
     env = DelegationEnvelope(
         id=DelegationId("del-001"),
         parent_run_id=RunId("run-001"),
-        child_manifest=object(),  # type: ignore[arg-type]
+        child_manifest=cast(Any, object()),
         brief="test",
         expected_outputs=["out"],
     )
     with pytest.raises((TypeError, Exception)):
-        env.id = DelegationId("del-002")  # type: ignore[assignment]
+        env_any = cast(Any, env)
+        env_any.id = DelegationId("del-002")
 
 
 def test_make_envelope() -> None:
@@ -35,7 +38,7 @@ def test_make_envelope() -> None:
 
     env = make_envelope(
         parent_run_id=RunId("run-001"),
-        child_manifest=object(),  # type: ignore[arg-type]
+        child_manifest=cast(Any, object()),
         brief="sub task",
         expected_outputs=["summary"],
     )

@@ -171,9 +171,10 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Test
-        # Windows runners do not guarantee docker-compose; skip integration
-        # tests there. Linux runs all tests including integration against the
-        # Postgres service below.
+        # Windows runners do not guarantee docker-compose/Postgres service
+        # availability; integration coverage for the real provider-path +
+        # Postgres-backed EA runtime (including tests/integration/ea/test_ea_e2e.py)
+        # is intentionally gated to the linux job below.
         run: uv run pytest -m "not integration"
 
       - name: Upload coverage report
