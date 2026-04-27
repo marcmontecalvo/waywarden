@@ -54,6 +54,10 @@ class IterationResult:
     changes_applied: bool = False
     plan_revised: bool = False
     iteration_count: int = 0
+    # Plan revision details (P6-7 #98 — first-class loop output).
+    plan_body: str = ""
+    plan_diff_from_previous: str = ""
+    plan_rationale: str = ""
 
     @property
     def done(self) -> bool:
@@ -231,6 +235,9 @@ async def run_till_done(
             changes_applied=result.changes_applied,
             plan_revised=result.plan_revised,
             iteration_count=iteration,
+            plan_body=result.plan_body,
+            plan_diff_from_previous=result.plan_diff_from_previous,
+            plan_rationale=result.plan_rationale,
         )
 
         # code: iteration_started
@@ -256,7 +263,18 @@ async def run_till_done(
 
         # code: check_passed OR check_failed
         if result.plan_revised:
+            # Emit the plan revision artifact and milestone (P6-7).
+            _emit_progress(run_id, stream, "plan", "revision_cataloged")
             _emit_progress(run_id, stream, "code", "plan_revised")
+            _emit_plan_revision_artifact(
+                run_id=run_id,
+                stream=stream,
+                version=result.iteration_count,
+                body=result.plan_body,
+                diff=result.plan_diff_from_previous,
+                rationale=result.plan_rationale,
+                artifact_ref=result.plan_artifact_id,
+            )
             _emit_progress(run_id, stream, "plan", "ready")
             if cfg.esc_check_if_revised:
                 pass  # revise = trace
@@ -305,6 +323,48 @@ def _emit_progress(
             event_id=None,
             action=f"{phase}.{milestone}",
             request_id=None,
+        ),
+        actor=Actor(kind="system", id=None, display=None),
+    )
+    stream.emit(event)
+
+
+def _emit_plan_revision_artifact(
+    run_id: str,
+    stream: _EventStream,
+    *,
+    version: int,
+    body: str,
+    diff: str,
+    rationale: str,
+    artifact_ref: str,
+) -> None:
+    """Emit a ``run.artifact_created(kind=plan-revision)`` event.
+
+    This surfaces the plan revision as a first-class loop output per
+    issue #98 (P6-7).  The artifact carries the diff-from-previous,
+    rationale, and version number so that operators can see exactly
+    what changed and why — no opaque re-planning.
+    """
+    event = RunEvent(
+        id=RunEventId(f"{run_id}.artifact.plan-revision-v{version}"),
+        run_id=RunId(run_id),
+        seq=len(stream.events) + 1,
+        type="run.artifact_created",
+        payload={
+            "artifact_ref": artifact_ref,
+            "artifact_kind": "plan-revision",
+            "label": f"plan-revision-v{version}",
+            "version": version,
+            "diff_from_previous": diff,
+            "rationale": rationale,
+            "body": body,
+        },
+        timestamp=datetime.now(UTC),
+        causation=Causation(
+            event_id=None,
+            action="plan_revision",
+            request_id=artifact_ref,
         ),
         actor=Actor(kind="system", id=None, display=None),
     )
