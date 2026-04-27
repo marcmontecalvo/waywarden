@@ -10,6 +10,7 @@ from waywarden.services.orchestration.milestones import (
     ValidPhase,
 )
 from waywarden.services.orchestration.routine import EACoroutine, RoutineSlice
+from waywarden.services.orchestration.subagent_progress import make_sub_agent_progress_event
 
 __all__ = [
     "EACoroutine",
@@ -19,4 +20,5 @@ __all__ = [
     "RoutineSlice",
     "ValidMilestone",
     "ValidPhase",
+    "make_sub_agent_progress_event",
 ]
