@@ -50,6 +50,9 @@ code **must** appear here.
 | Milestone         | Description                              |
 | ----------------- | ---------------------------------------- |
 | `envelope_emitted` | Delegation envelope registered for child |
+| `sub_agent_registered` | Bounded sub-agent role registered for orchestration |
+| `sub_agent_started` | Sub-agent execution started |
+| `sub_agent_completed` | Sub-agent execution completed |
 
 ## Rules
 

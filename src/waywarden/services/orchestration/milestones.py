@@ -74,6 +74,21 @@ MILESTONE_CATALOG: tuple[MilestoneDefinition, ...] = (
         "envelope_emitted",
         "Delegation envelope registered for child run",
     ),
+    MilestoneDefinition(
+        "handoff",
+        "sub_agent_registered",
+        "Bounded sub-agent role registered for orchestration",
+    ),
+    MilestoneDefinition(
+        "handoff",
+        "sub_agent_started",
+        "Sub-agent execution started",
+    ),
+    MilestoneDefinition(
+        "handoff",
+        "sub_agent_completed",
+        "Sub-agent execution completed",
+    ),
     # code — till-done loop iterations (P6-4 #95)
     MilestoneDefinition(
         "code",
