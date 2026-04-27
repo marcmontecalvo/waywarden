@@ -6,21 +6,49 @@ AGENT="${AGENT:-codex}"
 
 if [[ -z "$TARGET" ]]; then
   echo "Usage:"
-  echo "  we 4"
-  echo "  we P4"
-  echo "  we https://github.com/marcmontecalvo/waywarden/issues/63"
+  echo "  scripts/we 4                 # means EPIC P4, not issue #4"
+  echo "  scripts/we P4"
+  echo "  scripts/we issue 63          # exact GitHub issue number"
+  echo "  scripts/we '#63'             # exact GitHub issue number"
+  echo "  scripts/we https://github.com/marcmontecalvo/waywarden/issues/63"
   echo
   echo "Optional:"
-  echo "  AGENT=codex we 4"
-  echo "  AGENT=claude we 4"
-  echo "  AGENT=pi we 4"
+  echo "  AGENT=codex scripts/we 4"
+  echo "  AGENT=claude scripts/we 4"
+  echo "  AGENT=pi scripts/we 4"
   exit 1
+fi
+
+# If the user passes multiple args like "issue 63", preserve them.
+if [[ "$#" -gt 1 ]]; then
+  TARGET="$*"
 fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
-PROMPT=$(cat <<PROMPT_EOF
+# Normalize only for clarity in the prompt. The skill still performs authoritative resolution.
+if [[ "$TARGET" =~ ^[0-9]+$ ]]; then
+  NORMALIZED_TARGET="P${TARGET}"
+  TARGET_NOTE="The user provided bare number '$TARGET'. Treat this as EPIC ${NORMALIZED_TARGET}, not GitHub issue #${TARGET}. Resolve the matching [EPIC] ${NORMALIZED_TARGET} issue before reading an issue by number."
+elif [[ "$TARGET" =~ ^[Pp][0-9]+$ ]]; then
+  NORMALIZED_TARGET="${TARGET^^}"
+  TARGET_NOTE="The user provided '${TARGET}'. Treat this as EPIC ${NORMALIZED_TARGET}. Resolve the matching [EPIC] ${NORMALIZED_TARGET} issue before reading an issue by number."
+elif [[ "$TARGET" =~ ^#([0-9]+)$ ]]; then
+  NORMALIZED_TARGET="$TARGET"
+  TARGET_NOTE="The user provided explicit issue reference '$TARGET'. Use that exact GitHub issue as the EPIC candidate."
+elif [[ "$TARGET" =~ ^issue[[:space:]]+[0-9]+$ ]]; then
+  NORMALIZED_TARGET="$TARGET"
+  TARGET_NOTE="The user provided explicit issue reference '$TARGET'. Use that exact GitHub issue as the EPIC candidate."
+elif [[ "$TARGET" =~ /issues/[0-9]+/?$ ]]; then
+  NORMALIZED_TARGET="$TARGET"
+  TARGET_NOTE="The user provided a GitHub issue URL. Use that exact GitHub issue as the EPIC candidate."
+else
+  NORMALIZED_TARGET="$TARGET"
+  TARGET_NOTE="Resolve this EPIC input according to .agents/skills/work-entire-epic/SKILL.md."
+fi
+
+PROMPT=$(cat <<EOF_PROMPT
 Open and follow the repo-local skill directly:
 
 .agents/skills/work-entire-epic/SKILL.md
@@ -29,11 +57,19 @@ Do not use a global skill registry.
 
 Target EPIC input:
 
-$TARGET
+$NORMALIZED_TARGET
+
+Input-resolution note:
+
+$TARGET_NOTE
+
+Critical rule:
+
+A bare number such as '4' means EPIC P4. It does not mean GitHub issue #4. Only read issue #4 if the user explicitly says '#4', 'issue 4', or provides a URL ending in /issues/4.
 
 Operational rules:
 - This is a whole-EPIC loop.
-- First resolve the EPIC.
+- First resolve the EPIC issue.
 - Review all open child issues in the EPIC.
 - Select the first open actionable child issue.
 - For each child issue, follow:
@@ -46,7 +82,7 @@ Operational rules:
 - Do not use bare python; use uv.
 - Do not work directly on main.
 - Do not stop until the EPIC is complete or blocked.
-PROMPT_EOF
+EOF_PROMPT
 )
 
 case "$AGENT" in
