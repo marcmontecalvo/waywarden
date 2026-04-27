@@ -446,6 +446,162 @@ class PipelineMetadata(AssetMetadata, frozen=True):
     kind: Literal["pipeline"] = "pipeline"
     stages: tuple[str, ...] = ()
     timeout_seconds: int = 0
+    start_node: str = ""
+    nodes: tuple[dict[str, Any], ...] = ()
+    routes: tuple[dict[str, str | None], ...] = ()
+
+    @field_validator("start_node", mode="before")
+    @classmethod
+    def _normalize_start_node(cls, value: object) -> str:
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            raise TypeError("start_node must be a string")
+        return value.strip()
+
+    @field_validator("nodes", mode="before")
+    @classmethod
+    def _normalize_nodes(cls, value: object) -> tuple[dict[str, Any], ...]:
+        if value is None:
+            return ()
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("nodes must be a sequence of mappings")
+        required = frozenset(
+            {
+                "id",
+                "kind",
+                "ref_id",
+                "input_artifact_kind",
+                "output_artifact_kind",
+                "phase",
+                "milestone",
+            }
+        )
+        nodes: list[dict[str, Any]] = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise TypeError(f"nodes[{idx}] must be a mapping")
+            missing = required - set(item)
+            if missing:
+                raise ValueError(f"nodes[{idx}] missing required fields: {sorted(missing)}")
+            node: dict[str, Any] = {}
+            for key in required:
+                raw = item[key]
+                if not isinstance(raw, str):
+                    raise TypeError(f"nodes[{idx}].{key} must be a string")
+                trimmed = raw.strip()
+                if not trimmed:
+                    raise ValueError(f"nodes[{idx}].{key} must not be blank")
+                node[key] = trimmed
+            if node["kind"] not in {"sub_agent", "team", "review_checkpoint"}:
+                raise ValueError(
+                    f"nodes[{idx}].kind must be one of sub_agent, team, review_checkpoint"
+                )
+            checkpoint = item.get("review_checkpoint")
+            if node["kind"] == "review_checkpoint":
+                if not isinstance(checkpoint, dict):
+                    raise TypeError(
+                        f"nodes[{idx}].review_checkpoint must be a mapping for review nodes"
+                    )
+                node["review_checkpoint"] = cls._normalize_review_checkpoint(
+                    checkpoint,
+                    index=idx,
+                )
+            elif checkpoint is not None:
+                raise ValueError(
+                    f"nodes[{idx}].review_checkpoint is only valid for review_checkpoint nodes"
+                )
+            nodes.append(node)
+        return tuple(nodes)
+
+    @staticmethod
+    def _normalize_review_checkpoint(
+        value: dict[object, object],
+        *,
+        index: int,
+    ) -> dict[str, str]:
+        required = frozenset(
+            {
+                "input_artifact_kind",
+                "passed_output_artifact_kind",
+                "failed_output_artifact_kind",
+            }
+        )
+        missing = required - set(value)
+        if missing:
+            raise ValueError(
+                f"nodes[{index}].review_checkpoint missing required fields: {sorted(missing)}"
+            )
+        checkpoint: dict[str, str] = {}
+        for key in required:
+            raw = value[key]
+            if not isinstance(raw, str):
+                raise TypeError(f"nodes[{index}].review_checkpoint.{key} must be a string")
+            trimmed = raw.strip()
+            if not trimmed:
+                raise ValueError(f"nodes[{index}].review_checkpoint.{key} must not be blank")
+            checkpoint[key] = trimmed
+        return checkpoint
+
+    @field_validator("routes", mode="before")
+    @classmethod
+    def _normalize_routes(cls, value: object) -> tuple[dict[str, str | None], ...]:
+        if value is None:
+            return ()
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("routes must be a sequence of mappings")
+        required = frozenset({"from_node", "outcome", "to_node"})
+        routes: list[dict[str, str | None]] = []
+        for idx, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise TypeError(f"routes[{idx}] must be a mapping")
+            missing = required - set(item)
+            if missing:
+                raise ValueError(f"routes[{idx}] missing required fields: {sorted(missing)}")
+            route: dict[str, str | None] = {}
+            for key in ("from_node", "outcome"):
+                raw = item[key]
+                if not isinstance(raw, str):
+                    raise TypeError(f"routes[{idx}].{key} must be a string")
+                trimmed = raw.strip()
+                if not trimmed:
+                    raise ValueError(f"routes[{idx}].{key} must not be blank")
+                route[key] = trimmed
+            if route["outcome"] not in {"success", "failure"}:
+                raise ValueError(f"routes[{idx}].outcome must be one of success, failure")
+            to_node = item["to_node"]
+            if to_node is None:
+                route["to_node"] = None
+            elif isinstance(to_node, str) and to_node.strip():
+                route["to_node"] = to_node.strip()
+            else:
+                raise TypeError(f"routes[{idx}].to_node must be a string or null")
+            routes.append(route)
+        return tuple(routes)
+
+    @model_validator(mode="after")
+    def _validate_pipeline_references(self) -> PipelineMetadata:
+        if not self.nodes:
+            return self
+        if not self.start_node:
+            raise ValueError("start_node is required when nodes are declared")
+        node_ids = [node["id"] for node in self.nodes]
+        if len(set(node_ids)) != len(node_ids):
+            raise ValueError("nodes must not contain duplicate ids")
+        node_id_set = set(node_ids)
+        if self.start_node not in node_id_set:
+            raise ValueError("start_node references unknown node")
+        route_keys: set[tuple[str, str | None]] = set()
+        for idx, route in enumerate(self.routes):
+            if route["from_node"] not in node_id_set:
+                raise ValueError(f"routes[{idx}].from_node references unknown node")
+            if route["to_node"] is not None and route["to_node"] not in node_id_set:
+                raise ValueError(f"routes[{idx}].to_node references unknown node")
+            key = (str(route["from_node"]), route["outcome"])
+            if key in route_keys:
+                raise ValueError("routes must not contain duplicate node outcomes")
+            route_keys.add(key)
+        return self
 
 
 class PolicyMetadata(AssetMetadata, frozen=True):

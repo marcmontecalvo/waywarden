@@ -1,0 +1,54 @@
+id: coding-review-pipeline
+kind: pipeline
+version: 1.0.0
+description: Coding pipeline that runs the dispatch team and gates handback through a typed review checkpoint.
+tags:
+  - coding
+  - pipeline
+  - review
+required_providers:
+  - model
+  - tool
+start_node: team-run
+nodes:
+  - id: team-run
+    kind: team
+    ref_id: coding-dispatch-team
+    input_artifact_kind: coding-task
+    output_artifact_kind: team-handoff
+    phase: handoff
+    milestone: team_started
+  - id: review-gate
+    kind: review_checkpoint
+    ref_id: adversarial-review
+    input_artifact_kind: team-handoff
+    output_artifact_kind: review-report
+    phase: review
+    milestone: findings_recorded
+    review_checkpoint:
+      input_artifact_kind: team-handoff
+      passed_output_artifact_kind: approved-handoff
+      failed_output_artifact_kind: review-findings
+  - id: fallback-review
+    kind: sub_agent
+    ref_id: agent-reviewer
+    input_artifact_kind: review-findings
+    output_artifact_kind: review-report
+    phase: handoff
+    milestone: sub_agent_started
+routes:
+  - from_node: team-run
+    outcome: success
+    to_node: review-gate
+  - from_node: review-gate
+    outcome: success
+    to_node:
+  - from_node: review-gate
+    outcome: failure
+    to_node: fallback-review
+  - from_node: fallback-review
+    outcome: success
+    to_node:
+profile_filter:
+  - op: include
+    tag: coding
