@@ -1,3 +1,14 @@
+---
+type: spec
+title: "Local Postgres Setup"
+status: Complete
+date: 2026-04-27
+spec_number: "SETUP-POSTGRES"
+phase: harness-core
+relates_to_adrs: [0002]
+tags: [setup, postgres, docker, development]
+---
+
 # Local Postgres
 
 Run a local Postgres instance for development and integration testing.

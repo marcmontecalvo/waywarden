@@ -5,7 +5,7 @@ description: Work every open actionable child issue in a GitHub EPIC by repeated
 
 # work-entire-epic
 
-Use this skill when the user gives an EPIC number, EPIC name, or GitHub EPIC issue URL and wants the whole EPIC completed.
+Use this skill when the user gives an EPIC number, phase number, EPIC name, or GitHub EPIC issue URL and wants the whole EPIC completed.
 
 This skill is intentionally a thin loop around the repo-local next-issue skill:
 
@@ -15,22 +15,37 @@ Do not invent a new implementation workflow.
 
 Do not use a global skill registry.
 
-Open the repo-local SKILL.md files directly.
+Open repo-local SKILL.md files directly.
 
-## Inputs
+## Critical input-resolution rule
 
-Accepted input forms:
+A bare number is **not automatically a GitHub issue number**.
+
+Interpret inputs as follows:
+
+- `we 4` means **work EPIC P4**, not GitHub issue `#4`.
+- `work epic 4` means **work EPIC P4**, not GitHub issue `#4`.
+- `work P4` means **work EPIC P4**.
+- `we P4` means **work EPIC P4**.
+- `we issue 4` means GitHub issue `#4`.
+- `we #4` means GitHub issue `#4`.
+- `we https://github.com/<owner>/<repo>/issues/<number>` means use that exact GitHub issue as the EPIC candidate.
+
+For the common shorthand `we 4`, first resolve the EPIC by searching open issues for an issue whose title/labels/body indicate `[EPIC] P4` / `phase-p4` / `P4:`.
+
+Only call `gh issue view 4` when the user explicitly says `issue 4`, `#4`, or provides `/issues/4`.
+
+## Accepted input forms
 
 - `work epic 4`
+- `work epic P4`
 - `work P4`
 - `we 4`
 - `we P4`
-- `we https://github.com/marcmontecalvo/waywarden/issues/<number>`
+- `we issue 63`
+- `we #63`
+- `we https://github.com/marcmontecalvo/waywarden/issues/63`
 - direct GitHub EPIC issue URL
-
-If the user provides only a number like `4`, resolve it as EPIC/P4 according to the repo's existing GitHub issue conventions.
-
-If the user provides a GitHub issue URL, treat that issue as the EPIC.
 
 ## Goal
 
@@ -56,39 +71,98 @@ Continue until:
 - the EPIC has no remaining open actionable child issues, or
 - the EPIC is blocked by a real dependency requiring human input.
 
-## Mandatory workflow
+## Phase 1: Resolve the EPIC
 
-### Phase 1: Resolve the EPIC
+### A. If input is a GitHub issue URL
 
-1. Identify the EPIC issue from the user input.
-2. Read the EPIC with GitHub CLI.
-3. Determine the child issues from the EPIC body/checklist/comments.
-4. Review all child issues that are still open.
-5. Identify the first open actionable child issue.
-
-Use `gh` only for GitHub operations.
-
-Start with stable reads:
-
-```bash
-gh issue view <epic-number> --json number,title,body,state,url,labels,comments
-```
-
-For child issues:
+Extract the issue number from the URL and read it directly:
 
 ```bash
 gh issue view <issue-number> --json number,title,body,state,url,labels,comments
 ```
 
-Do not request unsupported GitHub JSON fields.
+The issue must be treated as the EPIC candidate. If it is not labeled/title-shaped like an EPIC, stop and report `FAIL` unless the user explicitly said to treat it as the EPIC.
 
-If a `gh --json` field fails, immediately fall back to:
+### B. If input is `#N` or `issue N`
+
+Read that issue number directly:
 
 ```bash
-gh issue view <issue-number> --json number,title,body,state,url,labels
+gh issue view <issue-number> --json number,title,body,state,url,labels,comments
 ```
 
-### Phase 2: Child issue loop
+The issue must be treated as the EPIC candidate.
+
+### C. If input is a bare number, such as `4`
+
+Normalize it to phase key `P4`.
+
+Do **not** read issue `#4`.
+
+Search for the EPIC issue using `gh issue list`:
+
+```bash
+gh issue list \
+  --state all \
+  --search "repo:$(gh repo view --json nameWithOwner --jq .nameWithOwner) P4 in:title" \
+  --json number,title,state,url,labels \
+  --limit 50
+```
+
+Prefer the result that matches all or most of:
+
+- title starts with `[EPIC] P4`
+- title contains `P4:`
+- has label `epic`
+- has label `phase-p4`
+
+Then read that issue as the EPIC:
+
+```bash
+gh issue view <resolved-epic-number> --json number,title,body,state,url,labels,comments
+```
+
+### D. If input is `P4`
+
+Use the same EPIC search flow as a bare number normalized to `P4`.
+
+### E. If multiple EPIC candidates match
+
+Choose the issue with:
+
+1. `epic` label
+2. matching `phase-pN` label
+3. title prefix `[EPIC] PN`
+4. open state over closed state
+
+If still ambiguous, stop with `FAIL` and list candidates.
+
+## Phase 2: Read child issues
+
+Determine child issues from the EPIC body/checklist/comments.
+
+Prefer explicit GitHub issue links and checklist/order-of-execution items in the EPIC body.
+
+Read each child issue that appears in the EPIC body:
+
+```bash
+gh issue view <issue-number> --json number,title,body,state,url,labels,comments
+```
+
+Review all child issues that are still open.
+
+Identify the first open actionable child issue according to the EPIC order of execution.
+
+Respect:
+
+- explicit dependencies
+- `blocked` labels
+- design/spike labels if they indicate not executable
+- sequencing notes in the EPIC body
+
+Do not silently skip open child issues.
+
+## Phase 3: Child issue loop
 
 For each selected child issue, run the existing next-issue workflow exactly:
 
@@ -197,13 +271,14 @@ Optional/future/governance items do not keep the EPIC open unless the EPIC expli
 
 ## Non-negotiable rules
 
+- Do not treat `we 4` as GitHub issue `#4`.
 - Do not work directly on `main`.
 - Do not skip tests.
 - Do not skip `make format`, `make lint`, or `make test` before a commit.
 - Do not commit after red lint/tests/typecheck.
 - Do not claim a failure is preexisting unless the baseline gate captured it before edits.
 - Do not close a child issue unless it was merged to `main`.
-- Do not move to the next child issue unless the current issue reached `PASS`.
+- Do not move to the next child issue while the current child issue is incomplete.
 - Do not keep looping after a real blocker.
 - Do not silently skip open child issues.
 - Do not treat aggregate coverage as acceptance proof.
@@ -230,7 +305,6 @@ After the EPIC loop ends, return:
 - final state: open|closed
 
 ## CHILD ISSUES COMPLETED
-- #<number> <title> — PASS
 - #<number> <title> — PASS
 
 ## CHILD ISSUES SKIPPED OR BLOCKED

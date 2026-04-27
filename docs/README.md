@@ -1,8 +1,8 @@
 ---
-type: research
+type: index
 title: "Documentation Map and Navigation"
 status: Active
-date: 2026-04-17
+date: 2026-04-27
 source_url: null
 source_type: index
 priority: directly-relevant
@@ -14,73 +14,69 @@ relates_to_adrs: null
 
 This docs tree is split by **intent**, not by age.
 
-**Key reference**: All documents must include [YAML frontmatter](./FRONTMATTER-SPEC.md) with metadata for discovery and linking.
+**Key reference**: All documents must include [YAML frontmatter](./FRONTMATTER-SPEC.md)
+with metadata for discovery and linking.
 
-## Folders
+## Operator guides
 
-- `architecture/`
-  - Canonical architecture decisions (ADRs)
-  - Durable constraints, boundaries, and design rules
-  - If a note changes how WayWarden should actually be built, it should end up here
+### `setup/`
 
-- `issues/`
-  - Execution backlog and phased implementation work
-  - What the coding agent should build, in what order
-  - Should reference ADRs rather than restating architecture from scratch
+Getting a working local instance running.
 
-- `prompts/`
-  - Prompt assets for coding agents and bootstrap flows
-  - Prompt docs support execution; they are not the source of truth for system design
+- [quickstart.md](setup/quickstart.md) — clone → install → migrate → run → smoke check
+- [providers.md](setup/providers.md) — Honcho, LLM-Wiki, Anthropic, tracing, policy
+- [ea-instance.md](setup/ea-instance.md) — configure marc-ea, add lisa-ea, profile selection
 
-- `research/`
-  - External products, repos, articles, and UX references
-  - Pattern-oriented notes only
-  - Useful for fast-moving market inputs before they graduate into architecture decisions
+### `usage/`
 
-## Usage rules
+Day-to-day operation and API reference.
+
+- [ea-operator-guide.md](usage/ea-operator-guide.md) — what EA does today, task/approval/delegation flows
+- [api-smoke-tests.md](usage/api-smoke-tests.md) — curl commands for every endpoint
+
+## Architecture
+
+### `architecture/`
+
+Canonical architecture decisions (ADRs) and durable design rules. If a note
+changes how Waywarden should be built, it ends up here.
+
+## Other folders
+
+- `orchestration/` — milestone catalog documentation
+- `prompts/` — prompt assets for coding agents and bootstrap flows
+- `research/` — external products, repos, UX references (pattern notes only)
+- `references/` — external inspiration
+- `specs/` — runtime protocol specs (RT-001, RT-002), skill contracts
+
+## Folder rules
 
 1. Put **durable decisions** in `architecture/`.
 2. Put **fast-moving external observations** in `research/`.
-3. Put **build order and implementation work** in `issues/`.
+3. Put **operator setup and usage** in `setup/` and `usage/`.
 4. Put **execution prompts** in `prompts/`.
-5. If a research note changes the actual design, add or update an ADR instead of letting the research doc become the spec.
-6. **All documents must include YAML frontmatter** with metadata (type, title, status, date). See [FRONTMATTER-SPEC.md](./FRONTMATTER-SPEC.md) for the standard.
+5. If a research note changes the actual design, write or update an ADR.
+6. **All documents must include YAML frontmatter** (type, title, status, date).
+   See [FRONTMATTER-SPEC.md](./FRONTMATTER-SPEC.md) for the standard.
 
 ## Local development
 
-Install the dev toolchain and git hooks with:
+Install the dev toolchain and git hooks:
 
 ```bash
-uv sync --extra dev
+make bootstrap
 uv run pre-commit install
 ```
 
-Run the full hook set manually with:
+Run the full hook set manually:
 
 ```bash
 uv run pre-commit run --all-files
 ```
 
-The configured hooks currently run:
+Configured hooks:
 - `ruff format`
 - `ruff check --fix`
 - `mypy` on staged Python files in `src/` and `tests/`
 - `trailing-whitespace`
 - `end-of-file-fixer`
-
-## Working rule for the current phase
-
-WayWarden is still pre-build. That means:
-- `research/` will change quickly
-- `architecture/` should stay tighter and more stable
-- `issues/` should lag architecture slightly and only contain work that is ready to build
-
-## Current risk to avoid
-
-Do not let `research/` become a second architecture folder.
-
-When a new article, repo, or product matters, do this in order:
-1. capture it in `research/`
-2. extract only the durable implications
-3. write or update an ADR
-4. only then update the phased backlog in `issues/`

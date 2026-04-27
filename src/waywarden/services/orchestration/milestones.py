@@ -49,6 +49,11 @@ MILESTONE_CATALOG: tuple[MilestoneDefinition, ...] = (
     MilestoneDefinition("plan", "drafted", "Initial plan drafted"),
     MilestoneDefinition("plan", "approval_requested", "Plan submitted for approval gate"),
     MilestoneDefinition("plan", "ready", "Plan approved and ready for execution"),
+    MilestoneDefinition(
+        "plan",
+        "revision_cataloged",
+        "Plan revision cataloged as a first-class artifact with diff and rationale",
+    ),
     # execute
     MilestoneDefinition("execute", "tool_invoked", "A tool invocation starts"),
     MilestoneDefinition("execute", "artifact_emitted", "A tool or step produced an artifact"),

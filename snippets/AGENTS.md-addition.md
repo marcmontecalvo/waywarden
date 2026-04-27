@@ -10,6 +10,13 @@ The whole-EPIC skill loops over the existing next-issue skill:
 
 `.agents/skills/work-next-issue-in-given-epic/SKILL.md`
 
+Critical input rule:
+
+- `we 4` means EPIC `P4`, not GitHub issue `#4`.
+- `work epic 4` means EPIC `P4`, not GitHub issue `#4`.
+- `we P4` means EPIC `P4`.
+- `we #4`, `we issue 4`, or a URL ending in `/issues/4` means exact GitHub issue `#4`.
+
 Rules:
 
 - Resolve the EPIC first.
