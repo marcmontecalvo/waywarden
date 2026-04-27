@@ -1,3 +1,14 @@
+---
+type: spec
+title: "CI / CD Configuration"
+status: Complete
+date: 2026-04-27
+spec_number: "CI-001"
+phase: harness-core
+relates_to_adrs: null
+tags: [ci, testing, github-actions, integration-tests]
+---
+
 # CI / CD
 
 ## Jobs

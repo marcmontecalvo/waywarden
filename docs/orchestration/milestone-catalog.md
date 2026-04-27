@@ -1,3 +1,13 @@
+---
+type: spec
+title: "Orchestration Milestone Catalog"
+status: In Use
+date: 2026-04-27
+spec_number: "ORCH-001"
+phase: harness-core
+relates_to_adrs: null
+---
+
 # Orchestration Milestone Catalog
 
 Catalogue of every `run.progress` `phase` / `milestone` pair used by the
