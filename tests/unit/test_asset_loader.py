@@ -14,6 +14,7 @@ from waywarden.assets.loader import (
 from waywarden.assets.schema import (
     AssetKind,
     AssetMetadata,
+    PipelineMetadata,
 )
 
 FIXTURES_DIR = Path("tests/fixtures/assets").resolve()
@@ -220,6 +221,52 @@ def test_filter_expression_to_dict() -> None:
     data = expr.to_dict()
     assert data["op"] == "include"
     assert data["tags"] == ["ea"]
+
+
+def test_pipeline_metadata_requires_typed_nodes_and_routes() -> None:
+    asset = AssetMetadata.from_dict(
+        {
+            "id": "coding-review-pipeline",
+            "kind": "pipeline",
+            "version": "1.0.0",
+            "description": "Pipeline with team execution and review checkpoint.",
+            "nodes": [
+                {
+                    "id": "team-run",
+                    "kind": "team",
+                    "ref_id": "coding-dispatch-team",
+                    "input_artifact_kind": "coding-task",
+                    "output_artifact_kind": "team-handoff",
+                    "phase": "handoff",
+                    "milestone": "team_started",
+                },
+                {
+                    "id": "review-gate",
+                    "kind": "review_checkpoint",
+                    "ref_id": "adversarial-review",
+                    "input_artifact_kind": "team-handoff",
+                    "output_artifact_kind": "review-report",
+                    "phase": "review",
+                    "milestone": "findings_recorded",
+                    "review_checkpoint": {
+                        "input_artifact_kind": "team-handoff",
+                        "passed_output_artifact_kind": "approved-handoff",
+                        "failed_output_artifact_kind": "review-findings",
+                    },
+                },
+            ],
+            "routes": [
+                {"from_node": "team-run", "outcome": "success", "to_node": "review-gate"},
+                {"from_node": "review-gate", "outcome": "success", "to_node": None},
+                {"from_node": "review-gate", "outcome": "failure", "to_node": "team-run"},
+            ],
+            "start_node": "team-run",
+        }
+    )
+
+    assert isinstance(asset, PipelineMetadata)
+    assert asset.start_node == "team-run"
+    assert asset.nodes[1]["review_checkpoint"]["failed_output_artifact_kind"] == ("review-findings")
 
 
 # -----------------------------------------------------------------------
