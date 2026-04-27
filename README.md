@@ -1,14 +1,59 @@
 # waywarden
 
-Waywarden is a **slim, extensible agent harness** built around one small core and many swappable profile packs.
+Waywarden is a **slim, extensible agent harness** — one small core runtime and
+many swappable profile packs. It supports multiple agents running side by side
+on the same core, such as:
 
-The goal is to let you run multiple agents side by side — for example:
 - a personal EA for Marc
 - a personal EA for Lisa
 - a coding agent
 - a Home Assistant companion
 
-All of them should share the same harness architecture while remaining separately configurable, observable, and controllable.
+All instances share the same harness architecture while remaining separately
+configurable, observable, and controllable.
+
+## Current state
+
+**Phase P6 is underway.** The core harness, EA profile, and all backing
+infrastructure are operational:
+
+- FastAPI service with REST API and SSE streaming
+- PostgreSQL-backed system of record (Alembic-managed schema)
+- Profile loader (ea, coding, home)
+- Multi-instance configuration (marc-ea ships by default)
+- Task domain and state machine
+- Run lifecycle with RT-002 event log
+- Approval engine (yolo / ask / allowlist / custom presets)
+- Model router (fake stub or Anthropic)
+- Honcho memory adapter (optional)
+- LLM-Wiki knowledge adapter (optional, filesystem fallback)
+- OpenTelemetry-compatible tracing (noop by default)
+- Token accounting per turn
+
+## Quick start
+
+```bash
+git clone https://github.com/marcmontecalvo/waywarden.git
+cd waywarden
+make bootstrap
+cp .env.example .env
+make db-up
+make migrate
+make run
+curl -s http://localhost:8000/healthz
+```
+
+Full setup instructions: [docs/setup/quickstart.md](docs/setup/quickstart.md)
+
+## Operator docs
+
+| Guide | Purpose |
+|---|---|
+| [Quickstart](docs/setup/quickstart.md) | Clone → running local instance |
+| [Providers](docs/setup/providers.md) | Honcho, LLM-Wiki, model provider wiring |
+| [EA Instance Config](docs/setup/ea-instance.md) | Configure and add EA instances |
+| [EA Operator Guide](docs/usage/ea-operator-guide.md) | What EA can do, task and approval flows |
+| [API Smoke Tests](docs/usage/api-smoke-tests.md) | Curl commands for every endpoint |
 
 ## Positioning
 
@@ -26,232 +71,91 @@ This repo **is**:
 - a profile-driven harness with swappable memory, knowledge, tool, model, and channel providers
 - an API-first platform that can power separate dashboards and UIs
 
-## Architecture thesis
+## Architecture
 
-Waywarden should be:
-- one **small core runtime**
-- one **extension system**
-- one **profile system**
-- many **instances**
+One **core runtime**, one **extension system**, one **profile system**, many **instances**.
 
-A single core should support profiles such as:
-- `ea`
-- `coding`
-- `home`
+A single deployment runs multiple instances simultaneously — `marc-ea`,
+`lisa-ea`, `coding-main` — without code forks.
 
-A single deployment should also be able to run multiple configured instances at once, such as:
-- `marc-ea`
-- `lisa-ea`
-- `coding-main`
-- `ha-main`
+Design rules:
+1. **One core, many profiles** — the core owns runtime primitives; profiles activate extensions.
+2. **Multi-instance by design** — no code fork required per instance.
+3. **Memory is not knowledge** — Honcho for runtime memory; LLM-Wiki for curated, inspectable knowledge.
+4. **Providers are swappable** — Honcho and LLM-Wiki are starting choices, not permanent commitments.
+5. **No giant god prompt** — architecture lives in code, configs, contracts, and tests.
+6. **Policy is explicit** — approvals, YOLO mode, and auditing are policy presets, not hidden behavior.
+7. **UI is optional** — APIs are the contract; dashboards and UIs live outside this repo.
+8. **Token discipline is a feature** — the harness measures user-input, injected context, tool expansion, and response tokens.
 
-## Current stack targets
+## Stack
 
 - Ubuntu 24.04 LTS
 - Python 3.13.x
 - `uv`
-- FastAPI
-- Uvicorn
+- FastAPI + Uvicorn
 - Pydantic v2
-- pytest
-- Ruff
+- SQLAlchemy 2 + Alembic + psycopg
+- PostgreSQL 16
+- pytest + Ruff
 
-Planned for later milestones (not wired yet):
-- SQLAlchemy 2 + Alembic + psycopg are pinned in the dependency graph for P2, but
-  ORM mappings and migrations land in later P2 issues
-- Postgres as the system of record (P2+)
-- Honcho as the starting memory provider (P3+)
-- LLM-Wiki as the starting knowledge provider (P3+)
-- OpenTelemetry-compatible tracing with a no-op mode when auditing is disabled
+## Dev commands
 
-## App Config
-
-Application bootstrap settings are loaded into a strictly typed `AppConfig`.
-
-Precedence is highest to lowest:
-- process environment variables with the `WAYWARDEN_` prefix
-- `.env` in the current working directory
-- `config/app.yaml`
-- `AppConfig` class defaults
-
-Loading behavior:
-- `load_app_config()` reads `config/app.yaml` from the requested `config_dir`, defaulting to `./config`
-- `.env` is resolved from the requested `cwd`, defaulting to the current process working directory
-- `config/app.yaml` is required; if it is missing, loading fails with an explicit file-not-found style config error
-- each load builds its YAML source per call, so repeated or concurrent loads do not mutate shared class state
-
-Only `config/app.yaml` is schema-validated in this phase. Other `config/*.yaml` files are tolerated so later milestones can attach their own typed consumers without leaking provider-specific config into the core app model.
-
-## Instance Fixtures
-
-M1 instance fixtures live under `config/` in two parts:
-- `config/instances.yaml`: manifest of instance descriptors for the deployment
-- `config/instances/<instance-id>.yaml`: per-instance overlay file referenced by `config_path`
-
-The manifest shape is:
-
-```yaml
-instances:
-  - id: marc-ea
-    display_name: Marc EA
-    profile_id: ea
-    config_path: instances/marc-ea.yaml
+```bash
+make bootstrap   # uv sync --extra dev
+make db-up       # start Postgres sidecar (Docker)
+make migrate     # alembic upgrade head
+make run         # production uvicorn on :8000
+make dev         # uvicorn with live reload
+make test        # pytest with 80% coverage threshold
+make lint        # ruff check + format check
+make format      # ruff check --fix + format
+make secret-scan # gitleaks over working tree
+make db-down     # stop Postgres (keep data)
+make db-nuke     # stop Postgres + delete volumes
 ```
 
-`config_path` is resolved relative to `config/`, and each referenced file is schema-checked against the current `InstanceConfig` shape:
+## CLI
 
-```yaml
-env: {}
-overrides: {}
+```bash
+uv run waywarden serve           # start the server
+uv run waywarden list-profiles   # show loaded profiles
+uv run waywarden list-instances  # show loaded instances
+uv run waywarden chat "..."      # submit a chat message
 ```
 
-The checked-in default fixture is `marc-ea`, pinned to the real `ea` profile. Instance loading fails clearly if the manifest is malformed, an overlay file is invalid, or a referenced `profile_id` no longer exists in `profiles/`.
+## App config
 
-## CLI bootstrap
+Settings are loaded into a strictly-typed `AppConfig`.
 
-The M1 boot slice exposes three commands:
-- `uv run waywarden serve`
-- `uv run waywarden list-profiles`
-- `uv run waywarden list-instances`
+Precedence (highest to lowest):
+1. Process environment variables with the `WAYWARDEN_` prefix
+2. `.env` in the current working directory
+3. `config/app.yaml`
+4. `AppConfig` class defaults
 
-`serve` loads `AppConfig`, builds the FastAPI app through the shared app factory, and binds uvicorn to the configured `host` and `port`.
-
-On Windows, the supported launch mode for this slice is the direct foreground command `uv run waywarden serve`. Stop it with `Ctrl+C`. Reload-oriented or alternate signal-management launch modes are intentionally out of scope for this milestone.
-
-## Design rules
-
-1. **One core, many profiles**
-   The harness core owns the runtime primitives. Profiles decide which tools, widgets, prompts, routines, teams, policies, and context providers are active.
-
-2. **Multi-instance by design**
-   The same harness should support multiple side-by-side instances without code forks.
-
-3. **Memory is not knowledge**
-   Honcho handles runtime memory. LLM-Wiki handles curated, inspectable knowledge.
-
-4. **Providers are swappable**
-   Honcho and LLM-Wiki are starting providers, not permanent architecture commitments.
-
-5. **No giant god prompt**
-   Architecture lives in code, configs, contracts, and tests.
-
-6. **Policy is explicit**
-   Approvals, YOLO mode, allow/deny behavior, and auditing are policy presets, not hidden behavior.
-
-7. **UI is optional**
-   The Web UI and dashboards live outside this repo. APIs are the contract.
-
-8. **Token discipline is a feature**
-   The harness must measure user-input tokens, injected context tokens, tool/context expansion, and response tokens per turn.
-
-## Extension surface
-
-Waywarden should support shared root-level assets and extensions such as:
-- widgets
-- commands
-- prompts
-- tools
-- skills
-- agents
-- teams
-- pipelines
-- routines
-- policies
-- themes
-- context providers
-
-Profiles should filter and enable these shared assets rather than duplicating them.
-
-## Why this exists
-
-Forking existing harnesses is attractive for a fast demo but expensive for ownership.
-
-Waywarden borrows ideas from:
-- OpenHarness variants for small, inspectable harness thinking
-- Pi for extension stacking, widgets, teams, chains, and profile-like customization
-- ZeroID for delegation envelopes, scoped authority, and tool-boundary trust
-- Claude Code ecosystem ideas for routines, session management, subagents, advisor patterns, and auto-mode thinking
-- OpenClaw command-center style tools for observability and operator UX
-
-It intentionally avoids inheriting any one project’s full runtime assumptions.
+`config/app.yaml` is required; startup fails explicitly if it is missing.
 
 ## Repository map
 
-- `docs/architecture/`: ADRs and architecture decisions
-- `docs/contributing.md`: Definition of Done, label taxonomy, milestones, and phase map. Active tracking is on [GitHub Issues](https://github.com/marcmontecalvo/waywarden/issues).
-- `docs/prompts/`: prompts for coding agents
-- `docs/research/`: external products, repos, and UX patterns worth borrowing from selectively
-- `config/`: runtime/provider/profile/policy config
-- `infra/`: docker sidecars and systemd units
-- `src/`: application code
-- `tests/`: unit, integration, and contract tests
-- `assets/`: shared widgets, commands, prompts, routines, teams, policies, and other extension assets
-- `profiles/`: profile overlays and selection rules
+| Path | Purpose |
+|---|---|
+| `src/waywarden/` | Harness application code |
+| `tests/` | Unit and integration tests |
+| `profiles/` | Profile overlay definitions |
+| `assets/` | Shared extensions (widgets, commands, skills, routines, etc.) |
+| `config/` | Runtime, instance, and provider config |
+| `infra/` | Docker Compose sidecars and systemd units |
+| `alembic/` | Database migrations |
+| `docs/architecture/` | ADRs and durable architecture decisions |
+| `docs/setup/` | Operator setup guides |
+| `docs/usage/` | Operator usage guides |
+| `docs/contributing.md` | Definition of Done, labels, milestones, phase map |
 
-## Local development
-
-- `make run`: starts the harness
-- `make test`: runs the test suite
-- `make lint` / `make format`: runs `ruff`
-- `make secret-scan`: runs `gitleaks` over the working tree. To allow-list known false positives, add the relevant exception rules to `.gitleaksignore`.
-
-### Type checking policy
-- `src/waywarden/` stays under strict `mypy` enforcement. Tests retain lighter but checked typing.
-- For third-party dependencies lacking stubs (e.g., `honcho`), do not use global `ignore_errors = true` or blanket ignores. Add targeted `[[tool.mypy.overrides]]` entries mapping to the specific module in `pyproject.toml` with `ignore_missing_imports = true`.
-
-## Package layout
-
-- `src/waywarden/`: harness package root
-- `src/waywarden/todo/ea_profile/`: temporary home for EA-specific modules that still need to move behind a real profile overlay
-
-## First milestone
-
-Deliver a real core harness with:
-- web API
-- CLI entrypoint
-- profile loader
-- multi-instance support
-- session/message/task persistence
-- extension registry
-- model router
-- Honcho adapter
-- LLM-Wiki adapter
-- approval engine
-- token accounting
-## Package layout
-
-- `src/waywarden/`: harness package root
-- `src/waywarden/todo/ea_profile/`: temporary home for EA-specific modules that still need to move behind a real profile overlay
-
-## First milestone
-
-Deliver a real core harness with:
-- web API
-- CLI entrypoint
-- profile loader
-- multi-instance support
-- session/message/task persistence
-- extension registry
-- model router
-- Honcho adapter
-- LLM-Wiki adapter
-- approval engine
-- token accounting
-- global tracer abstraction
-
-Then deliver the first full profile:
-- `ea`
-
-## Public repo note
-
-The public repo name remains **Waywarden** because it:
-- works for a core harness instead of a single agent persona
-- is not tied to coding or smart home specifically
-- implies guidance and staying on course
-- avoids collision with existing OpenHarness naming
+Active execution tracking: [GitHub Issues](https://github.com/marcmontecalvo/waywarden/issues)
 
 ## Governance
 
 - [SECURITY.md](SECURITY.md): Security reporting path and policies.
 - [CONTRIBUTING.md](CONTRIBUTING.md): Developer workflow and quality gates.
-- [LICENSE](LICENSE): Explicit repo license decision (pending maintainer choice).
+- [LICENSE](LICENSE): Repo license.
