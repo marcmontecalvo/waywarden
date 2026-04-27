@@ -1,0 +1,24 @@
+id: coding-handoff
+kind: routine
+version: 1.0.0
+description: Coding handoff routine that emits delegated-work checkpoints as visible RT-002 progress events.
+tags:
+  - coding
+  - routine
+  - handoff
+required_providers:
+  - model
+  - tool
+milestones:
+  - phase: handoff
+    names:
+      - envelope_emitted
+    checkpoints:
+      - plan-approved
+      - implementation-complete
+      - review-found-issues
+emits_events:
+  - run.progress
+profile_filter:
+  - op: include
+    tag: coding
