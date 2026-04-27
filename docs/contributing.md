@@ -2,7 +2,7 @@
 type: contributing
 title: "Contributing — Planning, Labels, and Done"
 status: Active
-date: 2026-04-21
+date: 2026-04-27
 owner: marcmontecalvo
 ---
 
@@ -33,7 +33,7 @@ Completion is defined as: merged into `main`, verified on `main`, issue closed, 
 ## Milestones
 
 - `v1-harness` — harness core + first profile (EA). Phases P0–P5.
-- `v2-coding` — coding profile, till-done loop, teams/pipelines, backup/restore. Phases P6–P8.
+- `v2-coding` — coding profile, till-done loop, teams/pipelines, scheduler, backup/restore, and workspace safety. Phases P6–P8.
 - `v3-home` — home profile, HA adapters, optional reflection surfaces. Phases P9–P10.
 
 ## Labels
@@ -80,7 +80,7 @@ Every non-epic issue should carry one label from each of Priority, State, and Ar
 | P5    | EA profile, shared assets, first end-to-end user           | v1-harness  |
 | P6    | Coding profile, till-done loop, token discipline in-flight | v2-coding   |
 | P7    | Adversarial review, teams, pipelines, sub-agents           | v2-coding   |
-| P8    | Backup / restore, scheduler                                | v2-coding   |
+| P8    | Scheduler, system backup/restore, run recovery, workspace rollback | v2-coding   |
 | P9    | Home profile, HA adapters                                  | v3-home     |
 | P10   | Reflection, optional surfaces, long-horizon refinements    | v3-home     |
 
@@ -92,7 +92,7 @@ Every non-epic issue should carry one label from each of Priority, State, and Ar
 
 ## Issues
 
-- Title prefix `Pn-k:` (e.g. `P1-3: Health endpoints`) to make phase plus ordering obvious.
+- Title prefix `Pn-k:` (e.g., `P1-3: Health endpoints`) to make phase plus ordering obvious.
 - First body line references the parent epic: `Parent epic: #N`.
 - Every issue links to the ADRs and specs it implements.
 - Use `Depends on: #X` lines for blocking relationships.
