@@ -10,6 +10,7 @@ Covers P6-6 acceptance criteria:
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
@@ -32,7 +33,7 @@ from waywarden.services.approval_types import (
     Timeout,
 )
 from waywarden.services.visibility import VisibilityService
-from waywarden.tools.model import ToolProvider
+from waywarden.tools.model import ToolProvider, ToolResult
 
 # ---------------------------------------------------------------------------
 # In-memory doubles
@@ -100,16 +101,16 @@ class DummyToolProvider(ToolProvider):
     def name(self) -> str:
         return "dummy"
 
-    def capabilities(self) -> list[str]:
-        return ["dummy:cap1"]
+    def capabilities(self) -> frozenset[str]:
+        return frozenset({"dummy:cap1"})
 
     async def invoke(
         self,
         tool_id: str,
         action: str,
-        params: dict[str, Any],
-    ) -> Any:
-        return None
+        params: Mapping[str, object],
+    ) -> ToolResult:
+        return ToolResult(tool_id=tool_id, action=action, output="")
 
 
 # ---------------------------------------------------------------------------
@@ -125,7 +126,7 @@ def _make_policy(
     return ToolPolicy(
         preset="ask",
         rules=rules,
-        default_decision=cast("Any", default),
+        default_decision=cast(Any, default),
     )
 
 
@@ -596,6 +597,7 @@ class TestDecisionPathsViaEngine:
             action="write",
             summary="Write file",
         )
+        assert aid is not None
 
         # Resolve with Granted
         await engine.resolve(aid, Granted())
@@ -644,6 +646,7 @@ class TestDecisionPathsViaEngine:
             action="run",
             summary="Shell command",
         )
+        assert aid is not None
 
         await engine.resolve(aid, DeniedAbandon(reason="not safe"))
 
@@ -690,6 +693,7 @@ class TestDecisionPathsViaEngine:
             action="request",
             summary="HTTP call",
         )
+        assert aid is not None
 
         await engine.resolve(aid, DeniedAlternatePath(note="use cached data"))
 
@@ -736,6 +740,7 @@ class TestDecisionPathsViaEngine:
             action="apply",
             summary="Apply code changes",
         )
+        assert aid is not None
 
         await engine.resolve(aid, Timeout(retryable=False))
 

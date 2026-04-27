@@ -30,6 +30,7 @@ Postgres is unavailable.
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncIterator
 from pathlib import Path
 from uuid import uuid4
 
@@ -89,7 +90,7 @@ DATABASE_URL = "postgresql+psycopg://waywarden:waywarden@127.0.0.1:5432/waywarde
 
 
 @pytest_asyncio.fixture(scope="session")
-async def _engine():
+async def _engine() -> AsyncIterator[AsyncEngine]:
     engine = create_async_engine(DATABASE_URL, echo=False)
     yield engine
     await engine.dispose()
@@ -114,7 +115,9 @@ async def _apply_migrations(_engine: AsyncEngine) -> None:
 
 
 @pytest_asyncio.fixture
-async def session_factory(_engine: AsyncEngine):
+async def session_factory(
+    _engine: AsyncEngine,
+) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     yield async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
 
@@ -442,7 +445,7 @@ async def test_p6_4_6_7_till_done_e2e_postgres(
     _ = handoff.create_envelope(
         objective="Implement greeting with edge-case handling",
         parent_manifest=manifest,
-        acceptance_criteria=("greet returns correct format"),
+        acceptance_criteria=("greet returns correct format",),
     )
     await handoff.record_checkpoint(
         checkpoint="plan-approved",
@@ -507,8 +510,10 @@ async def test_p6_4_6_7_till_done_e2e_postgres(
         # All progress milestones in Postgres must be catalog-valid
         for event in pg_events:
             if event.type == "run.progress":
-                phase = event.payload.get("phase", "")
-                milestone = event.payload.get("milestone", "")
+                phase = event.payload.get("phase")
+                milestone = event.payload.get("milestone")
+                assert isinstance(phase, str)
+                assert isinstance(milestone, str)
                 assert is_valid_milestone(phase, milestone), (
                     f"Invalid milestone: {phase!r}.{milestone!r}"
                 )
@@ -583,8 +588,10 @@ async def test_p6_milestones_are_catalog_valid(
 
     for event in stream.events:
         if event.type == "run.progress":
-            phase = event.payload.get("phase", "")
-            milestone = event.payload.get("milestone", "")
+            phase = event.payload.get("phase")
+            milestone = event.payload.get("milestone")
+            assert isinstance(phase, str)
+            assert isinstance(milestone, str)
             assert is_valid_milestone(phase, milestone), (
                 f"Unregistered milestone: {phase!r}.{milestone!r}"
             )
