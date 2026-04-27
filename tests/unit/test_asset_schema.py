@@ -311,6 +311,44 @@ def test_policy_metadata_enforce_mode() -> None:
     assert meta.enforce_mode == "block"
 
 
+def test_team_metadata_declares_dispatcher_specialists_and_fallback() -> None:
+    meta = TeamMetadata(
+        id="coding-team",
+        kind="team",
+        version="1.0.0",
+        description="coding team",
+        dispatcher="agent-dispatcher",
+        specialists=("agent-reviewer", "agent-tester"),
+        handoff_routes=(
+            {
+                "from_agent": "agent-dispatcher",
+                "output_name": "needs-review",
+                "to_agent": "agent-reviewer",
+                "artifact_kind": "review-request",
+            },
+        ),
+        fallback_agent="agent-tester",
+    )
+
+    assert meta.dispatcher == "agent-dispatcher"
+    assert meta.specialists == ("agent-reviewer", "agent-tester")
+    assert meta.handoff_routes[0]["to_agent"] == "agent-reviewer"
+    assert meta.fallback_agent == "agent-tester"
+
+
+def test_team_metadata_requires_dispatcher_and_specialist_structure() -> None:
+    with pytest.raises(AssetValidationError, match="dispatcher"):
+        AssetMetadata.from_dict(
+            {
+                "id": "coding-team",
+                "kind": "team",
+                "version": "1.0.0",
+                "description": "coding team",
+                "specialists": ["agent-reviewer"],
+            }
+        )
+
+
 def test_kind_literal_stick() -> None:
     """Each kind-specific model locks its ``kind`` literal."""
     assert RoutineMetadata(kind="routine", id="r", version="1.0", description="d").kind == "routine"
@@ -329,7 +367,17 @@ def test_kind_literal_stick() -> None:
         ).kind
         == "agent"
     )
-    assert TeamMetadata(kind="team", id="tm", version="1.0", description="d").kind == "team"
+    assert (
+        TeamMetadata(
+            kind="team",
+            id="tm",
+            version="1.0",
+            description="d",
+            dispatcher="agent-dispatcher",
+            specialists=("agent-reviewer",),
+        ).kind
+        == "team"
+    )
     assert (
         PipelineMetadata(kind="pipeline", id="pl", version="1.0", description="d").kind
         == "pipeline"

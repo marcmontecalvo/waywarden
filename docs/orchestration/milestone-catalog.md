@@ -53,6 +53,9 @@ code **must** appear here.
 | `sub_agent_registered` | Bounded sub-agent role registered for orchestration |
 | `sub_agent_started` | Sub-agent execution started |
 | `sub_agent_completed` | Sub-agent execution completed |
+| `team_started` | Team execution started with aggregated member progress |
+| `team_completed` | Team execution completed with aggregated member progress |
+| `team_blocked` | Team execution blocked on handoff routing or member progress |
 
 ## Rules
 

@@ -1,0 +1,28 @@
+id: coding-dispatch-team
+kind: team
+version: 1.0.0
+description: Coding dispatcher team that routes implementation handoffs to bounded review and test specialists.
+tags:
+  - coding
+  - team
+  - dispatch
+required_providers:
+  - model
+  - tool
+dispatcher: agent-dispatcher
+specialists:
+  - agent-reviewer
+  - agent-tester
+handoff_routes:
+  - from_agent: agent-dispatcher
+    output_name: needs-review
+    to_agent: agent-reviewer
+    artifact_kind: review-request
+  - from_agent: agent-dispatcher
+    output_name: needs-tests
+    to_agent: agent-tester
+    artifact_kind: test-request
+fallback_agent: agent-reviewer
+profile_filter:
+  - op: include
+    tag: coding

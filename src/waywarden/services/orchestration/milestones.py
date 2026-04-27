@@ -89,6 +89,21 @@ MILESTONE_CATALOG: tuple[MilestoneDefinition, ...] = (
         "sub_agent_completed",
         "Sub-agent execution completed",
     ),
+    MilestoneDefinition(
+        "handoff",
+        "team_started",
+        "Team execution started with aggregated member progress",
+    ),
+    MilestoneDefinition(
+        "handoff",
+        "team_completed",
+        "Team execution completed with aggregated member progress",
+    ),
+    MilestoneDefinition(
+        "handoff",
+        "team_blocked",
+        "Team execution blocked on handoff routing or member progress",
+    ),
     # code — till-done loop iterations (P6-4 #95)
     MilestoneDefinition(
         "code",
