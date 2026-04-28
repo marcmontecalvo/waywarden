@@ -19,7 +19,7 @@ tags: [ci, testing, github-actions, integration-tests]
 | `dependency-sanity` | ubuntu + windows | `uv sync --frozen` + import check | skipped |
 | `lint` | ubuntu + windows | ruff format + ruff check | skipped |
 | `typecheck` | ubuntu | mypy --strict | skipped |
-| `test` | ubuntu + windows | `pytest --no-cov -m "not integration"` | skipped |
+| `test` | ubuntu + windows | full `pytest` coverage gate | self-skips service-backed tests when services are unavailable |
 | `integration-linux` | ubuntu | full `pytest` run against Postgres service | **yes** |
 
 ### Why integration tests are Linux-only
@@ -34,10 +34,10 @@ and Postgres-backed runtime proof runs, including:
 - `tests/integration/coding/test_coding_till_done_e2e.py`
 
 The cross-platform `test` matrix remains useful for fast compatibility signal,
-but it intentionally disables coverage with `--no-cov` and runs only
-`-m "not integration"`. That keeps the 80% threshold honest instead of failing
-Windows and non-service Linux jobs for code that is only exercised by the
-Postgres-backed integration paths.
+and now runs the normal `uv run pytest` command on both Linux and Windows so the
+80% coverage gate is enforced on both runners. Tests that require unavailable
+services self-skip in that matrix. The Linux-only `integration-linux` job remains
+the service-backed proof for Postgres runtime paths.
 
 ## Coverage
 
@@ -45,16 +45,21 @@ Postgres-backed integration paths.
 - Coverage source: `src/waywarden` and `alembic`.
 - Excluded: `alembic/versions/*.py` (generated migrations).
 - Test directories are not part of the coverage denominator.
+- P7 sub-agent, team, pipeline, dispatcher workflow, progress, and adversarial
+  review modules live under `src/waywarden`, are not omitted, and are therefore
+  counted in the denominator.
 
 The coverage report artifact is uploaded from `integration-linux`, the only CI
-job that runs the full suite and therefore the only job where the 80% gate is
-meaningful.
+job that runs the full suite against a Postgres service.
 
 ## Secret scanning
 
 - CI runs Gitleaks in the `secret-scan` job.
 - Local reproduction path: `make secret-scan`
 - False positives are audited via [`.gitleaksignore`](../../.gitleaksignore).
+- P7 adversarial fixtures currently require no `.gitleaksignore` entries.
+- Any future fixture allowlist entry must include an inline justification in
+  `.gitleaksignore` or a runbook note that explains why the fixture is safe.
 
 ## Reproducing integration tests locally
 
