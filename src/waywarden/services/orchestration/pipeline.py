@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
 
+from waywarden.domain.durability import TokenBudgetTelemetry, token_budget_payload
 from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.pipeline import (
@@ -48,6 +49,7 @@ class PipelineExecutionEngine:
         run_id: RunId,
         outcomes: Mapping[str, PipelineOutcome],
         correlation: RunCorrelation | None = None,
+        token_budget: TokenBudgetTelemetry | None = None,
         max_steps: int | None = None,
     ) -> PipelineExecutionResult:
         """Execute *pipeline* using supplied per-node outcomes."""
@@ -81,6 +83,7 @@ class PipelineExecutionEngine:
                     outcome=outcome,
                     status=node_status,
                     correlation=correlation,
+                    token_budget=token_budget,
                 )
             )
             if status == "aborted":
@@ -113,6 +116,7 @@ class PipelineExecutionEngine:
         outcome: PipelineOutcome,
         status: str,
         correlation: RunCorrelation | None,
+        token_budget: TokenBudgetTelemetry | None,
     ) -> RunEvent:
         if not is_valid_milestone(node.phase, node.milestone):
             raise ValueError(
@@ -134,6 +138,9 @@ class PipelineExecutionEngine:
         }
         if correlation is not None:
             payload.update(correlation.as_payload())
+        budget_payload = token_budget_payload(token_budget)
+        if budget_payload is not None:
+            payload["token_budget"] = budget_payload
 
         return RunEvent(
             id=RunEventId(f"evt-{run_id}-{pipeline.id}-{node.id}-{uuid4().hex}"),

@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
+from waywarden.domain.durability import TokenBudgetTelemetry, token_budget_payload
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
 from waywarden.services.orchestration.milestones import is_valid_milestone
@@ -193,6 +194,7 @@ async def run_till_done(
     iteration_result_fn: Callable[[int], IterationResult],
     config: LoopConfig | None = None,
     events: _EventStream | None = None,
+    token_budget: TokenBudgetTelemetry | None = None,
 ) -> str:
     """Execute the till-done loop for a coding run.
 
@@ -241,16 +243,16 @@ async def run_till_done(
         )
 
         # code: iteration_started
-        _emit_progress(run_id, stream, "code", "iteration_started")
+        _emit_progress(run_id, stream, "code", "iteration_started", token_budget=token_budget)
 
         if iteration >= cfg.max_iterations:
-            _emit_progress(run_id, stream, "code", "loop_escalated")
+            _emit_progress(run_id, stream, "code", "loop_escalated", token_budget=token_budget)
             return LoopOutcome.ESCALATED
 
         # plan phase: drafted
-        _emit_progress(run_id, stream, "plan", "drafted")
-        _emit_progress(run_id, stream, "plan", "approval_requested")
-        _emit_progress(run_id, stream, "plan", "ready")
+        _emit_progress(run_id, stream, "plan", "drafted", token_budget=token_budget)
+        _emit_progress(run_id, stream, "plan", "approval_requested", token_budget=token_budget)
+        _emit_progress(run_id, stream, "plan", "ready", token_budget=token_budget)
 
         # code: changes_applied
         _emit_progress(
@@ -259,13 +261,14 @@ async def run_till_done(
             "code",
             "changes_applied",
             payload={"artifact_id": result.plan_artifact_id},
+            token_budget=token_budget,
         )
 
         # code: check_passed OR check_failed
         if result.plan_revised:
             # Emit the plan revision artifact and milestone (P6-7).
-            _emit_progress(run_id, stream, "plan", "revision_cataloged")
-            _emit_progress(run_id, stream, "code", "plan_revised")
+            _emit_progress(run_id, stream, "plan", "revision_cataloged", token_budget=token_budget)
+            _emit_progress(run_id, stream, "code", "plan_revised", token_budget=token_budget)
             _emit_plan_revision_artifact(
                 run_id=run_id,
                 stream=stream,
@@ -274,25 +277,26 @@ async def run_till_done(
                 diff=result.plan_diff_from_previous,
                 rationale=result.plan_rationale,
                 artifact_ref=result.plan_artifact_id,
+                token_budget=token_budget,
             )
-            _emit_progress(run_id, stream, "plan", "ready")
+            _emit_progress(run_id, stream, "plan", "ready", token_budget=token_budget)
             if cfg.esc_check_if_revised:
                 pass  # revise = trace
         elif result.check_passed:
-            _emit_progress(run_id, stream, "code", "check_passed")
+            _emit_progress(run_id, stream, "code", "check_passed", token_budget=token_budget)
         else:
-            _emit_progress(run_id, stream, "code", "iteration_complete")
+            _emit_progress(run_id, stream, "code", "iteration_complete", token_budget=token_budget)
 
         if not result.check_passed:
             consecutive_check_failures += 1
 
         if result.check_passed and not result.plan_revised:
-            _emit_progress(run_id, stream, "code", "iteration_complete")
-            _emit_progress(run_id, stream, "code", "terminal")
+            _emit_progress(run_id, stream, "code", "iteration_complete", token_budget=token_budget)
+            _emit_progress(run_id, stream, "code", "terminal", token_budget=token_budget)
             return LoopOutcome.COMPLETED
 
     # Exceeded max iterations
-    _emit_progress(run_id, stream, "code", "loop_escalated")
+    _emit_progress(run_id, stream, "code", "loop_escalated", token_budget=token_budget)
     return LoopOutcome.ESCALATED
 
 
@@ -303,21 +307,27 @@ def _emit_progress(
     milestone: str,
     *,
     payload: dict[str, Any] | None = None,
+    token_budget: TokenBudgetTelemetry | None = None,
 ) -> None:
     """Emit a run.progress milestone event into the capture stream."""
     if not is_valid_milestone(phase, milestone):
         raise ValueError(f"milestone not cataloged: phase={phase!r} milestone={milestone!r}")
+
+    event_payload: dict[str, Any] = {
+        "phase": phase,
+        "milestone": milestone,
+        **(payload or {}),
+    }
+    budget_payload = token_budget_payload(token_budget)
+    if budget_payload is not None:
+        event_payload["token_budget"] = budget_payload
 
     event = RunEvent(
         id=RunEventId(f"{run_id}.prog.{phase}.{milestone}"),
         run_id=RunId(run_id),
         seq=len(stream.events) + 1,
         type="run.progress",
-        payload={
-            "phase": phase,
-            "milestone": milestone,
-            **(payload or {}),
-        },
+        payload=event_payload,
         timestamp=datetime.now(UTC),
         causation=Causation(
             event_id=None,
@@ -338,6 +348,7 @@ def _emit_plan_revision_artifact(
     diff: str,
     rationale: str,
     artifact_ref: str,
+    token_budget: TokenBudgetTelemetry | None = None,
 ) -> None:
     """Emit a ``run.artifact_created(kind=plan-revision)`` event.
 
@@ -346,20 +357,25 @@ def _emit_plan_revision_artifact(
     rationale, and version number so that operators can see exactly
     what changed and why — no opaque re-planning.
     """
+    payload: dict[str, Any] = {
+        "artifact_ref": artifact_ref,
+        "artifact_kind": "plan-revision",
+        "label": f"plan-revision-v{version}",
+        "version": version,
+        "diff_from_previous": diff,
+        "rationale": rationale,
+        "body": body,
+    }
+    budget_payload = token_budget_payload(token_budget)
+    if budget_payload is not None:
+        payload["token_budget"] = budget_payload
+
     event = RunEvent(
         id=RunEventId(f"{run_id}.artifact.plan-revision-v{version}"),
         run_id=RunId(run_id),
         seq=len(stream.events) + 1,
         type="run.artifact_created",
-        payload={
-            "artifact_ref": artifact_ref,
-            "artifact_kind": "plan-revision",
-            "label": f"plan-revision-v{version}",
-            "version": version,
-            "diff_from_previous": diff,
-            "rationale": rationale,
-            "body": body,
-        },
+        payload=payload,
         timestamp=datetime.now(UTC),
         causation=Causation(
             event_id=None,

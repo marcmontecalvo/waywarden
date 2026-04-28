@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from waywarden.domain.durability import TokenBudgetTelemetry
 from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunId
 from waywarden.domain.pipeline import (
@@ -97,6 +98,9 @@ def test_pipeline_execution_branches_on_review_failure() -> None:
         review_run_id="run-review",
         delegation_id="del-run-parent-1",
         manifest_run_id="run-team",
+        checkpoint_id="checkpoint-review-gate",
+        saga_id="saga-coding-handback",
+        resume_token="resume-run-pipeline-7",
     )
 
     result = engine.execute(
@@ -108,6 +112,15 @@ def test_pipeline_execution_branches_on_review_failure() -> None:
             "fallback-review": "success",
         },
         correlation=correlation,
+        token_budget=TokenBudgetTelemetry(
+            budget_id="budget-coding-1",
+            source="dispatcher",
+            observed_prompt_tokens=40,
+            observed_completion_tokens=10,
+            observed_total_tokens=50,
+            remaining_tokens=950,
+            warning="within-budget",
+        ),
     )
 
     assert result.status == "completed"
@@ -119,6 +132,18 @@ def test_pipeline_execution_branches_on_review_failure() -> None:
     assert result.events[2].payload["node_kind"] == "sub_agent"
     assert result.events[1].payload["milestone_ref"] == "review.findings_recorded"
     assert result.events[1].payload["review_run_id"] == "run-review"
+    assert result.events[1].payload["checkpoint_id"] == "checkpoint-review-gate"
+    assert result.events[1].payload["saga_id"] == "saga-coding-handback"
+    assert result.events[1].payload["resume_token"] == "resume-run-pipeline-7"
+    assert result.events[1].payload["token_budget"] == {
+        "budget_id": "budget-coding-1",
+        "source": "dispatcher",
+        "observed_prompt_tokens": 40,
+        "observed_completion_tokens": 10,
+        "observed_total_tokens": 50,
+        "remaining_tokens": 950,
+        "warning": "within-budget",
+    }
 
 
 def test_pipeline_execution_aborts_on_abort_route() -> None:

@@ -8,6 +8,13 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 from uuid import uuid4
 
+from waywarden.domain.durability import (
+    SideEffectClassification,
+    TokenBudgetTelemetry,
+    ToolActionMetadata,
+    token_budget_payload,
+    tool_actions_payload,
+)
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.manifest.tool_policy import ToolDecision, ToolPolicy
 from waywarden.domain.pipeline import PipelineOutcome
@@ -68,6 +75,7 @@ class AdversarialReviewInput:
     tool_calls: tuple[Mapping[str, object], ...] = ()
     memory_items: tuple[Mapping[str, object], ...] = ()
     knowledge_items: tuple[Mapping[str, object], ...] = ()
+    token_budget: TokenBudgetTelemetry | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,9 +120,21 @@ class AdversarialReviewRoutine:
             policy_decisions=policy_decisions,
             rationale=self._rationale(findings, gate_decision),
         )
-        events = await self._emit_finding_events(input, findings, explanation)
+        tool_actions = self._tool_action_metadata(input, explanation)
+        events = await self._emit_finding_events(input, findings, explanation, tool_actions)
         pipeline_outcome: PipelineOutcome = "success" if gate_decision == "continue" else "failure"
         status: ReviewStatus = "aborted" if gate_decision == "abort" else "completed"
+        handback_metadata: dict[str, Any] = {
+            "input_artifact_ref": input.input_artifact_ref,
+            "input_artifact_kind": input.input_artifact_kind,
+            "approval_explanation": explanation.as_payload(),
+        }
+        budget_payload = token_budget_payload(input.token_budget)
+        if budget_payload is not None:
+            handback_metadata["token_budget"] = budget_payload
+        actions_payload = tool_actions_payload(tool_actions)
+        if actions_payload is not None:
+            handback_metadata["tool_actions"] = actions_payload
         return AdversarialReviewResult(
             findings=findings,
             gate_decision=gate_decision,
@@ -122,11 +142,7 @@ class AdversarialReviewRoutine:
             status=status,
             approval_explanation=explanation,
             events=events,
-            handback_metadata={
-                "input_artifact_ref": input.input_artifact_ref,
-                "input_artifact_kind": input.input_artifact_kind,
-                "approval_explanation": explanation.as_payload(),
-            },
+            handback_metadata=handback_metadata,
         )
 
     def _detect(self, input: AdversarialReviewInput) -> tuple[AdversarialFinding, ...]:
@@ -285,12 +301,14 @@ class AdversarialReviewRoutine:
         input: AdversarialReviewInput,
         findings: tuple[AdversarialFinding, ...],
         explanation: ApprovalExplanation,
+        tool_actions: tuple[ToolActionMetadata, ...],
     ) -> tuple[RunEvent, ...]:
         if not findings:
             event = await self._append_progress_event(
                 input=input,
                 finding=None,
                 explanation=explanation,
+                tool_actions=tool_actions,
             )
             return (event,)
         events: list[RunEvent] = []
@@ -300,6 +318,7 @@ class AdversarialReviewRoutine:
                     input=input,
                     finding=finding,
                     explanation=explanation,
+                    tool_actions=tool_actions,
                 )
             )
         return tuple(events)
@@ -310,6 +329,7 @@ class AdversarialReviewRoutine:
         input: AdversarialReviewInput,
         finding: AdversarialFinding | None,
         explanation: ApprovalExplanation,
+        tool_actions: tuple[ToolActionMetadata, ...],
     ) -> RunEvent:
         next_seq = (await self._approval_engine.events.latest_seq(input.run_id)) + 1
         payload: dict[str, object] = {
@@ -326,6 +346,12 @@ class AdversarialReviewRoutine:
             "gate_decision": explanation.gate_decision,
             "approval_explanation": explanation.as_payload(),
         }
+        budget_payload = token_budget_payload(input.token_budget)
+        if budget_payload is not None:
+            payload["token_budget"] = budget_payload
+        actions_payload = tool_actions_payload(tool_actions)
+        if actions_payload is not None:
+            payload["tool_actions"] = actions_payload
         if finding is not None:
             payload.update(
                 {
@@ -358,6 +384,35 @@ class AdversarialReviewRoutine:
         return await self._approval_engine.events.append(event)
 
     @staticmethod
+    def _tool_action_metadata(
+        input: AdversarialReviewInput,
+        explanation: ApprovalExplanation,
+    ) -> tuple[ToolActionMetadata, ...]:
+        actions: list[ToolActionMetadata] = []
+        approval_payload = explanation.as_payload()
+        for call in input.tool_calls:
+            tool_id = str(call.get("tool_id") or call.get("tool") or "unknown").strip()
+            action = str(call.get("action") or "unknown").strip()
+            side_effect_class = str(
+                call.get("side_effect_class") or _infer_side_effect_class(call)
+            ).strip()
+            rationale = str(
+                call.get("side_effect_rationale") or f"Classified from tool call action {action!r}."
+            ).strip()
+            actions.append(
+                ToolActionMetadata(
+                    tool_id=tool_id or "unknown",
+                    action=action or "unknown",
+                    side_effect=SideEffectClassification(
+                        action_class=side_effect_class,
+                        rationale=rationale,
+                    ),
+                    approval_explanation=approval_payload,
+                )
+            )
+        return tuple(actions)
+
+    @staticmethod
     def _rationale(
         findings: tuple[AdversarialFinding, ...],
         gate_decision: GateDecision,
@@ -370,6 +425,22 @@ class AdversarialReviewRoutine:
 
 def _non_empty_str(value: object) -> bool:
     return isinstance(value, str) and bool(value.strip())
+
+
+def _infer_side_effect_class(call: Mapping[str, object]) -> str:
+    action = str(call.get("action", "")).lower()
+    command = str(call.get("command", "")).lower()
+    if action in {"read", "list", "inspect", "search"}:
+        return "read-only"
+    if any(token in command for token in ("rm -rf", "git reset --hard", "mv ", "cp ", "touch ")):
+        return "workspace-mutating"
+    if action in {"insert", "update", "delete", "migrate"}:
+        return "DB-mutating"
+    if action in {"deploy", "publish", "send", "post"}:
+        return "external-write"
+    if action in {"configure", "provision", "mutate_provider"}:
+        return "provider-mutating"
+    return "unknown/high-risk"
 
 
 __all__ = [

@@ -8,6 +8,11 @@ from typing import Any, cast
 
 import pytest
 
+from waywarden.domain.durability import (
+    SideEffectClassification,
+    TokenBudgetTelemetry,
+    ToolActionMetadata,
+)
 from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunId
 from waywarden.domain.subagent import (
@@ -171,6 +176,26 @@ def test_sub_agent_progress_event_uses_rt002_catalog_milestone() -> None:
         summary="Reviewer started",
         now=datetime(2026, 4, 27, tzinfo=UTC),
         correlation=correlation,
+        token_budget=TokenBudgetTelemetry(
+            budget_id="budget-review-1",
+            source="caller",
+            observed_total_tokens=75,
+        ),
+        tool_actions=(
+            ToolActionMetadata(
+                tool_id="file-reader",
+                action="read",
+                side_effect=SideEffectClassification(
+                    action_class="read-only",
+                    rationale="Sub-agent inspects an artifact without mutation.",
+                ),
+                approval_explanation={
+                    "approval_required": False,
+                    "policy_preset": "ask",
+                    "rationale": "Read-only inspection is auto-allowed.",
+                },
+            ),
+        ),
     )
 
     assert event.type == "run.progress"
@@ -182,4 +207,11 @@ def test_sub_agent_progress_event_uses_rt002_catalog_milestone() -> None:
     assert event.payload["parent_run_id"] == "run-parent"
     assert event.payload["sub_agent_id"] == "agent-reviewer"
     assert event.payload["role"] == "reviewer"
+    token_budget = cast(dict[str, object], event.payload["token_budget"])
+    tool_actions = cast(tuple[dict[str, object], ...], event.payload["tool_actions"])
+    side_effect = cast(dict[str, object], tool_actions[0]["side_effect"])
+    approval_explanation = cast(dict[str, object], tool_actions[0]["approval_explanation"])
+    assert token_budget["budget_id"] == "budget-review-1"
+    assert side_effect["action_class"] == "read-only"
+    assert approval_explanation["approval_required"] is False
     assert is_valid_milestone(str(event.payload["phase"]), str(event.payload["milestone"]))
