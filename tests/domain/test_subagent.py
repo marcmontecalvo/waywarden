@@ -8,6 +8,7 @@ from typing import Any, cast
 
 import pytest
 
+from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunId
 from waywarden.domain.subagent import (
     SubAgent,
@@ -150,19 +151,35 @@ def test_sub_agent_registry_rejects_duplicate_ids() -> None:
 
 def test_sub_agent_progress_event_uses_rt002_catalog_milestone() -> None:
     agent = SubAgent(id="agent-reviewer", role=_role())
+    correlation = RunCorrelation(
+        correlation_id="corr-review-1",
+        parent_run_id="run-parent",
+        child_run_id="run-child",
+        dispatcher_run_id="run-parent",
+        team_run_id="run-team",
+        pipeline_run_id="run-pipeline",
+        delegation_id="del-run-parent-1",
+        manifest_run_id="run-child",
+        sub_agent_run_id="run-child",
+    )
     event = make_sub_agent_progress_event(
-        run_id=RunId("run-1"),
+        run_id=RunId("run-child"),
         sub_agent=agent,
         seq=1,
         milestone="sub_agent_started",
         status="running",
         summary="Reviewer started",
         now=datetime(2026, 4, 27, tzinfo=UTC),
+        correlation=correlation,
     )
 
     assert event.type == "run.progress"
     assert event.payload["phase"] == "handoff"
     assert event.payload["milestone"] == "sub_agent_started"
+    assert event.payload["milestone_ref"] == "handoff.sub_agent_started"
+    assert event.payload["run_id"] == "run-child"
+    assert event.payload["agent_id"] == "agent-reviewer"
+    assert event.payload["parent_run_id"] == "run-parent"
     assert event.payload["sub_agent_id"] == "agent-reviewer"
     assert event.payload["role"] == "reviewer"
     assert is_valid_milestone(str(event.payload["phase"]), str(event.payload["milestone"]))

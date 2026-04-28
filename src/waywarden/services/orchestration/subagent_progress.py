@@ -39,6 +39,9 @@ def make_sub_agent_progress_event(
     payload: dict[str, object] = {
         "phase": "handoff",
         "milestone": milestone,
+        "milestone_ref": f"handoff.{milestone}",
+        "run_id": str(run_id),
+        "agent_id": str(sub_agent.id),
         "sub_agent_id": str(sub_agent.id),
         "role": sub_agent.role.name,
         "status": status,

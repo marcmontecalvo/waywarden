@@ -298,12 +298,17 @@ def test_dispatcher_workflow_emits_rt002_metadata_with_correlation_ids() -> None
     artifact_payload = package.artifact_event.payload
     assert progress_payload["phase"] == "handoff"
     assert progress_payload["milestone"] == "envelope_emitted"
+    assert progress_payload["milestone_ref"] == "handoff.envelope_emitted"
+    assert progress_payload["run_id"] == "run-dispatch-parent"
     assert progress_payload["correlation_id"] == "corr-coding-1"
     assert progress_payload["team_run_id"] == "run-team-child"
     assert progress_payload["pipeline_run_id"] == "run-pipeline-child"
     assert progress_payload["review_run_id"] == "run-review-child"
     assert artifact_payload["delegation_id"] == str(package.envelope.id)
     assert artifact_payload["manifest_run_id"] == "run-team-child"
+    assert artifact_payload["source_run_id"] == "run-dispatch-parent"
+    assert artifact_payload["target_run_id"] == "run-team-child"
+    assert artifact_payload["handoff_boundary"] == "dispatcher_to_team"
 
     team_event = make_team_progress_event(
         run_id=RunId("run-team-child"),

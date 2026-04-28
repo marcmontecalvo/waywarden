@@ -97,7 +97,7 @@ async def _build_stream(
         events = await repo.list(run_id, since_seq=last_seen_seq)
 
         emitted_seqs: set[int] = set()
-        for ev in events:
+        for ev in sorted(events, key=lambda event: event.seq):
             if ev.seq in emitted_seqs:
                 continue
             emitted_seqs.add(ev.seq)
@@ -113,7 +113,7 @@ async def _build_stream(
                 # Re-query for new events since our highest emitted seq
                 cutoff = max(last_seen_seq, max(emitted_seqs)) if emitted_seqs else 0
                 new_events = await repo.list(run_id, since_seq=cutoff)
-                for ev in new_events:
+                for ev in sorted(new_events, key=lambda event: event.seq):
                     if ev.seq in emitted_seqs:
                         continue
                     emitted_seqs.add(ev.seq)

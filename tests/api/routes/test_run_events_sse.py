@@ -205,6 +205,29 @@ class TestReplayFromN:
 
         assert repo._called_with[0]["since_seq"] == 2
 
+    @pytest.mark.integration
+    @pytest.mark.anyio
+    async def test_reconnect_replays_tail_in_seq_order_without_duplicates(self) -> None:
+        """Reconnect sorts by seq and suppresses duplicates in the replay tail."""
+        repo = _MockRepo(
+            [
+                _MockRunEvent(seq=1, type_="run.created"),
+                _MockRunEvent(seq=4, type_="run.progress", payload={"phase": "review"}),
+                _MockRunEvent(seq=3, type_="run.progress", payload={"phase": "handoff"}),
+                _MockRunEvent(seq=3, type_="run.progress", payload={"phase": "handoff"}),
+            ]
+        )
+        await _attach_repo(repo)
+
+        from waywarden.api.routers.run_events import _build_stream
+
+        gen = _build_stream("run-mock", 1, 4, cast(Any, repo))
+        events = await _collect_frames(gen)
+
+        assert [event["seq"] for event in events] == [3, 4]
+        assert [event["payload"]["phase"] for event in events] == ["handoff", "review"]
+        assert repo._called_with[0]["since_seq"] == 1
+
 
 # ---------------------------------------------------------------------------
 # Test: Invalid last_seen_seq returns 400

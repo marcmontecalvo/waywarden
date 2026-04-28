@@ -121,6 +121,8 @@ class PipelineExecutionEngine:
         payload: dict[str, object] = {
             "phase": node.phase,
             "milestone": node.milestone,
+            "milestone_ref": f"{node.phase}.{node.milestone}",
+            "run_id": str(run_id),
             "pipeline_id": str(pipeline.id),
             "node_id": str(node.id),
             "node_kind": node.kind,

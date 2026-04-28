@@ -14,6 +14,7 @@ from waywarden.domain.handoff import HandoffArtifact, RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.manifest.manifest import WorkspaceManifest
 from waywarden.domain.run_event import Actor, Causation, RunEvent
+from waywarden.services.orchestration.handoff_events import make_handoff_artifact_event
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +102,8 @@ class DispatcherWorkflowPackager:
         payload: dict[str, object] = {
             "phase": "handoff",
             "milestone": "envelope_emitted",
+            "milestone_ref": "handoff.envelope_emitted",
+            "run_id": str(correlation.dispatcher_run_id),
             "detail": {
                 "workflow_id": workflow.id,
                 "team_ref": workflow.team_ref,
@@ -130,25 +133,15 @@ class DispatcherWorkflowPackager:
         correlation: RunCorrelation,
         handoff_artifact: HandoffArtifact,
     ) -> RunEvent:
-        payload: dict[str, object] = {
-            "artifact_ref": handoff_artifact.artifact_ref,
-            "artifact_kind": handoff_artifact.artifact_kind,
-            "label": handoff_artifact.label,
-        }
-        payload.update(correlation.as_payload())
-        return RunEvent(
-            id=RunEventId(f"evt-{correlation.dispatcher_run_id}-artifact-{uuid4().hex}"),
+        return make_handoff_artifact_event(
             run_id=RunId(str(correlation.dispatcher_run_id)),
+            handoff_artifact=handoff_artifact,
             seq=2,
-            type="run.artifact_created",
-            payload=payload,
-            timestamp=self._now(),
-            causation=Causation(
-                event_id=None,
-                action="dispatcher_workflow.artifact_created",
-                request_id=str(handoff_artifact.delegation_id),
-            ),
-            actor=Actor(kind="system", id=str(correlation.dispatcher_run_id), display="dispatcher"),
+            source_run_id=correlation.dispatcher_run_id,
+            target_run_id=correlation.team_run_id,
+            handoff_boundary="dispatcher_to_team",
+            correlation=correlation,
+            now=self._now(),
         )
 
 

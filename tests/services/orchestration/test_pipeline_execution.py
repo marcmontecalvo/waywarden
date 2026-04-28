@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunId
 from waywarden.domain.pipeline import (
     Pipeline,
@@ -86,21 +87,38 @@ def test_pipeline_execution_runs_linear_success_path_over_catalog_milestones() -
 
 def test_pipeline_execution_branches_on_review_failure() -> None:
     engine = PipelineExecutionEngine(now=lambda: datetime(2026, 4, 27, tzinfo=UTC))
+    correlation = RunCorrelation(
+        correlation_id="corr-pipeline-1",
+        parent_run_id="run-parent",
+        child_run_id="run-team",
+        dispatcher_run_id="run-parent",
+        team_run_id="run-team",
+        pipeline_run_id="run-pipeline",
+        review_run_id="run-review",
+        delegation_id="del-run-parent-1",
+        manifest_run_id="run-team",
+    )
 
     result = engine.execute(
         pipeline=_pipeline(),
-        run_id=RunId("run-1"),
+        run_id=RunId("run-pipeline"),
         outcomes={
             "team-run": "success",
             "review-gate": "failure",
             "fallback-review": "success",
         },
+        correlation=correlation,
     )
 
     assert result.status == "completed"
     assert result.visited_node_ids == ("team-run", "review-gate", "fallback-review")
+    assert result.events[0].payload["milestone_ref"] == "handoff.team_started"
+    assert result.events[0].payload["run_id"] == "run-pipeline"
+    assert result.events[0].payload["parent_run_id"] == "run-parent"
     assert result.events[1].payload["outcome"] == "failure"
     assert result.events[2].payload["node_kind"] == "sub_agent"
+    assert result.events[1].payload["milestone_ref"] == "review.findings_recorded"
+    assert result.events[1].payload["review_run_id"] == "run-review"
 
 
 def test_pipeline_execution_aborts_on_abort_route() -> None:
