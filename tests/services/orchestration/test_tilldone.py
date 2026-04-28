@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
+from waywarden.domain.durability import TokenBudgetTelemetry
 from waywarden.services.orchestration.milestones import MILESTONE_CATALOG
 from waywarden.services.orchestration.tilldone import (
     IterationResult,
     LoopConfig,
     LoopOutcome,
+    _EventStream,
     run_till_done,
 )
 
@@ -52,6 +56,37 @@ async def test_single_pass_success() -> None:
         ),
     )
     assert result == LoopOutcome.COMPLETED
+
+
+@pytest.mark.asyncio
+async def test_till_done_progress_includes_token_budget_metadata_when_supplied() -> None:
+    """Token telemetry is surfaced as metadata only, without changing loop control."""
+    stream = _EventStream()
+
+    result = await run_till_done(
+        "run-budget",
+        iteration_result_fn=lambda i: IterationResult(
+            plan_artifact_id="plan-v1",
+            check_passed=True,
+            changes_applied=True,
+            plan_revised=False,
+        ),
+        token_budget=TokenBudgetTelemetry(
+            budget_id="budget-loop-1",
+            source="instance",
+            observed_total_tokens=300,
+            remaining_tokens=700,
+            warning="within-budget",
+        ),
+        events=stream,
+    )
+
+    assert result == LoopOutcome.COMPLETED
+    assert stream.progress_events
+    assert all(
+        cast(dict[str, object], event.payload["token_budget"])["budget_id"] == "budget-loop-1"
+        for event in stream.progress_events
+    )
 
 
 # ---------------------------------------------------------------------------

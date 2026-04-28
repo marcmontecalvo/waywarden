@@ -6,6 +6,11 @@ from datetime import UTC, datetime
 
 import pytest
 
+from waywarden.domain.durability import (
+    SideEffectClassification,
+    TokenBudgetTelemetry,
+    ToolActionMetadata,
+)
 from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunId
 from waywarden.domain.subagent import SubAgent, SubAgentRole
@@ -67,6 +72,28 @@ def test_team_progress_event_aggregates_per_agent_status() -> None:
             "agent-tester": "run-team-tester",
         },
         correlation=correlation,
+        token_budget=TokenBudgetTelemetry(
+            budget_id="budget-team-1",
+            source="profile",
+            observed_total_tokens=200,
+            remaining_tokens=800,
+            warning="below-soft-limit",
+        ),
+        tool_actions=(
+            ToolActionMetadata(
+                tool_id="shell",
+                action="exec",
+                side_effect=SideEffectClassification(
+                    action_class="workspace-mutating",
+                    rationale="Team member applies workspace edits.",
+                ),
+                approval_explanation={
+                    "approval_required": True,
+                    "policy_preset": "ask",
+                    "rationale": "Workspace mutation routes through policy.",
+                },
+            ),
+        ),
         now=datetime(2026, 4, 27, tzinfo=UTC),
     )
 
@@ -103,6 +130,30 @@ def test_team_progress_event_aggregates_per_agent_status() -> None:
             "parent_run_id": "run-parent",
             "status": "registered",
             "milestone_ref": "handoff.team_started",
+        },
+    )
+    assert event.payload["token_budget"] == {
+        "budget_id": "budget-team-1",
+        "source": "profile",
+        "observed_prompt_tokens": None,
+        "observed_completion_tokens": None,
+        "observed_total_tokens": 200,
+        "remaining_tokens": 800,
+        "warning": "below-soft-limit",
+    }
+    assert event.payload["tool_actions"] == (
+        {
+            "tool_id": "shell",
+            "action": "exec",
+            "side_effect": {
+                "action_class": "workspace-mutating",
+                "rationale": "Team member applies workspace edits.",
+            },
+            "approval_explanation": {
+                "approval_required": True,
+                "policy_preset": "ask",
+                "rationale": "Workspace mutation routes through policy.",
+            },
         },
     )
     assert is_valid_milestone(str(event.payload["phase"]), str(event.payload["milestone"]))

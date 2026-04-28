@@ -13,6 +13,7 @@ import pytest
 from waywarden.assets.loader import AssetRegistry
 from waywarden.assets.schema import PipelineMetadata, RoutineMetadata
 from waywarden.domain.approval import Approval
+from waywarden.domain.durability import TokenBudgetTelemetry
 from waywarden.domain.ids import RunId
 from waywarden.domain.manifest.tool_policy import ToolDecisionRule, ToolPolicy
 from waywarden.domain.run_event import RunEvent
@@ -100,6 +101,7 @@ def _input(
     tool_calls: tuple[Mapping[str, object], ...] = (),
     memory_items: tuple[Mapping[str, object], ...] = (),
     knowledge_items: tuple[Mapping[str, object], ...] = (),
+    token_budget: TokenBudgetTelemetry | None = None,
 ) -> AdversarialReviewInput:
     return AdversarialReviewInput(
         run_id="run-adv",
@@ -111,6 +113,7 @@ def _input(
         tool_calls=tool_calls,
         memory_items=memory_items,
         knowledge_items=knowledge_items,
+        token_budget=token_budget,
     )
 
 
@@ -214,6 +217,51 @@ async def test_destructive_tool_misuse_triggers_finding_and_aborts_pipeline() ->
     assert result.approval_explanation is not None
     assert result.approval_explanation.policy_decisions["destructive_tool_misuse"] == "forbidden"
     assert _finding_events(events.events, "destructive_tool_misuse")
+
+
+@pytest.mark.anyio
+async def test_adversarial_review_emits_side_effect_and_token_budget_metadata() -> None:
+    routine, _, events = _routine()
+
+    result = await routine.review(
+        _input(
+            tool_calls=(
+                {
+                    "tool_id": "shell",
+                    "action": "exec",
+                    "command": "rm -rf /tmp/waywarden-target",
+                    "side_effect_class": "workspace-mutating",
+                    "side_effect_rationale": "Deletes files from the workspace.",
+                },
+            ),
+            token_budget=TokenBudgetTelemetry(
+                budget_id="budget-adv-1",
+                source="pipeline",
+                observed_prompt_tokens=120,
+                observed_completion_tokens=30,
+                observed_total_tokens=150,
+                remaining_tokens=350,
+                warning="near-hard-limit",
+            ),
+        )
+    )
+
+    assert result.handback_metadata["token_budget"]["budget_id"] == "budget-adv-1"
+    assert result.handback_metadata["tool_actions"][0]["side_effect"] == {
+        "action_class": "workspace-mutating",
+        "rationale": "Deletes files from the workspace.",
+    }
+    assert result.handback_metadata["tool_actions"][0]["approval_explanation"]["gate_decision"] == (
+        "abort"
+    )
+
+    finding_event = _finding_events(events.events, "destructive_tool_misuse")[0]
+    token_budget = cast(dict[str, object], finding_event.payload["token_budget"])
+    tool_actions = cast(tuple[dict[str, object], ...], finding_event.payload["tool_actions"])
+    approval_explanation = cast(dict[str, object], tool_actions[0]["approval_explanation"])
+    assert token_budget["remaining_tokens"] == 350
+    assert tool_actions[0]["tool_id"] == "shell"
+    assert approval_explanation["policy_preset"] == "ask"
 
 
 @pytest.mark.anyio

@@ -6,6 +6,12 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
 
+from waywarden.domain.durability import (
+    TokenBudgetTelemetry,
+    ToolActionMetadata,
+    token_budget_payload,
+    tool_actions_payload,
+)
 from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
@@ -26,6 +32,8 @@ def make_sub_agent_progress_event(
     status: SubAgentProgressStatus,
     summary: str,
     correlation: RunCorrelation | None = None,
+    token_budget: TokenBudgetTelemetry | None = None,
+    tool_actions: tuple[ToolActionMetadata, ...] | None = None,
     now: datetime | None = None,
 ) -> RunEvent:
     """Build a catalog-valid RT-002 ``run.progress`` event for a sub-agent."""
@@ -49,6 +57,12 @@ def make_sub_agent_progress_event(
     }
     if correlation is not None:
         payload.update(correlation.as_payload())
+    budget_payload = token_budget_payload(token_budget)
+    if budget_payload is not None:
+        payload["token_budget"] = budget_payload
+    actions_payload = tool_actions_payload(tool_actions)
+    if actions_payload is not None:
+        payload["tool_actions"] = actions_payload
 
     return RunEvent(
         id=RunEventId(f"evt-{run_id}-{sub_agent.id}-{milestone}-{uuid4().hex}"),

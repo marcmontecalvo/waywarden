@@ -53,6 +53,9 @@ class RunCorrelation:
     manifest_run_id: RunId | str
     sub_agent_run_id: RunId | str | None = None
     review_run_id: RunId | str | None = None
+    checkpoint_id: str | None = None
+    saga_id: str | None = None
+    resume_token: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -93,6 +96,10 @@ class RunCorrelation:
             "review_run_id",
             _clean_optional_run_id(self.review_run_id, field_name="review_run_id"),
         )
+        for field_name in ("checkpoint_id", "saga_id", "resume_token"):
+            value = getattr(self, field_name)
+            if value is not None:
+                object.__setattr__(self, field_name, _clean_text(value, field_name=field_name))
 
     def as_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -109,6 +116,12 @@ class RunCorrelation:
             payload["sub_agent_run_id"] = str(self.sub_agent_run_id)
         if self.review_run_id is not None:
             payload["review_run_id"] = str(self.review_run_id)
+        if self.checkpoint_id is not None:
+            payload["checkpoint_id"] = self.checkpoint_id
+        if self.saga_id is not None:
+            payload["saga_id"] = self.saga_id
+        if self.resume_token is not None:
+            payload["resume_token"] = self.resume_token
         return payload
 
 
