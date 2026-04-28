@@ -171,10 +171,10 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Test
-        # The coverage gate is enforced only on the Linux full-suite job
-        # below. This matrix job exists for fast cross-platform signal, so it
-        # runs the non-integration slice without partial-coverage failures.
-        run: uv run pytest --no-cov -m "not integration"
+        # Enforce the project coverage gate on both Linux and Windows. Tests
+        # that need unavailable services self-skip; the Linux integration job
+        # below remains the Postgres-backed full-runtime proof.
+        run: uv run pytest
 
   integration-linux:
     name: integration (linux)

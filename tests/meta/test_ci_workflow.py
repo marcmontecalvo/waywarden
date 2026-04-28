@@ -29,19 +29,19 @@ def _step_run(job: dict[str, object], step_name: str) -> str:
     raise AssertionError(f"step {step_name!r} not found")
 
 
-def test_non_integration_matrix_runs_without_coverage_gate() -> None:
-    """Cross-platform non-integration tests should not enforce partial coverage."""
+def test_cross_platform_test_matrix_runs_coverage_gate() -> None:
+    """Cross-platform tests must run the project-level coverage gate."""
     workflow = _load_ci_workflow()
     jobs = workflow["jobs"]
     assert isinstance(jobs, dict)
     test_job = jobs["test"]
     assert isinstance(test_job, dict)
     run = _step_run(test_job, "Test")
-    assert run == 'uv run pytest --no-cov -m "not integration"'
+    assert run == "uv run pytest"
 
 
-def test_cross_platform_test_matrix_executes_non_integration_fixture_tests() -> None:
-    """The adversarial fixture tests are non-integration tests run on Linux and Windows."""
+def test_cross_platform_test_matrix_executes_fixture_tests_on_both_platforms() -> None:
+    """The adversarial fixture tests run with coverage on Linux and Windows."""
     workflow = _load_ci_workflow()
     jobs = workflow["jobs"]
     assert isinstance(jobs, dict)
@@ -54,7 +54,7 @@ def test_cross_platform_test_matrix_executes_non_integration_fixture_tests() -> 
     oses = matrix["os"]
     assert isinstance(oses, list)
     assert oses == ["ubuntu-latest", "windows-latest"]
-    assert _step_run(test_job, "Test") == 'uv run pytest --no-cov -m "not integration"'
+    assert _step_run(test_job, "Test") == "uv run pytest"
 
 
 def test_linux_full_suite_job_carries_honest_coverage_gate() -> None:
