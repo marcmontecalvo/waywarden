@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import cast
+from pathlib import Path
+from typing import Any, Literal, TypedDict, cast
 
 import pytest
 
@@ -20,7 +22,27 @@ from waywarden.services.orchestration.adversarial_review import (
     AdversarialReviewInput,
     AdversarialReviewRoutine,
     FindingClass,
+    GateDecision,
+    ReviewStatus,
 )
+
+FIXTURES_DIR = Path("tests/fixtures/adversarial").resolve()
+CHECKLIST_PATH = Path("docs/runbooks/adversarial-review-checklist.md").resolve()
+
+
+class FixtureExpectation(TypedDict):
+    finding_class: FindingClass | Literal["none"]
+    gate_decision: GateDecision
+    pipeline_outcome: Literal["success", "failure"]
+    status: ReviewStatus
+
+
+class FixturePayload(TypedDict):
+    id: str
+    mode: str
+    description: str
+    input: dict[str, Any]
+    expected: FixtureExpectation
 
 
 class InMemoryApprovalRepo:
@@ -258,3 +280,107 @@ def _finding_events(events: list[RunEvent], finding_class: str) -> list[RunEvent
         for event in events
         if event.type == "run.progress" and event.payload.get("finding_class") == finding_class
     ]
+
+
+def _fixture_paths() -> list[Path]:
+    return sorted(FIXTURES_DIR.glob("*/*.json"))
+
+
+def _load_fixture(path: Path) -> FixturePayload:
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    assert isinstance(loaded, dict)
+    return cast(FixturePayload, loaded)
+
+
+def _input_from_fixture(fixture: FixturePayload) -> AdversarialReviewInput:
+    input_data = fixture["input"]
+    return _input(
+        handback=cast(str, input_data.get("handback_text", "")),
+        tool_calls=tuple(cast(tuple[Mapping[str, object], ...], input_data.get("tool_calls", ()))),
+        memory_items=tuple(
+            cast(tuple[Mapping[str, object], ...], input_data.get("memory_items", ()))
+        ),
+        knowledge_items=tuple(
+            cast(tuple[Mapping[str, object], ...], input_data.get("knowledge_items", ()))
+        ),
+    )
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("fixture_path", _fixture_paths(), ids=lambda path: path.stem)
+async def test_adversarial_fixtures_are_ci_executable_with_approval_metadata(
+    fixture_path: Path,
+) -> None:
+    fixture = _load_fixture(fixture_path)
+    routine, approvals, events = _routine()
+
+    result = await routine.review(_input_from_fixture(fixture))
+
+    expected = fixture["expected"]
+    assert result.gate_decision == expected["gate_decision"]
+    assert result.pipeline_outcome == expected["pipeline_outcome"]
+    assert result.status == expected["status"]
+    assert "approval_explanation" in result.handback_metadata
+    assert result.approval_explanation.rationale
+    assert "policy_preset" in result.approval_explanation.as_payload()
+    assert "policy_decisions" in result.approval_explanation.as_payload()
+
+    if expected["finding_class"] == "none":
+        assert result.findings == ()
+        assert await approvals.list_by_run("run-adv") == []
+        approval_explanation = cast(
+            Mapping[str, object],
+            events.events[0].payload["approval_explanation"],
+        )
+        assert approval_explanation["gate_decision"] == "continue"
+        return
+
+    assert _classes(result.findings) == (expected["finding_class"],)
+    approval_id = result.approval_explanation.approval_ids[0]
+    approval = await approvals.get(approval_id)
+    assert approval is not None
+    assert approval.approval_kind == "adversarial_review"
+    assert _finding_events(events.events, expected["finding_class"])
+    finding_event = _finding_events(events.events, expected["finding_class"])[0]
+    assert "approval_explanation" in finding_event.payload
+    approval_explanation = cast(
+        Mapping[str, object],
+        finding_event.payload["approval_explanation"],
+    )
+    assert approval_explanation["approval_ids"] == (approval_id,)
+
+
+def test_fixture_set_covers_all_failure_modes_and_control() -> None:
+    modes = {path.parent.name for path in _fixture_paths()}
+
+    assert modes == {
+        "approval_boundary_misuse",
+        "control",
+        "destructive_tool_misuse",
+        "malformed_memory_knowledge",
+        "prompt_injection",
+    }
+
+
+def test_adversarial_checklist_exists_with_frontmatter_and_revision_workflow() -> None:
+    text = CHECKLIST_PATH.read_text(encoding="utf-8")
+
+    assert text.startswith("---\n")
+    assert "type: spec" in text
+    assert 'title: "Adversarial Review Checklist"' in text
+    assert "relates_to_adrs: [0007, 0008]" in text
+    assert "## Revision Workflow" in text
+    assert "prompt injection" in text.lower()
+    assert "approval-boundary misuse" in text.lower()
+    assert "malformed memory/knowledge inputs" in text.lower()
+    assert "destructive tool misuse" in text.lower()
+
+
+@pytest.mark.anyio
+async def test_adversarial_review_metadata_references_operator_checklist() -> None:
+    registry = AssetRegistry()
+    await registry.load_from_dir("assets")
+
+    routine = cast(RoutineMetadata, registry.get("adversarial-review", "routine"))
+
+    assert routine.documentation_refs == ("docs/runbooks/adversarial-review-checklist.md",)

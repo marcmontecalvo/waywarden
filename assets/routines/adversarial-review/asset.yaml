@@ -22,6 +22,8 @@ milestones:
 emits_events:
   - run.progress
   - run.approval_waiting
+documentation_refs:
+  - docs/runbooks/adversarial-review-checklist.md
 profile_filter:
   - op: include
     tag: coding

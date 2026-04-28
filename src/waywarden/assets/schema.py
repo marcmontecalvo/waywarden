@@ -283,6 +283,7 @@ class RoutineMetadata(AssetMetadata, frozen=True):
     kind: Literal["routine"] = "routine"
     milestones: tuple[dict[str, Any], ...] = ()
     emits_events: tuple[str, ...] = ()
+    documentation_refs: tuple[str, ...] = ()
 
     @field_validator("milestones", mode="before")
     @classmethod
@@ -297,6 +298,25 @@ class RoutineMetadata(AssetMetadata, frozen=True):
                 raise TypeError(f"milestones[{index}] must be a mapping")
             normalized.append(dict(item))
         return tuple(normalized)
+
+    @field_validator("documentation_refs", mode="before")
+    @classmethod
+    def _normalize_documentation_refs(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            value = [value]
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("documentation_refs must be a string or sequence of strings")
+        refs: list[str] = []
+        for index, item in enumerate(value):
+            if not isinstance(item, str):
+                raise TypeError(f"documentation_refs[{index}] must be a string")
+            ref = item.strip()
+            if not ref:
+                raise ValueError(f"documentation_refs[{index}] must not be blank")
+            refs.append(ref)
+        return tuple(dict.fromkeys(refs))
 
 
 class WidgetMetadata(AssetMetadata, frozen=True):

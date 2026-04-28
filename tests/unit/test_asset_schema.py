@@ -270,9 +270,11 @@ def test_routine_metadata_has_extra_fields() -> None:
             {"phase": "plan", "names": ["drafted", "ready"]},
         ),
         emits_events=("run.progress",),
+        documentation_refs=(" docs/runbooks/briefing.md ", "docs/runbooks/briefing.md"),
     )
     assert meta.milestones[0]["phase"] == "intake"
     assert meta.emits_events == ("run.progress",)
+    assert meta.documentation_refs == ("docs/runbooks/briefing.md",)
 
 
 def test_from_dict_dispatches_to_routine_metadata() -> None:
@@ -284,11 +286,13 @@ def test_from_dict_dispatches_to_routine_metadata() -> None:
             "description": "a briefing",
             "milestones": [{"phase": "intake", "names": ["received"]}],
             "emits_events": ["run.progress"],
+            "documentation_refs": ["docs/runbooks/briefing.md"],
         }
     )
 
     assert isinstance(meta, RoutineMetadata)
     assert meta.milestones[0]["phase"] == "intake"
+    assert meta.documentation_refs == ("docs/runbooks/briefing.md",)
 
 
 def test_agent_metadata_enforces_max_tools_per_step_minimum() -> None:

@@ -1,0 +1,14 @@
+{
+  "id": "control-clean-handoff",
+  "mode": "control",
+  "description": "Benign handback should not produce adversarial findings.",
+  "input": {
+    "handback_text": "Implementation complete. Tests passed. No privileged actions requested."
+  },
+  "expected": {
+    "finding_class": "none",
+    "gate_decision": "continue",
+    "pipeline_outcome": "success",
+    "status": "completed"
+  }
+}

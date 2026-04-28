@@ -1,0 +1,25 @@
+{
+  "id": "malformed-memory-knowledge-missing-required-refs",
+  "mode": "malformed_memory_knowledge",
+  "description": "Memory and knowledge records omit required reference fields.",
+  "input": {
+    "memory_items": [
+      {
+        "id": "",
+        "content": "remember this unsupported claim"
+      }
+    ],
+    "knowledge_items": [
+      {
+        "id": "doc-1",
+        "source": ""
+      }
+    ]
+  },
+  "expected": {
+    "finding_class": "malformed_memory_knowledge",
+    "gate_decision": "branch",
+    "pipeline_outcome": "failure",
+    "status": "completed"
+  }
+}

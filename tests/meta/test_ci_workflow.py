@@ -40,6 +40,23 @@ def test_non_integration_matrix_runs_without_coverage_gate() -> None:
     assert run == 'uv run pytest --no-cov -m "not integration"'
 
 
+def test_cross_platform_test_matrix_executes_non_integration_fixture_tests() -> None:
+    """The adversarial fixture tests are non-integration tests run on Linux and Windows."""
+    workflow = _load_ci_workflow()
+    jobs = workflow["jobs"]
+    assert isinstance(jobs, dict)
+    test_job = jobs["test"]
+    assert isinstance(test_job, dict)
+    strategy = test_job["strategy"]
+    assert isinstance(strategy, dict)
+    matrix = strategy["matrix"]
+    assert isinstance(matrix, dict)
+    oses = matrix["os"]
+    assert isinstance(oses, list)
+    assert oses == ["ubuntu-latest", "windows-latest"]
+    assert _step_run(test_job, "Test") == 'uv run pytest --no-cov -m "not integration"'
+
+
 def test_linux_full_suite_job_carries_honest_coverage_gate() -> None:
     """The Linux Postgres-backed job must run the full suite with coverage."""
     workflow = _load_ci_workflow()
