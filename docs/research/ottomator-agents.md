@@ -29,7 +29,7 @@ The likely value for WayWarden is not in copying any exact stack choices, but in
 ### 1. Practical role decomposition
 WayWarden benefits from explicit specialist roles when they reduce:
 - token waste
-n- ambiguity
+- ambiguity
 - planning errors
 - review gaps
 
