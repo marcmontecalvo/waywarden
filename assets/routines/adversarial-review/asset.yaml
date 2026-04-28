@@ -1,0 +1,27 @@
+id: adversarial-review
+kind: routine
+version: 1.0.0
+description: Pipeline checkpoint routine that detects adversarial handback findings and gates approval-aware review outcomes.
+tags:
+  - coding
+  - routine
+  - review
+  - adversarial
+required_providers:
+  - model
+  - tool
+milestones:
+  - phase: review
+    names:
+      - findings_recorded
+    checkpoint: review-gate
+    gates:
+      - continue
+      - abort
+      - branch
+emits_events:
+  - run.progress
+  - run.approval_waiting
+profile_filter:
+  - op: include
+    tag: coding
