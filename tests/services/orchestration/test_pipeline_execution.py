@@ -24,7 +24,7 @@ def _pipeline() -> Pipeline:
                 id="team-run",
                 kind="team",
                 ref_id="coding-dispatch-team",
-                input_artifact_kind="coding-task",
+                input_artifact_kind="team-handoff",
                 output_artifact_kind="team-handoff",
                 phase="handoff",
                 milestone="team_started",

@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
 
+from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
 from waywarden.domain.team import (
@@ -26,6 +27,7 @@ def make_team_progress_event(
     status: TeamProgressStatus,
     summary: str,
     member_statuses: dict[str, TeamMemberProgressStatus],
+    correlation: RunCorrelation | None = None,
     now: datetime | None = None,
 ) -> RunEvent:
     """Build a catalog-valid team-level RT-002 ``run.progress`` event."""
@@ -46,22 +48,25 @@ def make_team_progress_event(
 
     normalized_statuses = {member_id: member_statuses[member_id] for member_id in team.member_ids}
     timestamp = now or datetime.now(UTC)
+    payload: dict[str, object] = {
+        "phase": "handoff",
+        "milestone": milestone,
+        "team_id": str(team.id),
+        "dispatcher_id": str(team.dispatcher.id),
+        "specialist_ids": tuple(str(agent.id) for agent in team.specialists),
+        "status": status,
+        "summary": clean_summary,
+        "member_statuses": normalized_statuses,
+    }
+    if correlation is not None:
+        payload.update(correlation.as_payload())
 
     return RunEvent(
         id=RunEventId(f"evt-{run_id}-{team.id}-{milestone}-{uuid4().hex}"),
         run_id=run_id,
         seq=seq,
         type="run.progress",
-        payload={
-            "phase": "handoff",
-            "milestone": milestone,
-            "team_id": str(team.id),
-            "dispatcher_id": str(team.dispatcher.id),
-            "specialist_ids": tuple(str(agent.id) for agent in team.specialists),
-            "status": status,
-            "summary": clean_summary,
-            "member_statuses": normalized_statuses,
-        },
+        payload=payload,
         timestamp=timestamp,
         causation=Causation(
             event_id=None,

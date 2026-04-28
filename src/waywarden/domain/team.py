@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Literal, NewType, Self, cast
 
+from waywarden.domain.handoff import HandoffArtifact
 from waywarden.domain.subagent import (
     SubAgent,
     SubAgentId,
@@ -70,6 +71,8 @@ class Team:
     """Dispatcher plus specialist sub-agents with typed handoff routing."""
 
     id: TeamId | str
+    input_artifact_kind: str
+    output_artifact_kind: str
     dispatcher: SubAgent
     specialists: tuple[SubAgent, ...]
     handoff_routes: tuple[TeamHandoffRoute, ...] = ()
@@ -79,6 +82,16 @@ class Team:
     def __post_init__(self) -> None:
         team_id = TeamId(_clean_text(self.id, field_name="id"))
         object.__setattr__(self, "id", team_id)
+        object.__setattr__(
+            self,
+            "input_artifact_kind",
+            _clean_text(self.input_artifact_kind, field_name="input_artifact_kind"),
+        )
+        object.__setattr__(
+            self,
+            "output_artifact_kind",
+            _clean_text(self.output_artifact_kind, field_name="output_artifact_kind"),
+        )
 
         if not isinstance(self.dispatcher, SubAgent):
             raise TypeError("dispatcher must be a SubAgent")
@@ -161,6 +174,12 @@ class Team:
         raise KeyError(
             f"no handoff route from {clean_from_agent!r} for output {clean_output_name!r}"
         )
+
+    def accepts_handoff_artifact(self, artifact: HandoffArtifact) -> bool:
+        """Return True when *artifact* matches the team's normalized input boundary."""
+        if not isinstance(artifact, HandoffArtifact):
+            raise TypeError("artifact must be a HandoffArtifact")
+        return artifact.artifact_kind == self.input_artifact_kind
 
     @staticmethod
     def _raise_on_deadlock(routes: tuple[TeamHandoffRoute, ...]) -> None:

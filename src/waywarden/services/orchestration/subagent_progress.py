@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
 
+from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.run_event import Actor, Causation, RunEvent
 from waywarden.domain.subagent import (
@@ -24,6 +25,7 @@ def make_sub_agent_progress_event(
     milestone: SubAgentProgressMilestone,
     status: SubAgentProgressStatus,
     summary: str,
+    correlation: RunCorrelation | None = None,
     now: datetime | None = None,
 ) -> RunEvent:
     """Build a catalog-valid RT-002 ``run.progress`` event for a sub-agent."""
@@ -34,20 +36,23 @@ def make_sub_agent_progress_event(
     clean_summary = summary.strip()
     if not clean_summary:
         raise ValueError("summary must not be blank")
+    payload: dict[str, object] = {
+        "phase": "handoff",
+        "milestone": milestone,
+        "sub_agent_id": str(sub_agent.id),
+        "role": sub_agent.role.name,
+        "status": status,
+        "summary": clean_summary,
+    }
+    if correlation is not None:
+        payload.update(correlation.as_payload())
 
     return RunEvent(
         id=RunEventId(f"evt-{run_id}-{sub_agent.id}-{milestone}-{uuid4().hex}"),
         run_id=run_id,
         seq=seq,
         type="run.progress",
-        payload={
-            "phase": "handoff",
-            "milestone": milestone,
-            "sub_agent_id": str(sub_agent.id),
-            "role": sub_agent.role.name,
-            "status": status,
-            "summary": clean_summary,
-        },
+        payload=payload,
         timestamp=timestamp,
         causation=Causation(
             event_id=None,

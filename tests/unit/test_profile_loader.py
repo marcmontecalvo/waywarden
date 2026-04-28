@@ -35,6 +35,7 @@ def test_load_profiles_loads_checked_in_profile_fixtures() -> None:
         "agent",
         "team",
         "pipeline",
+        "workflow",
         "policy",
         "theme",
         "context_provider",

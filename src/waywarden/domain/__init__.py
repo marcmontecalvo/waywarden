@@ -1,3 +1,4 @@
+from waywarden.domain.handoff import HandoffArtifact, RunCorrelation
 from waywarden.domain.pipeline import (
     Pipeline,
     PipelineId,
@@ -17,6 +18,7 @@ from waywarden.domain.subagent import (
 from waywarden.domain.team import Team, TeamHandoffRoute, TeamId, TeamRegistry
 
 __all__ = [
+    "HandoffArtifact",
     "Pipeline",
     "PipelineId",
     "PipelineNode",
@@ -24,6 +26,7 @@ __all__ = [
     "PipelineRegistry",
     "PipelineRoute",
     "ReviewCheckpoint",
+    "RunCorrelation",
     "SubAgent",
     "SubAgentHandoffArtifact",
     "SubAgentId",

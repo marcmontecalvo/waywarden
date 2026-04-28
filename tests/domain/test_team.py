@@ -33,6 +33,8 @@ def test_team_routes_dispatcher_to_two_specialists_with_typed_handoffs() -> None
 
     team = Team(
         id="coding-team",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher=dispatcher,
         specialists=(reviewer, tester),
         handoff_routes=(
@@ -63,6 +65,8 @@ def test_team_dispatcher_fallback_routes_unmatched_handoff_to_fallback_specialis
     tester = _agent("agent-tester", "tester", ("test-report",))
     team = Team(
         id="coding-team",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher=dispatcher,
         specialists=(reviewer, tester),
         handoff_routes=(
@@ -91,6 +95,8 @@ def test_team_detects_deadlocked_handoff_cycles() -> None:
     with pytest.raises(ValueError, match="deadlock"):
         Team(
             id="coding-team",
+            input_artifact_kind="team-handoff",
+            output_artifact_kind="team-handoff",
             dispatcher=dispatcher,
             specialists=(reviewer, tester),
             handoff_routes=(
@@ -119,6 +125,8 @@ def test_team_detects_deadlocked_handoff_cycles() -> None:
 def test_team_rejects_provider_specific_metadata_and_is_frozen() -> None:
     team = Team(
         id="coding-team",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher=_agent("agent-dispatcher", "dispatcher", ("needs-review",)),
         specialists=(_agent("agent-reviewer", "reviewer", ("review-report",)),),
         fallback_agent="agent-reviewer",
@@ -132,11 +140,15 @@ def test_team_rejects_provider_specific_metadata_and_is_frozen() -> None:
 def test_team_registry_registers_and_lists_deterministically() -> None:
     first = Team(
         id="coding-team-a",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher=_agent("agent-dispatcher-a", "dispatcher-a", ("needs-review",)),
         specialists=(_agent("agent-reviewer-a", "reviewer-a", ("review-report",)),),
     )
     second = Team(
         id="coding-team-b",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher=_agent("agent-dispatcher-b", "dispatcher-b", ("needs-review",)),
         specialists=(_agent("agent-reviewer-b", "reviewer-b", ("review-report",)),),
     )

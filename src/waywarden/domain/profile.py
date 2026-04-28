@@ -25,6 +25,7 @@ CURRENT_PROFILE_EXTENSION_EXAMPLES: frozenset[str] = frozenset(
         "agent",
         "team",
         "pipeline",
+        "workflow",
         "routine",
         "policy",
         "theme",

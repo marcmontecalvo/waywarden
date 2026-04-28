@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from typing import cast
 from uuid import uuid4
 
+from waywarden.domain.handoff import RunCorrelation
 from waywarden.domain.ids import RunEventId, RunId
 from waywarden.domain.pipeline import (
     Pipeline,
@@ -46,6 +47,7 @@ class PipelineExecutionEngine:
         pipeline: Pipeline,
         run_id: RunId,
         outcomes: Mapping[str, PipelineOutcome],
+        correlation: RunCorrelation | None = None,
         max_steps: int | None = None,
     ) -> PipelineExecutionResult:
         """Execute *pipeline* using supplied per-node outcomes."""
@@ -78,6 +80,7 @@ class PipelineExecutionEngine:
                     seq=len(events) + 1,
                     outcome=outcome,
                     status=node_status,
+                    correlation=correlation,
                 )
             )
             if status == "aborted":
@@ -109,29 +112,33 @@ class PipelineExecutionEngine:
         seq: int,
         outcome: PipelineOutcome,
         status: str,
+        correlation: RunCorrelation | None,
     ) -> RunEvent:
         if not is_valid_milestone(node.phase, node.milestone):
             raise ValueError(
                 f"milestone not cataloged: phase={node.phase!r} milestone={node.milestone!r}"
             )
+        payload: dict[str, object] = {
+            "phase": node.phase,
+            "milestone": node.milestone,
+            "pipeline_id": str(pipeline.id),
+            "node_id": str(node.id),
+            "node_kind": node.kind,
+            "ref_id": node.ref_id,
+            "input_artifact_kind": node.input_artifact_kind,
+            "output_artifact_kind": node.output_artifact_kind,
+            "outcome": outcome,
+            "status": status,
+        }
+        if correlation is not None:
+            payload.update(correlation.as_payload())
 
         return RunEvent(
             id=RunEventId(f"evt-{run_id}-{pipeline.id}-{node.id}-{uuid4().hex}"),
             run_id=run_id,
             seq=seq,
             type="run.progress",
-            payload={
-                "phase": node.phase,
-                "milestone": node.milestone,
-                "pipeline_id": str(pipeline.id),
-                "node_id": str(node.id),
-                "node_kind": node.kind,
-                "ref_id": node.ref_id,
-                "input_artifact_kind": node.input_artifact_kind,
-                "output_artifact_kind": node.output_artifact_kind,
-                "outcome": outcome,
-                "status": status,
-            },
+            payload=payload,
             timestamp=self._now(),
             causation=Causation(
                 event_id=None,

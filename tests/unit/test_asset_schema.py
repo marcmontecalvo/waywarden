@@ -19,6 +19,8 @@ from waywarden.assets.schema import (
     ThemeMetadata,
     ToolMetadata,
     WidgetMetadata,
+    WorkflowHandoffMetadata,
+    WorkflowMetadata,
     validate_unique_ids,
 )
 
@@ -317,6 +319,8 @@ def test_team_metadata_declares_dispatcher_specialists_and_fallback() -> None:
         kind="team",
         version="1.0.0",
         description="coding team",
+        input_artifact_kind="team-handoff",
+        output_artifact_kind="team-handoff",
         dispatcher="agent-dispatcher",
         specialists=("agent-reviewer", "agent-tester"),
         handoff_routes=(
@@ -331,6 +335,8 @@ def test_team_metadata_declares_dispatcher_specialists_and_fallback() -> None:
     )
 
     assert meta.dispatcher == "agent-dispatcher"
+    assert meta.input_artifact_kind == "team-handoff"
+    assert meta.output_artifact_kind == "team-handoff"
     assert meta.specialists == ("agent-reviewer", "agent-tester")
     assert meta.handoff_routes[0]["to_agent"] == "agent-reviewer"
     assert meta.fallback_agent == "agent-tester"
@@ -344,9 +350,36 @@ def test_team_metadata_requires_dispatcher_and_specialist_structure() -> None:
                 "kind": "team",
                 "version": "1.0.0",
                 "description": "coding team",
+                "input_artifact_kind": "team-handoff",
+                "output_artifact_kind": "team-handoff",
                 "specialists": ["agent-reviewer"],
             }
         )
+
+
+def test_workflow_metadata_declares_dispatcher_team_pipeline_and_handoff_contract() -> None:
+    meta = WorkflowMetadata(
+        id="coding-dispatcher-workflow",
+        kind="workflow",
+        version="1.0.0",
+        description="Dispatcher workflow for coding tasks.",
+        workflow_type="dispatcher",
+        dispatcher="agent-dispatcher",
+        team_ref="coding-dispatch-team",
+        pipeline_ref="coding-review-pipeline",
+        handoff_artifact=WorkflowHandoffMetadata(
+            artifact_kind="team-handoff",
+            label="Coding team handoff",
+            output_name="team-handoff",
+        ),
+        expected_outputs=("plan", "patch", "review"),
+    )
+
+    assert meta.workflow_type == "dispatcher"
+    assert meta.team_ref == "coding-dispatch-team"
+    assert meta.pipeline_ref == "coding-review-pipeline"
+    assert meta.handoff_artifact.artifact_kind == "team-handoff"
+    assert meta.expected_outputs == ("plan", "patch", "review")
 
 
 def test_kind_literal_stick() -> None:
@@ -373,6 +406,8 @@ def test_kind_literal_stick() -> None:
             id="tm",
             version="1.0",
             description="d",
+            input_artifact_kind="team-handoff",
+            output_artifact_kind="team-handoff",
             dispatcher="agent-dispatcher",
             specialists=("agent-reviewer",),
         ).kind
@@ -381,6 +416,25 @@ def test_kind_literal_stick() -> None:
     assert (
         PipelineMetadata(kind="pipeline", id="pl", version="1.0", description="d").kind
         == "pipeline"
+    )
+    assert (
+        WorkflowMetadata(
+            kind="workflow",
+            id="wf",
+            version="1.0",
+            description="d",
+            workflow_type="dispatcher",
+            dispatcher="agent-dispatcher",
+            team_ref="coding-dispatch-team",
+            pipeline_ref="coding-review-pipeline",
+            handoff_artifact=WorkflowHandoffMetadata(
+                artifact_kind="team-handoff",
+                label="Coding team handoff",
+                output_name="team-handoff",
+            ),
+            expected_outputs=("plan",),
+        ).kind
+        == "workflow"
     )
     assert PolicyMetadata(kind="policy", id="po", version="1.0", description="d").kind == "policy"
     assert ThemeMetadata(kind="theme", id="th", version="1.0", description="d").kind == "theme"

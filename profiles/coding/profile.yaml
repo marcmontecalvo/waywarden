@@ -19,6 +19,7 @@ supported_extensions:
   - agent
   - team
   - pipeline
+  - workflow
   - policy
   - theme
   - context_provider

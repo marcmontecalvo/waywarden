@@ -9,6 +9,8 @@ tags:
 required_providers:
   - model
   - tool
+input_artifact_kind: team-handoff
+output_artifact_kind: team-handoff
 dispatcher: agent-dispatcher
 specialists:
   - agent-reviewer

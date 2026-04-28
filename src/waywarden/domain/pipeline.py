@@ -11,6 +11,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal, NewType, Self, cast
 
+from waywarden.domain.handoff import HandoffArtifact
 from waywarden.services.orchestration.milestones import ValidPhase, is_valid_milestone
 
 PipelineId = NewType("PipelineId", str)
@@ -200,6 +201,18 @@ class Pipeline:
             if route.from_node == clean_from_node and route.outcome == clean_outcome:
                 return route
         raise KeyError(f"no route from {clean_from_node!r} for outcome {clean_outcome!r}")
+
+    def accepts_handoff_artifact(
+        self,
+        artifact: HandoffArtifact,
+        *,
+        node_id: PipelineNodeId | str | None = None,
+    ) -> bool:
+        """Return True when *artifact* matches the selected node's input boundary."""
+        if not isinstance(artifact, HandoffArtifact):
+            raise TypeError("artifact must be a HandoffArtifact")
+        node = self.node(node_id if node_id is not None else self.start_node)
+        return artifact.artifact_kind == node.input_artifact_kind
 
 
 class PipelineRegistry:

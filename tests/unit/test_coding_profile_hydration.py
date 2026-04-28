@@ -53,6 +53,7 @@ def _valid_coding_descriptor() -> ProfileDescriptor:
             "agent",
             "team",
             "pipeline",
+            "workflow",
             "policy",
             "theme",
             "context_provider",

@@ -1,0 +1,26 @@
+id: coding-dispatcher-workflow
+kind: workflow
+version: 1.0.0
+description: Dispatcher workflow packaging that hands coding work into the dispatch team and review pipeline.
+tags:
+  - coding
+  - workflow
+  - dispatch
+required_providers:
+  - model
+  - tool
+workflow_type: dispatcher
+dispatcher: agent-dispatcher
+team_ref: coding-dispatch-team
+pipeline_ref: coding-review-pipeline
+handoff_artifact:
+  artifact_kind: team-handoff
+  label: Coding team handoff
+  output_name: team-handoff
+expected_outputs:
+  - plan
+  - patch
+  - review
+profile_filter:
+  - op: include
+    tag: coding

@@ -15,6 +15,7 @@ from waywarden.assets.schema import (
     AssetKind,
     AssetMetadata,
     PipelineMetadata,
+    WorkflowMetadata,
 )
 
 FIXTURES_DIR = Path("tests/fixtures/assets").resolve()
@@ -235,7 +236,7 @@ def test_pipeline_metadata_requires_typed_nodes_and_routes() -> None:
                     "id": "team-run",
                     "kind": "team",
                     "ref_id": "coding-dispatch-team",
-                    "input_artifact_kind": "coding-task",
+                    "input_artifact_kind": "team-handoff",
                     "output_artifact_kind": "team-handoff",
                     "phase": "handoff",
                     "milestone": "team_started",
@@ -267,6 +268,31 @@ def test_pipeline_metadata_requires_typed_nodes_and_routes() -> None:
     assert isinstance(asset, PipelineMetadata)
     assert asset.start_node == "team-run"
     assert asset.nodes[1]["review_checkpoint"]["failed_output_artifact_kind"] == ("review-findings")
+
+
+def test_workflow_metadata_requires_typed_handoff_contract() -> None:
+    asset = AssetMetadata.from_dict(
+        {
+            "id": "coding-dispatcher-workflow",
+            "kind": "workflow",
+            "version": "1.0.0",
+            "description": "Dispatcher workflow packaging.",
+            "workflow_type": "dispatcher",
+            "dispatcher": "agent-dispatcher",
+            "team_ref": "coding-dispatch-team",
+            "pipeline_ref": "coding-review-pipeline",
+            "handoff_artifact": {
+                "artifact_kind": "team-handoff",
+                "label": "Coding team handoff",
+                "output_name": "team-handoff",
+            },
+            "expected_outputs": ["plan", "patch", "review"],
+        }
+    )
+
+    assert isinstance(asset, WorkflowMetadata)
+    assert asset.handoff_artifact.artifact_kind == "team-handoff"
+    assert asset.expected_outputs == ("plan", "patch", "review")
 
 
 # -----------------------------------------------------------------------

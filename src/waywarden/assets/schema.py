@@ -35,6 +35,7 @@ AssetKind = Literal[
     "agent",
     "team",
     "pipeline",
+    "workflow",
     "policy",
     "theme",
     "context_provider",
@@ -52,6 +53,7 @@ KNOWN_ASSET_KINDS: frozenset[AssetKind] = frozenset(
         "agent",
         "team",
         "pipeline",
+        "workflow",
         "policy",
         "theme",
         "context_provider",
@@ -348,10 +350,24 @@ class TeamMetadata(AssetMetadata, frozen=True):
     """Asset metadata for ``team`` kind."""
 
     kind: Literal["team"] = "team"
+    input_artifact_kind: str
+    output_artifact_kind: str
     dispatcher: str
     specialists: tuple[str, ...]
     handoff_routes: tuple[dict[str, str], ...] = ()
     fallback_agent: str | None = None
+
+    @field_validator("input_artifact_kind", "output_artifact_kind", mode="before")
+    @classmethod
+    def _normalize_artifact_kind(cls, value: object, info: object) -> str:
+        if not isinstance(value, str):
+            field_name = getattr(info, "field_name", "artifact_kind")
+            raise TypeError(f"{field_name} must be a string")
+        normalized = value.strip()
+        field_name = getattr(info, "field_name", "artifact_kind")
+        if not normalized:
+            raise ValueError(f"{field_name} must not be blank")
+        return normalized
 
     @field_validator("dispatcher", mode="before")
     @classmethod
@@ -604,6 +620,71 @@ class PipelineMetadata(AssetMetadata, frozen=True):
         return self
 
 
+class WorkflowHandoffMetadata(BaseModel, frozen=True, extra="forbid"):
+    """Typed dispatcher-workflow handoff contract."""
+
+    artifact_kind: str
+    label: str
+    output_name: str
+
+    @field_validator("artifact_kind", "label", "output_name", mode="before")
+    @classmethod
+    def _normalize_required_text(cls, value: object, info: object) -> str:
+        field_name = getattr(info, "field_name", "value")
+        if not isinstance(value, str):
+            raise TypeError(f"{field_name} must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{field_name} must not be blank")
+        return normalized
+
+
+class WorkflowMetadata(AssetMetadata, frozen=True):
+    """Asset metadata for ``workflow`` kind."""
+
+    kind: Literal["workflow"] = "workflow"
+    workflow_type: Literal["dispatcher"] = "dispatcher"
+    dispatcher: str
+    team_ref: str
+    pipeline_ref: str
+    handoff_artifact: WorkflowHandoffMetadata
+    expected_outputs: tuple[str, ...] = ()
+
+    @field_validator("dispatcher", "team_ref", "pipeline_ref", mode="before")
+    @classmethod
+    def _normalize_ref_text(cls, value: object, info: object) -> str:
+        field_name = getattr(info, "field_name", "value")
+        if not isinstance(value, str):
+            raise TypeError(f"{field_name} must be a string")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError(f"{field_name} must not be blank")
+        return normalized
+
+    @field_validator("expected_outputs", mode="before")
+    @classmethod
+    def _normalize_expected_outputs(cls, value: object) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            raise TypeError("expected_outputs must be a sequence of strings")
+        if not isinstance(value, (list, tuple)):
+            raise TypeError("expected_outputs must be a sequence of strings")
+        outputs: list[str] = []
+        seen: set[str] = set()
+        for idx, item in enumerate(value):
+            if not isinstance(item, str):
+                raise TypeError(f"expected_outputs[{idx}] must be a string")
+            normalized = item.strip()
+            if not normalized:
+                raise ValueError(f"expected_outputs[{idx}] must not be blank")
+            if normalized in seen:
+                raise ValueError(f"expected_outputs[{idx}] duplicates {normalized!r}")
+            seen.add(normalized)
+            outputs.append(normalized)
+        return tuple(outputs)
+
+
 class PolicyMetadata(AssetMetadata, frozen=True):
     """Asset metadata for ``policy`` kind."""
 
@@ -644,6 +725,7 @@ _ASSET_MODEL_BY_KIND: dict[str, type[AssetMetadata]] = {
     "agent": AgentMetadata,
     "team": TeamMetadata,
     "pipeline": PipelineMetadata,
+    "workflow": WorkflowMetadata,
     "policy": PolicyMetadata,
     "theme": ThemeMetadata,
     "context_provider": ContextProviderMetadata,
